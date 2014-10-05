@@ -4,11 +4,9 @@ extern crate serialize;
 extern crate xml;
 extern crate tiled;
 
-use serialize::base64::{FromBase64};
 use std::io::File;
 use std::io::BufferedReader;
 use xml::reader::EventReader;
-use xml::reader::events::*;
 use tiled::parse;
 
 fn main() {

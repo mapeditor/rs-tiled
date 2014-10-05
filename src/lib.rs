@@ -3,11 +3,11 @@ extern crate flate2;
 extern crate xml;
 extern crate serialize;
 
-use std::io::{File, BufferedReader, BufReader, IoError, EndOfFile};
+use std::io::{BufReader, IoError, EndOfFile};
 use xml::reader::EventReader;
 use xml::common::Attribute;
 use xml::reader::events::*;
-use serialize::base64::{FromBase64};
+use serialize::base64::FromBase64;
 use flate2::reader::ZlibDecoder;
 
 macro_rules! get_attrs {
@@ -190,7 +190,7 @@ pub fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>,
                             match zd.read_le_u32() {
                                 Ok(v) => row.push(v),
                                 Err(IoError{kind, ..}) if kind == EndOfFile => return Ok(data),
-                                Err(e) => return Err("Zlib decoding error".to_string())
+                                Err(_) => return Err("Zlib decoding error".to_string())
                             }
                             if row.len() == width {
                                 data.push(row);
@@ -206,7 +206,7 @@ pub fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>,
                     return Ok(Vec::new());
                 }
             }
-            EndElement => return Err("Premature end to data".to_string())
+            _ => {}
         }
     }
 }
