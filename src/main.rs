@@ -11,6 +11,7 @@ use tiled::parse;
 
 fn main() {
     let file = File::open(&Path::new("assets/tiled_base64_zlib.tmx")).unwrap();
+    println!("Opened file");
     let reader = BufferedReader::new(file);
     let mut parser = EventReader::new(reader);
     println!("{}", parse(&mut parser));

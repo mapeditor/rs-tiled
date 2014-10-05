@@ -24,7 +24,7 @@ macro_rules! get_attrs {
                 }
             }
 
-            if !(true $(&& $oVar.is_some())*) {
+            if !(true $(&& $var.is_some())*) {
                 return Err($msg);
             }
             (($($oVar),*), ($($var.unwrap()),*))
@@ -148,14 +148,17 @@ impl Image {
 #[deriving(Show)]
 pub struct Layer {
     name: String,
+    opacity: f32,
+    visible: bool,
     tiles: Vec<Vec<u32>>
 }
 
 impl Layer {
     pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Layer, String> {
-        let ((), n) = get_attrs!(
+        let ((o, v), n) = get_attrs!(
             attrs,
-            optionals: [],
+            optionals: [("opacity", opacity, f32, |v:String| from_str(v[])),
+                        ("visible", visible, bool, |v:String| from_str(v[]).map(|x:int| x == 1))],
             required: [("name", name, String, |v| Some(v))],
             "layer must have a name".to_string());
         let mut tiles = Vec::new();
@@ -164,7 +167,7 @@ impl Layer {
                         tiles = try!(parse_data(parser, attrs, width));
                         Ok(())
                    });
-        Ok(Layer {name: n, tiles: tiles })
+        Ok(Layer {name: n, opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true), tiles: tiles })
     }
 }
 
