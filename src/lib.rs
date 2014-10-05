@@ -62,7 +62,9 @@ pub struct Map {
     width: int,
     height: int,
     tile_width: int,
-    tile_height: int
+    tile_height: int,
+    tilesets: Vec<Tileset>,
+    layers: Vec<Layer>
 }
 
 impl Map {
@@ -77,18 +79,21 @@ impl Map {
                        ("tileheight", tile_height, int, |v:String| from_str(v[]))],
             "map must have a version, width and height with correct types".to_string());
 
+        let mut tilesets = Vec::new();
+        let mut layers = Vec::new();
         parse_tag!(parser, "map", 
                    "tileset" => |attrs| {
-                        let t = try!(Tileset::new(parser, attrs));
-                        println!("{}", t);
+                        tilesets.push(try!(Tileset::new(parser, attrs)));
                         Ok(())
                    },
                    "layer" => |attrs| {
-                        let l = try!(Layer::new(parser, attrs, w as uint));
-                        println!("{}", l)
+                        layers.push(try!(Layer::new(parser, attrs, w as uint)));
                         Ok(())
                    });
-        Ok(Map {version: v, width: w, height: h, tile_width: tw, tile_height: th})
+        Ok(Map {version: v, 
+                width: w, height: h, 
+                tile_width: tw, tile_height: th,
+                tilesets: tilesets, layers: layers})
     }
 }
 
@@ -96,6 +101,7 @@ impl Map {
 pub struct Tileset {
     first_gid: int,
     name: String,
+    images: Vec<Image>
 }
 
 impl Tileset {
@@ -107,13 +113,13 @@ impl Tileset {
                       ("name", name, String, |v| Some(v))],
            "tileset must have a firstgid and name with correct types".to_string());
 
+        let mut images = Vec::new();
         parse_tag!(parser, "tileset",
                    "image" => |attrs| {
-                        let i = try!(Image::new(parser, attrs));
-                        println!("{}", i);
+                        images.push(try!(Image::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(Tileset {first_gid: g, name: n})
+        Ok(Tileset {first_gid: g, name: n, images: images})
    }
 }
 
@@ -141,7 +147,8 @@ impl Image {
 
 #[deriving(Show)]
 pub struct Layer {
-    name: String
+    name: String,
+    tiles: Vec<Vec<u32>>
 }
 
 impl Layer {
@@ -151,13 +158,13 @@ impl Layer {
             optionals: [],
             required: [("name", name, String, |v| Some(v))],
             "layer must have a name".to_string());
+        let mut tiles = Vec::new();
         parse_tag!(parser, "layer",
                    "data" => |attrs| {
-                        let d = try!(parse_data(parser, attrs, width));
-                        println!("{}", d);
+                        tiles = try!(parse_data(parser, attrs, width));
                         Ok(())
                    });
-        Ok(Layer {name: n})
+        Ok(Layer {name: n, tiles: tiles })
     }
 }
 
@@ -204,14 +211,12 @@ pub fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>,
     }
 }
 
-pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<(), String>{
+pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<Map, String>{
     loop {
         match parser.next() {
             StartElement {name, attributes, ..}  => {
                 if name.local_name[] == "map" {
-                    let m = try!(Map::new(parser, attributes));
-                    println!("{}", m);
-                    return Ok(());
+                    return Map::new(parser, attributes);
                 }
             }
             _ => {}
