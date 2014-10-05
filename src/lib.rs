@@ -1,12 +1,14 @@
 #![feature(globs, macro_rules)]
+extern crate flate2;
 extern crate xml;
+extern crate serialize;
 
-use std::io::File;
-use std::io::BufferedReader;
-
+use std::io::{File, BufferedReader, BufReader, IoError, EndOfFile};
 use xml::reader::EventReader;
 use xml::common::Attribute;
 use xml::reader::events::*;
+use serialize::base64::{FromBase64};
+use flate2::reader::ZlibDecoder;
 
 macro_rules! get_attrs {
     ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oT:ty, $oMethod:expr)),*], 
@@ -31,13 +33,17 @@ macro_rules! get_attrs {
 }
 
 macro_rules! parse_tag {
-    ($parser:expr, $close_tag:expr, $open_tag:expr => $open_method:expr) => {
+    ($parser:expr, $close_tag:expr, $($open_tag:expr => $open_method:expr),*) => {
         loop {
             match $parser.next() {
                 StartElement {name, attributes, ..} => {
-                    if name.local_name[] == $open_tag {
-                        $open_method(attributes);
-                    }
+                    if false {}
+                    $(else if name.local_name[] == $open_tag {
+                        match $open_method(attributes) {
+                            Ok(()) => {},
+                            Err(e) => return Err(e)
+                        };
+                    })*
                 }
                 EndElement {name, ..} => {
                     if name.local_name[] == $close_tag {
@@ -75,6 +81,11 @@ impl Map {
                    "tileset" => |attrs| {
                         let t = try!(Tileset::new(parser, attrs));
                         println!("{}", t);
+                        Ok(())
+                   },
+                   "layer" => |attrs| {
+                        let l = try!(Layer::new(parser, attrs, w as uint));
+                        println!("{}", l)
                         Ok(())
                    });
         Ok(Map {version: v, width: w, height: h, tile_width: tw, tile_height: th})
@@ -123,8 +134,73 @@ impl Image {
                        ("height", height, int, |v:String| from_str(v[]))],
             "image must have a source, width and height with correct types".to_string());
         
-        parse_tag!(parser, "image", "" => {});
+        parse_tag!(parser, "image", "" => |_| Ok(()));
         Ok(Image {source: s, width: w, height: h})
+    }
+}
+
+#[deriving(Show)]
+pub struct Layer {
+    name: String
+}
+
+impl Layer {
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Layer, String> {
+        let ((), n) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [("name", name, String, |v| Some(v))],
+            "layer must have a name".to_string());
+        parse_tag!(parser, "layer",
+                   "data" => |attrs| {
+                        let d = try!(parse_data(parser, attrs, width));
+                        println!("{}", d);
+                        Ok(())
+                   });
+        Ok(Layer {name: n})
+    }
+}
+
+pub fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Vec<Vec<u32>>, String> {
+    let ((), (e, c)) = get_attrs!(
+        attrs,
+        optionals: [],
+        required: [("encoding", encoding, String, |v| Some(v)),
+                   ("compression", compression, String, |v| Some(v))],
+        "".to_string());
+    if !(e[] == "base64" && c[] == "zlib") {
+        return Err("Only base64 and zlib allowed for the moment".to_string());
+    }
+    loop {
+        match parser.next() {
+            Characters(s) => {
+                match s[].trim().from_base64() {
+                    Ok(v) => {
+                        let mut zd = ZlibDecoder::new(BufReader::new(v[]));
+                        let mut data = Vec::new();
+                        let mut row = Vec::new();
+                        loop {
+                            match zd.read_le_u32() {
+                                Ok(v) => row.push(v),
+                                Err(IoError{kind, ..}) if kind == EndOfFile => return Ok(data),
+                                Err(e) => return Err("Zlib decoding error".to_string())
+                            }
+                            if row.len() == width {
+                                data.push(row);
+                                row = Vec::new();
+                            }
+                        }
+                    }
+                    Err(e) => return Err(format!("{}", e))
+                }
+            }
+            EndElement {name, ..} => {
+                if name.local_name[] == "data" {
+                    return Ok(Vec::new());
+                }
+            }
+            EndElement => return Err("Premature end to data".to_string())
+        }
     }
 }
 

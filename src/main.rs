@@ -15,5 +15,5 @@ fn main() {
     let file = File::open(&Path::new("assets/tiled_base64_zlib.tmx")).unwrap();
     let reader = BufferedReader::new(file);
     let mut parser = EventReader::new(reader);
-    parse(&mut parser);
+    println!("{}", parse(&mut parser));
 }
