@@ -4,6 +4,7 @@ extern crate xml;
 extern crate serialize;
 
 use std::io::{BufReader, IoError, EndOfFile};
+use std::from_str::FromStr;
 use xml::reader::EventReader;
 use xml::common::Attribute;
 use xml::reader::events::*;
@@ -59,6 +60,7 @@ macro_rules! parse_tag {
 #[deriving(Show)]
 pub struct Map {
     version: String,
+    orientation: Orientation,
     width: int,
     height: int,
     tile_width: int,
@@ -69,10 +71,11 @@ pub struct Map {
 
 impl Map {
     pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Map, String>  {
-        let ((), (v, w, h, tw, th)) = get_attrs!(
+        let ((), (v, o, w, h, tw, th)) = get_attrs!(
             attrs, 
             optionals: [], 
             required: [("version", version, String, |v| Some(v)),
+                       ("orientation", orientation, Orientation, |v:String| from_str(v[])),
                        ("width", width, int, |v:String| from_str(v[])),
                        ("height", height, int, |v:String| from_str(v[])),
                        ("tilewidth", tile_width, int, |v:String| from_str(v[])),
@@ -90,10 +93,28 @@ impl Map {
                         layers.push(try!(Layer::new(parser, attrs, w as uint)));
                         Ok(())
                    });
-        Ok(Map {version: v, 
+        Ok(Map {version: v, orientation: o,
                 width: w, height: h, 
                 tile_width: tw, tile_height: th,
                 tilesets: tilesets, layers: layers})
+    }
+}
+
+#[deriving(Show)]
+enum Orientation {
+    Orthogonal,
+    Isometric,
+    Staggered
+}
+
+impl FromStr for Orientation {
+    fn from_str(s: &str) -> Option<Orientation> {
+        match s {
+            "orthogonal" => Some(Orthogonal),
+            "isometric" => Some(Isometric),
+            "Staggered" => Some(Staggered),
+            _ => None
+        }
     }
 }
 
