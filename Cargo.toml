@@ -1,0 +1,8 @@
+[package]
+
+name = "tiled"
+version = "0.0.1"
+authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
+
+[dependencies.rust-xml]
+git = "https://github.com/mattyhall/rust-xml.git"
