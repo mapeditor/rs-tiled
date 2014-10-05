@@ -30,6 +30,26 @@ macro_rules! get_attrs {
     }
 }
 
+macro_rules! parse_tag {
+    ($parser:expr, $close_tag:expr, $open_tag:expr => $open_method:expr) => {
+        loop {
+            match $parser.next() {
+                StartElement {name, attributes, ..} => {
+                    if name.local_name[] == $open_tag {
+                        $open_method(attributes);
+                    }
+                }
+                EndElement {name, ..} => {
+                    if name.local_name[] == $close_tag {
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
 #[deriving(Show)]
 pub struct Map {
     version: String,
@@ -51,23 +71,13 @@ impl Map {
                        ("tileheight", tile_height, int, |v:String| from_str(v[]))],
             "map must have a version, width and height with correct types".to_string());
 
-        while true {
-            match parser.next() {
-                StartElement {name, attributes, ..} => {
-                    if name.local_name[] == "tileset" {
-                        let t = try!(Tileset::new(parser, attributes));
+        parse_tag!(parser, "map", 
+                   "tileset" => |attrs| {
+                        let t = try!(Tileset::new(parser, attrs));
                         println!("{}", t);
-                    }
-                }
-                EndElement {name, ..} => {
-                    if name.local_name[] == "map" {
-                        return Ok(Map {version: v, width: w, height: h, tile_width: tw, tile_height: th});
-                    }
-                }
-                _ => {}
-            }
-        }
-        Err("This should never happen".to_string())
+                        Ok(())
+                   });
+        Ok(Map {version: v, width: w, height: h, tile_width: tw, tile_height: th})
     }
 }
 
@@ -78,20 +88,48 @@ pub struct Tileset {
 }
 
 impl Tileset {
-   pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, String> {
-       let ((), (g, n)) = get_attrs!(
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, String> {
+        let ((), (g, n)) = get_attrs!(
            attrs,
            optionals: [],
            required: [("firstgid", first_gid, int, |v:String| from_str(v[])),
                       ("name", name, String, |v| Some(v))],
            "tileset must have a firstgid and name with correct types".to_string());
 
-       Ok(Tileset {first_gid: g, name: n})
+        parse_tag!(parser, "tileset",
+                   "image" => |attrs| {
+                        let i = try!(Image::new(parser, attrs));
+                        println!("{}", i);
+                        Ok(())
+                   });
+        Ok(Tileset {first_gid: g, name: n})
    }
 }
 
+#[deriving(Show)]
+pub struct Image {
+    source: String,
+    width: int,
+    height: int
+}
+
+impl Image {
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Image, String> {
+        let ((), (s, w, h)) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [("source", source, String, |v| Some(v)),
+                       ("width", width, int, |v:String| from_str(v[])),
+                       ("height", height, int, |v:String| from_str(v[]))],
+            "image must have a source, width and height with correct types".to_string());
+        
+        parse_tag!(parser, "image", "" => {});
+        Ok(Image {source: s, width: w, height: h})
+    }
+}
+
 pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<(), String>{
-    while true {
+    loop {
         match parser.next() {
             StartElement {name, attributes, ..}  => {
                 if name.local_name[] == "map" {
@@ -103,5 +141,4 @@ pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<(), String>{
             _ => {}
         }
     }
-    Ok(())
 }
