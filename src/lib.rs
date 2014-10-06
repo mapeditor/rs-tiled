@@ -124,6 +124,18 @@ impl Map {
                 tilesets: tilesets, layers: layers,
                 properties: properties})
     }
+
+    pub fn get_tileset_by_gid(&self, gid: uint) -> Option<&Tileset> {
+        let mut maximum_gid: int = -1;
+        let mut maximum_ts = None;
+        for tileset in self.tilesets.iter() {
+            if tileset.first_gid as int > maximum_gid && tileset.first_gid < gid {
+                maximum_gid = tileset.first_gid as int;
+                maximum_ts = Some(tileset);
+            }
+        }
+        maximum_ts
+    }
 }
 
 #[deriving(Show)]
@@ -146,7 +158,7 @@ impl FromStr for Orientation {
 
 #[deriving(Show)]
 pub struct Tileset {
-    pub first_gid: int,
+    pub first_gid: uint,
     pub name: String,
     pub images: Vec<Image>
 }
@@ -156,7 +168,7 @@ impl Tileset {
         let ((), (g, n)) = get_attrs!(
            attrs,
            optionals: [],
-           required: [("firstgid", first_gid, int, |v:String| from_str(v[])),
+           required: [("firstgid", first_gid, uint, |v:String| from_str(v[])),
                       ("name", name, String, |v| Some(v))],
            "tileset must have a firstgid and name with correct types".to_string());
 

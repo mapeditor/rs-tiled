@@ -14,5 +14,7 @@ fn main() {
     println!("Opened file");
     let reader = BufferedReader::new(file);
     let mut parser = EventReader::new(reader);
-    println!("{}", parse(&mut parser));
+    let map = parse(&mut parser).unwrap();
+    println!("{}", map);
+    println!("{}", map.get_tileset_by_gid(22));
 }
