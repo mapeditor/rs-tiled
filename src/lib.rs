@@ -5,6 +5,7 @@ extern crate serialize;
 
 use std::io::{BufReader, IoError, EndOfFile};
 use std::from_str::FromStr;
+use std::collections::HashMap;
 use xml::reader::EventReader;
 use xml::common::Attribute;
 use xml::reader::events::*;
@@ -57,6 +58,24 @@ macro_rules! parse_tag {
     }
 }
 
+pub type Properties = HashMap<String, String>;
+
+fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties, String> {
+    let mut p = HashMap::new();
+    parse_tag!(parser, "properties",
+               "property" => |attrs:Vec<Attribute>| {
+                    let ((), (k, v)) = get_attrs!(
+                        attrs,
+                        optionals: [],
+                        required: [("name", key, String, |v| Some(v)),
+                                   ("value", value, String, |v| Some(v))],
+                        "Property must have a name and a value".to_string());
+                    p.insert(k, v);
+                    Ok(())
+               });
+    Ok(p)
+}
+
 #[deriving(Show)]
 pub struct Map {
     version: String,
@@ -66,7 +85,8 @@ pub struct Map {
     tile_width: int,
     tile_height: int,
     tilesets: Vec<Tileset>,
-    layers: Vec<Layer>
+    layers: Vec<Layer>,
+    properties: Properties
 }
 
 impl Map {
@@ -84,6 +104,7 @@ impl Map {
 
         let mut tilesets = Vec::new();
         let mut layers = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "map", 
                    "tileset" => |attrs| {
                         tilesets.push(try!(Tileset::new(parser, attrs)));
@@ -92,11 +113,16 @@ impl Map {
                    "layer" => |attrs| {
                         layers.push(try!(Layer::new(parser, attrs, w as uint)));
                         Ok(())
+                   },
+                   "properties" => |_| {
+                        properties = try!(parse_properties(parser));
+                        Ok(())
                    });
         Ok(Map {version: v, orientation: o,
                 width: w, height: h, 
                 tile_width: tw, tile_height: th,
-                tilesets: tilesets, layers: layers})
+                tilesets: tilesets, layers: layers,
+                properties: properties})
     }
 }
 
@@ -171,7 +197,8 @@ pub struct Layer {
     name: String,
     opacity: f32,
     visible: bool,
-    tiles: Vec<Vec<u32>>
+    tiles: Vec<Vec<u32>>,
+    properties: Properties
 }
 
 impl Layer {
@@ -183,12 +210,18 @@ impl Layer {
             required: [("name", name, String, |v| Some(v))],
             "layer must have a name".to_string());
         let mut tiles = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "layer",
                    "data" => |attrs| {
                         tiles = try!(parse_data(parser, attrs, width));
                         Ok(())
+                   },
+                   "properties" => |_| {
+                        properties = try!(parse_properties(parser));
+                        Ok(())
                    });
-        Ok(Layer {name: n, opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true), tiles: tiles })
+        Ok(Layer {name: n, opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true), tiles: tiles,
+                  properties: properties})
     }
 }
 
