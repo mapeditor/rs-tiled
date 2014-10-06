@@ -127,7 +127,7 @@ impl Map {
 }
 
 #[deriving(Show)]
-enum Orientation {
+pub enum Orientation {
     Orthogonal,
     Isometric,
     Staggered
@@ -146,9 +146,9 @@ impl FromStr for Orientation {
 
 #[deriving(Show)]
 pub struct Tileset {
-    first_gid: int,
-    name: String,
-    images: Vec<Image>
+    pub first_gid: int,
+    pub name: String,
+    pub images: Vec<Image>
 }
 
 impl Tileset {
@@ -172,9 +172,9 @@ impl Tileset {
 
 #[deriving(Show)]
 pub struct Image {
-    source: String,
-    width: int,
-    height: int
+    pub source: String,
+    pub width: int,
+    pub height: int
 }
 
 impl Image {
@@ -194,11 +194,11 @@ impl Image {
 
 #[deriving(Show)]
 pub struct Layer {
-    name: String,
-    opacity: f32,
-    visible: bool,
-    tiles: Vec<Vec<u32>>,
-    properties: Properties
+    pub name: String,
+    pub opacity: f32,
+    pub visible: bool,
+    pub tiles: Vec<Vec<u32>>,
+    pub properties: Properties
 }
 
 impl Layer {
@@ -225,7 +225,7 @@ impl Layer {
     }
 }
 
-pub fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Vec<Vec<u32>>, String> {
+fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Vec<Vec<u32>>, String> {
     let ((), (e, c)) = get_attrs!(
         attrs,
         optionals: [],
