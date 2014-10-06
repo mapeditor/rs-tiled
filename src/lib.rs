@@ -9,12 +9,12 @@ use std::collections::HashMap;
 use xml::reader::EventReader;
 use xml::common::Attribute;
 use xml::reader::events::*;
-use serialize::base64::FromBase64;
+use serialize::base64::{FromBase64, FromBase64Error};
 use flate2::reader::ZlibDecoder;
 
 macro_rules! get_attrs {
     ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oT:ty, $oMethod:expr)),*], 
-     required: [$(($name:pat, $var:ident, $t:ty, $method:expr)),*], $msg:expr) => {
+     required: [$(($name:pat, $var:ident, $t:ty, $method:expr)),*], $err:expr) => {
         {
             $(let mut $oVar: Option<$oT> = None;)*
             $(let mut $var: Option<$t> = None;)*
@@ -25,9 +25,8 @@ macro_rules! get_attrs {
                     _ => {}
                 }
             }
-
             if !(true $(&& $var.is_some())*) {
-                return Err($msg);
+                return Err($err);
             }
             (($($oVar),*), ($($var.unwrap()),*))
         }
@@ -58,9 +57,17 @@ macro_rules! parse_tag {
     }
 }
 
+#[deriving(Show)]
+pub enum TiledError {
+    MissingAttributes(String),
+    DecompressingError(IoError),
+    DecodingError(FromBase64Error),
+    Other(String)
+}
+
 pub type Properties = HashMap<String, String>;
 
-fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties, String> {
+fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties, TiledError> {
     let mut p = HashMap::new();
     parse_tag!(parser, "properties",
                "property" => |attrs:Vec<Attribute>| {
@@ -69,7 +76,7 @@ fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties
                         optionals: [],
                         required: [("name", key, String, |v| Some(v)),
                                    ("value", value, String, |v| Some(v))],
-                        "Property must have a name and a value".to_string());
+                        MissingAttributes("property must have a name and a value".to_string()));
                     p.insert(k, v);
                     Ok(())
                });
@@ -90,7 +97,7 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Map, String>  {
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Map, TiledError>  {
         let ((), (v, o, w, h, tw, th)) = get_attrs!(
             attrs, 
             optionals: [], 
@@ -100,7 +107,7 @@ impl Map {
                        ("height", height, int, |v:String| from_str(v[])),
                        ("tilewidth", tile_width, int, |v:String| from_str(v[])),
                        ("tileheight", tile_height, int, |v:String| from_str(v[]))],
-            "map must have a version, width and height with correct types".to_string());
+            MissingAttributes("map must have a version, width and height with correct types".to_string()));
 
         let mut tilesets = Vec::new();
         let mut layers = Vec::new();
@@ -164,13 +171,13 @@ pub struct Tileset {
 }
 
 impl Tileset {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, String> {
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, TiledError> {
         let ((), (g, n)) = get_attrs!(
            attrs,
            optionals: [],
            required: [("firstgid", first_gid, uint, |v:String| from_str(v[])),
                       ("name", name, String, |v| Some(v))],
-           "tileset must have a firstgid and name with correct types".to_string());
+           MissingAttributes("tileset must have a firstgid and name with correct types".to_string()));
 
         let mut images = Vec::new();
         parse_tag!(parser, "tileset",
@@ -190,14 +197,14 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Image, String> {
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Image, TiledError> {
         let ((), (s, w, h)) = get_attrs!(
             attrs,
             optionals: [],
             required: [("source", source, String, |v| Some(v)),
                        ("width", width, int, |v:String| from_str(v[])),
                        ("height", height, int, |v:String| from_str(v[]))],
-            "image must have a source, width and height with correct types".to_string());
+            MissingAttributes("image must have a source, width and height with correct types".to_string()));
         
         parse_tag!(parser, "image", "" => |_| Ok(()));
         Ok(Image {source: s, width: w, height: h})
@@ -214,13 +221,13 @@ pub struct Layer {
 }
 
 impl Layer {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Layer, String> {
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Layer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, f32, |v:String| from_str(v[])),
                         ("visible", visible, bool, |v:String| from_str(v[]).map(|x:int| x == 1))],
             required: [("name", name, String, |v| Some(v))],
-            "layer must have a name".to_string());
+            MissingAttributes("layer must have a name".to_string()));
         let mut tiles = Vec::new();
         let mut properties = HashMap::new();
         parse_tag!(parser, "layer",
@@ -237,15 +244,15 @@ impl Layer {
     }
 }
 
-fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Vec<Vec<u32>>, String> {
+fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Vec<Vec<u32>>, TiledError> {
     let ((), (e, c)) = get_attrs!(
         attrs,
         optionals: [],
         required: [("encoding", encoding, String, |v| Some(v)),
                    ("compression", compression, String, |v| Some(v))],
-        "".to_string());
+        MissingAttributes("data must have an encoding and a compression".to_string()));
     if !(e[] == "base64" && c[] == "zlib") {
-        return Err("Only base64 and zlib allowed for the moment".to_string());
+        return Err(Other("Only base64 and zlib allowed for the moment".to_string()));
     }
     loop {
         match parser.next() {
@@ -259,7 +266,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, wid
                             match zd.read_le_u32() {
                                 Ok(v) => row.push(v),
                                 Err(IoError{kind, ..}) if kind == EndOfFile => return Ok(data),
-                                Err(_) => return Err("Zlib decoding error".to_string())
+                                Err(e) => return Err(DecompressingError(e))
                             }
                             if row.len() == width {
                                 data.push(row);
@@ -267,7 +274,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, wid
                             }
                         }
                     }
-                    Err(e) => return Err(format!("{}", e))
+                    Err(e) => return Err(DecodingError(e))
                 }
             }
             EndElement {name, ..} => {
@@ -280,7 +287,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, wid
     }
 }
 
-pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<Map, String>{
+pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<Map, TiledError>{
     loop {
         match parser.next() {
             StartElement {name, attributes, ..}  => {
