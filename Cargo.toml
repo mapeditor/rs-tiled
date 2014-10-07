@@ -4,6 +4,14 @@ name = "tiled"
 version = "0.0.1"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
 
+[lib]
+name = "tiled"
+path = "src/lib.rs"
+
+[[example]]
+name = "example"
+path = "examples/main.rs"
+
 [dependencies.rust-xml]
 git = "https://github.com/netvl/rust-xml.git"
 
