@@ -1,4 +1,4 @@
-#![feature(globs, macro_rules)]
+#![feature(globs, macro_rules, struct_variant)]
 extern crate flate2;
 extern crate xml;
 extern crate serialize;
@@ -59,7 +59,7 @@ macro_rules! parse_tag {
 
 #[deriving(Show)]
 pub enum TiledError {
-    MissingAttributes(String),
+    MalformedAttributes(String),
     DecompressingError(IoError),
     DecodingError(FromBase64Error),
     Other(String)
@@ -76,7 +76,7 @@ fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties
                         optionals: [],
                         required: [("name", key, String, |v| Some(v)),
                                    ("value", value, String, |v| Some(v))],
-                        MissingAttributes("property must have a name and a value".to_string()));
+                        MalformedAttributes("property must have a name and a value".to_string()));
                     p.insert(k, v);
                     Ok(())
                });
@@ -93,6 +93,7 @@ pub struct Map {
     tile_height: int,
     tilesets: Vec<Tileset>,
     layers: Vec<Layer>,
+    object_groups: Vec<ObjectGroup>,
     properties: Properties
 }
 
@@ -107,11 +108,12 @@ impl Map {
                        ("height", height, int, |v:String| from_str(v[])),
                        ("tilewidth", tile_width, int, |v:String| from_str(v[])),
                        ("tileheight", tile_height, int, |v:String| from_str(v[]))],
-            MissingAttributes("map must have a version, width and height with correct types".to_string()));
+            MalformedAttributes("map must have a version, width and height with correct types".to_string()));
 
         let mut tilesets = Vec::new();
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
+        let mut object_groups = Vec::new();
         parse_tag!(parser, "map", 
                    "tileset" => |attrs| {
                         tilesets.push(try!(Tileset::new(parser, attrs)));
@@ -124,11 +126,15 @@ impl Map {
                    "properties" => |_| {
                         properties = try!(parse_properties(parser));
                         Ok(())
+                   },
+                   "objectgroup" => |attrs| {
+                       object_groups.push(try!(ObjectGroup::new(parser, attrs)));
+                       Ok(())
                    });
         Ok(Map {version: v, orientation: o,
                 width: w, height: h, 
                 tile_width: tw, tile_height: th,
-                tilesets: tilesets, layers: layers,
+                tilesets: tilesets, layers: layers, object_groups: object_groups,
                 properties: properties})
     }
 
@@ -177,7 +183,7 @@ impl Tileset {
            optionals: [],
            required: [("firstgid", first_gid, uint, |v:String| from_str(v[])),
                       ("name", name, String, |v| Some(v))],
-           MissingAttributes("tileset must have a firstgid and name with correct types".to_string()));
+           MalformedAttributes("tileset must have a firstgid and name with correct types".to_string()));
 
         let mut images = Vec::new();
         parse_tag!(parser, "tileset",
@@ -204,7 +210,7 @@ impl Image {
             required: [("source", source, String, |v| Some(v)),
                        ("width", width, int, |v:String| from_str(v[])),
                        ("height", height, int, |v:String| from_str(v[]))],
-            MissingAttributes("image must have a source, width and height with correct types".to_string()));
+            MalformedAttributes("image must have a source, width and height with correct types".to_string()));
         
         parse_tag!(parser, "image", "" => |_| Ok(()));
         Ok(Image {source: s, width: w, height: h})
@@ -227,7 +233,7 @@ impl Layer {
             optionals: [("opacity", opacity, f32, |v:String| from_str(v[])),
                         ("visible", visible, bool, |v:String| from_str(v[]).map(|x:int| x == 1))],
             required: [("name", name, String, |v| Some(v))],
-            MissingAttributes("layer must have a name".to_string()));
+            MalformedAttributes("layer must have a name".to_string()));
         let mut tiles = Vec::new();
         let mut properties = HashMap::new();
         parse_tag!(parser, "layer",
@@ -244,13 +250,120 @@ impl Layer {
     }
 }
 
+#[deriving(Show)]
+pub struct ObjectGroup {
+    pub name: String,
+    pub objects: Vec<Object>
+}
+
+impl ObjectGroup {
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<ObjectGroup, TiledError> {
+        let ((), n) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [("name", name, String, |v| Some(v))],
+            MalformedAttributes("object groups must have a name".to_string()));
+        let mut objects = Vec::new();
+        parse_tag!(parser, "objectgroup",
+                   "object" => |attrs| {
+                        objects.push(try!(Object::new(parser, attrs)));
+                        Ok(())
+                   });
+        Ok(ObjectGroup {name: n, objects: objects})
+    }
+}
+
+#[deriving(Show)]
+pub enum Object {
+    Rect {x: int, y: int, width: uint, height: uint},
+    Ellipse {x: int, y: int, width: uint, height: uint},
+    Polyline {x: int, y: int, points: Vec<(int, int)>},
+    Polygon {x: int, y: int, points: Vec<(int, int)>}
+}
+
+impl Object {
+    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+        let ((w, h), (x, y)) = get_attrs!(
+            attrs,
+            optionals: [("width", width, uint, |v:String| from_str(v[])),
+                        ("height", height, uint, |v:String| from_str(v[]))],
+            required: [("x", x, int, |v:String| from_str(v[])),
+                       ("y", y, int, |v:String| from_str(v[]))],
+            MalformedAttributes("objects must have an x and a y number".to_string()));
+        let mut obj = None;
+        parse_tag!(parser, "object",
+                   "ellipse" => |_| {
+                        if w.is_none() || h.is_none() {
+                            return Err(MalformedAttributes("An ellipse must have a width and height".to_string()));
+                        }
+                        let (w, h) = (w.unwrap(), h.unwrap());
+                        obj = Some(Ellipse {x: x, y: y, width: w as uint, height: h as uint});
+                        Ok(())
+                    },
+                    "polyline" => |attrs| {
+                        obj = Some(try!(Object::new_polyline(x, y, attrs)));
+                        Ok(())
+                    },
+                    "polygon" => |attrs| {
+                        obj = Some(try!(Object::new_polygon(x, y, attrs)));
+                        Ok(())
+                    });
+        if obj.is_some() {
+            Ok(obj.unwrap())
+        } else if w.is_some() && h.is_some() {
+            let w = w.unwrap();
+            let h = h.unwrap();
+            Ok(Rect {x: x, y: y, width: w as uint, height: h as uint})
+        } else {
+            Err(MalformedAttributes("A rect must have a width and a height".to_string()))
+        }
+    }
+
+    fn new_polyline(x: int, y: int, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+        let ((), s) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [("points", points, String, |v| Some(v))],
+            MalformedAttributes("A polyline must have points".to_string()));
+       let points = try!(Object::parse_points(s));
+       Ok(Polyline {x: x, y: y, points: points})
+    }
+
+    fn new_polygon(x: int, y: int, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+        let ((), s) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [("points", points, String, |v| Some(v))],
+            MalformedAttributes("A polygon must have points".to_string()));
+       let points = try!(Object::parse_points(s));
+       Ok(Polygon {x: x, y: y, points: points})
+    }
+
+    fn parse_points(s: String) -> Result<Vec<(int, int)>, TiledError> {
+        let pairs = s[].split(' ');
+        let mut points = Vec::new();
+        for v in pairs.map(|p| p.splitn(1, ',')) {
+            let v: Vec<&str> = v.clone().collect();
+            if v.len() != 2 {
+                return Err(MalformedAttributes("one of a polyline's points does not have an x and y coordinate".to_string()));
+            }
+            let (x, y) = (from_str(v[0]), from_str(v[1]));
+            if x.is_none() || y.is_none() {
+                return Err(MalformedAttributes("one of polyline's points does not have integer coordinates".to_string()));
+            }
+            points.push((x.unwrap(), y.unwrap()));
+        }
+        Ok(points)
+    }
+}
+
 fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Vec<Vec<u32>>, TiledError> {
     let ((), (e, c)) = get_attrs!(
         attrs,
         optionals: [],
         required: [("encoding", encoding, String, |v| Some(v)),
                    ("compression", compression, String, |v| Some(v))],
-        MissingAttributes("data must have an encoding and a compression".to_string()));
+        MalformedAttributes("data must have an encoding and a compression".to_string()));
     if !(e[] == "base64" && c[] == "zlib") {
         return Err(Other("Only base64 and zlib allowed for the moment".to_string()));
     }
