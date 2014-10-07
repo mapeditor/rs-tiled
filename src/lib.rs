@@ -275,10 +275,10 @@ impl ObjectGroup {
 
 #[deriving(Show)]
 pub enum Object {
-    Rect {x: int, y: int, width: uint, height: uint},
-    Ellipse {x: int, y: int, width: uint, height: uint},
-    Polyline {x: int, y: int, points: Vec<(int, int)>},
-    Polygon {x: int, y: int, points: Vec<(int, int)>}
+    Rect {pub x: int, pub y: int, pub width: uint, pub height: uint},
+    Ellipse {pub x: int, pub y: int, pub width: uint, pub height: uint},
+    Polyline {pub x: int, pub y: int, pub points: Vec<(int, int)>},
+    Polygon {pub x: int, pub y: int, pub points: Vec<(int, int)>}
 }
 
 impl Object {
