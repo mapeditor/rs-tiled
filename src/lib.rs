@@ -12,6 +12,12 @@ use xml::reader::events::*;
 use serialize::base64::{FromBase64, FromBase64Error};
 use flate2::reader::ZlibDecoder;
 
+// Loops through the attributes once and pulls out the ones we ask it to. It
+// will check that the required ones are there. This could have been done with
+// attrs.find but that would be inefficient.
+//
+// This is probably a really terrible way to do this. It does cut down on lines
+// though which is nice.
 macro_rules! get_attrs {
     ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oT:ty, $oMethod:expr)),*], 
      required: [$(($name:pat, $var:ident, $t:ty, $method:expr)),*], $err:expr) => {
@@ -33,6 +39,10 @@ macro_rules! get_attrs {
     }
 }
 
+// Goes through the children of the tag and will call the correct function for
+// that child. Closes the tag
+//
+// Not quite as bad.
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, $($open_tag:expr => $open_method:expr),*) => {
         loop {
@@ -57,9 +67,14 @@ macro_rules! parse_tag {
     }
 }
 
+/// Errors which occured when parsing the file
 #[deriving(Show)]
 pub enum TiledError {
+    /// A attribute was missing, had the wrong type of wasn't formated
+    /// correctly.
     MalformedAttributes(String),
+    /// An error occured when decompressing using the 
+    /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
     DecompressingError(IoError),
     DecodingError(FromBase64Error),
     Other(String)
@@ -83,6 +98,7 @@ fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties
     Ok(p)
 }
 
+/// All Tiled files will be parsed into this. Holds all the layers and tilesets
 #[deriving(Show)]
 pub struct Map {
     version: String,
@@ -98,7 +114,7 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Map, TiledError>  {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Map, TiledError>  {
         let ((), (v, o, w, h, tw, th)) = get_attrs!(
             attrs, 
             optionals: [], 
@@ -138,6 +154,7 @@ impl Map {
                 properties: properties})
     }
 
+    /// This function will return the correct Tileset given a GID.
     pub fn get_tileset_by_gid(&self, gid: uint) -> Option<&Tileset> {
         let mut maximum_gid: int = -1;
         let mut maximum_ts = None;
@@ -169,19 +186,23 @@ impl FromStr for Orientation {
     }
 }
 
+/// A tileset, usually the tilesheet image.
 #[deriving(Show)]
 pub struct Tileset {
+    /// The GID of the first tile stored
     pub first_gid: uint,
     pub name: String,
     pub tile_width: uint,
     pub tile_height: uint,
     pub spacing: uint,
     pub margin: uint,
+    /// The Tiled spec says that a tileset can have mutliple images so a `Vec` 
+    /// is used. Usually you will only use one.
     pub images: Vec<Image>
 }
 
 impl Tileset {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, TiledError> {
         let ((s, m), (g, n, w, h)) = get_attrs!(
            attrs,
            optionals: [("spacing", spacing, uint, |v:String| from_str(v[])),
@@ -209,13 +230,14 @@ impl Tileset {
 
 #[deriving(Show)]
 pub struct Image {
+    /// The filepath of the image
     pub source: String,
     pub width: int,
     pub height: int
 }
 
 impl Image {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Image, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Image, TiledError> {
         let ((), (s, w, h)) = get_attrs!(
             attrs,
             optionals: [],
@@ -234,12 +256,14 @@ pub struct Layer {
     pub name: String,
     pub opacity: f32,
     pub visible: bool,
+    /// The tiles are arranged in rows. Each tile is a number which can be used
+    ///  to find which tileset it belongs to and can then be rendered.
     pub tiles: Vec<Vec<u32>>,
     pub properties: Properties
 }
 
 impl Layer {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Layer, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Layer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, f32, |v:String| from_str(v[])),
@@ -271,7 +295,7 @@ pub struct ObjectGroup {
 }
 
 impl ObjectGroup {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<ObjectGroup, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<ObjectGroup, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, f32, |v:String| from_str(v[])),
@@ -299,7 +323,7 @@ pub enum Object {
 }
 
 impl Object {
-    pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
         let ((w, h, v), (x, y)) = get_attrs!(
             attrs,
             optionals: [("width", width, uint, |v:String| from_str(v[])),
@@ -421,6 +445,8 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, wid
     }
 }
 
+/// Parse a buffer hopefully containing the contents of a Tiled file and try to
+/// parse it.
 pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<Map, TiledError> {
     loop {
         match parser.next() {
