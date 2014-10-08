@@ -292,37 +292,41 @@ impl ObjectGroup {
 
 #[deriving(Show)]
 pub enum Object {
-    Rect {pub x: int, pub y: int, pub width: uint, pub height: uint},
-    Ellipse {pub x: int, pub y: int, pub width: uint, pub height: uint},
-    Polyline {pub x: int, pub y: int, pub points: Vec<(int, int)>},
-    Polygon {pub x: int, pub y: int, pub points: Vec<(int, int)>}
+    Rect {pub x: int, pub y: int, pub width: uint, pub height: uint, pub visible: bool},
+    Ellipse {pub x: int, pub y: int, pub width: uint, pub height: uint, pub visible: bool},
+    Polyline {pub x: int, pub y: int, pub points: Vec<(int, int)>, pub visible: bool},
+    Polygon {pub x: int, pub y: int, pub points: Vec<(int, int)>, pub visible: bool}
 }
 
 impl Object {
     pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
-        let ((w, h), (x, y)) = get_attrs!(
+        let ((w, h, v), (x, y)) = get_attrs!(
             attrs,
             optionals: [("width", width, uint, |v:String| from_str(v[])),
-                        ("height", height, uint, |v:String| from_str(v[]))],
+                        ("height", height, uint, |v:String| from_str(v[])),
+                        ("visible", visible, bool, |v:String| from_str(v[]))],
             required: [("x", x, int, |v:String| from_str(v[])),
                        ("y", y, int, |v:String| from_str(v[]))],
             MalformedAttributes("objects must have an x and a y number".to_string()));
         let mut obj = None;
+        let v = v.unwrap_or(true);
         parse_tag!(parser, "object",
                    "ellipse" => |_| {
                         if w.is_none() || h.is_none() {
                             return Err(MalformedAttributes("An ellipse must have a width and height".to_string()));
                         }
                         let (w, h) = (w.unwrap(), h.unwrap());
-                        obj = Some(Ellipse {x: x, y: y, width: w as uint, height: h as uint});
+                        obj = Some(Ellipse {x: x, y: y, 
+                                            width: w as uint, height: h as uint,
+                                            visible: v});
                         Ok(())
                     },
                     "polyline" => |attrs| {
-                        obj = Some(try!(Object::new_polyline(x, y, attrs)));
+                        obj = Some(try!(Object::new_polyline(x, y, v, attrs)));
                         Ok(())
                     },
                     "polygon" => |attrs| {
-                        obj = Some(try!(Object::new_polygon(x, y, attrs)));
+                        obj = Some(try!(Object::new_polygon(x, y, v, attrs)));
                         Ok(())
                     });
         if obj.is_some() {
@@ -330,30 +334,30 @@ impl Object {
         } else if w.is_some() && h.is_some() {
             let w = w.unwrap();
             let h = h.unwrap();
-            Ok(Rect {x: x, y: y, width: w as uint, height: h as uint})
+            Ok(Rect {x: x, y: y, width: w as uint, height: h as uint, visible: v})
         } else {
             Err(MalformedAttributes("A rect must have a width and a height".to_string()))
         }
     }
 
-    fn new_polyline(x: int, y: int, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+    fn new_polyline(x: int, y: int, v: bool, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
             required: [("points", points, String, |v| Some(v))],
             MalformedAttributes("A polyline must have points".to_string()));
        let points = try!(Object::parse_points(s));
-       Ok(Polyline {x: x, y: y, points: points})
+       Ok(Polyline {x: x, y: y, points: points, visible: v})
     }
 
-    fn new_polygon(x: int, y: int, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+    fn new_polygon(x: int, y: int, v: bool, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
             required: [("points", points, String, |v| Some(v))],
             MalformedAttributes("A polygon must have points".to_string()));
        let points = try!(Object::parse_points(s));
-       Ok(Polygon {x: x, y: y, points: points})
+       Ok(Polygon {x: x, y: y, points: points, visible: v})
     }
 
     fn parse_points(s: String) -> Result<Vec<(int, int)>, TiledError> {
