@@ -175,14 +175,17 @@ pub struct Tileset {
     pub name: String,
     pub tile_width: uint,
     pub tile_height: uint,
+    pub spacing: uint,
+    pub margin: uint,
     pub images: Vec<Image>
 }
 
 impl Tileset {
     pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, TiledError> {
-        let ((), (g, n, w, h)) = get_attrs!(
+        let ((s, m), (g, n, w, h)) = get_attrs!(
            attrs,
-           optionals: [],
+           optionals: [("spacing", spacing, uint, |v:String| from_str(v[])),
+                       ("margin", margin, uint, |v:String| from_str(v[]))],
            required: [("firstgid", first_gid, uint, |v:String| from_str(v[])),
                       ("name", name, String, |v| Some(v)),
                       ("tilewidth", width, uint, |v:String| from_str(v[])),
@@ -195,7 +198,12 @@ impl Tileset {
                         images.push(try!(Image::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(Tileset {first_gid: g, name: n, tile_width: w, tile_height: h, images: images})
+        Ok(Tileset {first_gid: g, 
+                    name: n, 
+                    tile_width: w, tile_height: h, 
+                    spacing: s.unwrap_or(0),
+                    margin: m.unwrap_or(0),
+                    images: images})
    }
 }
 
