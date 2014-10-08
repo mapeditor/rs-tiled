@@ -421,7 +421,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, wid
     }
 }
 
-pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<Map, TiledError>{
+pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<Map, TiledError> {
     loop {
         match parser.next() {
             StartElement {name, attributes, ..}  => {
