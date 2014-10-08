@@ -173,17 +173,21 @@ impl FromStr for Orientation {
 pub struct Tileset {
     pub first_gid: uint,
     pub name: String,
+    pub tile_width: uint,
+    pub tile_height: uint,
     pub images: Vec<Image>
 }
 
 impl Tileset {
     pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, TiledError> {
-        let ((), (g, n)) = get_attrs!(
+        let ((), (g, n, w, h)) = get_attrs!(
            attrs,
            optionals: [],
            required: [("firstgid", first_gid, uint, |v:String| from_str(v[])),
-                      ("name", name, String, |v| Some(v))],
-           MalformedAttributes("tileset must have a firstgid and name with correct types".to_string()));
+                      ("name", name, String, |v| Some(v)),
+                      ("tilewidth", width, uint, |v:String| from_str(v[])),
+                      ("tileheight", height, uint, |v:String| from_str(v[]))],
+           MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string()));
 
         let mut images = Vec::new();
         parse_tag!(parser, "tileset",
@@ -191,7 +195,7 @@ impl Tileset {
                         images.push(try!(Image::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(Tileset {first_gid: g, name: n, images: images})
+        Ok(Tileset {first_gid: g, name: n, tile_width: w, tile_height: h, images: images})
    }
 }
 
