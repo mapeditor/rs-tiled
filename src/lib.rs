@@ -265,14 +265,17 @@ impl Layer {
 #[deriving(Show)]
 pub struct ObjectGroup {
     pub name: String,
+    pub opacity: f32,
+    pub visible: bool,
     pub objects: Vec<Object>
 }
 
 impl ObjectGroup {
     pub fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<ObjectGroup, TiledError> {
-        let ((), n) = get_attrs!(
+        let ((o, v), n) = get_attrs!(
             attrs,
-            optionals: [],
+            optionals: [("opacity", opacity, f32, |v:String| from_str(v[])),
+                        ("visible", visible, bool, |v:String| from_str(v[]).map(|x:int| x == 1))],
             required: [("name", name, String, |v| Some(v))],
             MalformedAttributes("object groups must have a name".to_string()));
         let mut objects = Vec::new();
@@ -281,7 +284,9 @@ impl ObjectGroup {
                         objects.push(try!(Object::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(ObjectGroup {name: n, objects: objects})
+        Ok(ObjectGroup {name: n, 
+                        opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true), 
+                        objects: objects})
     }
 }
 
