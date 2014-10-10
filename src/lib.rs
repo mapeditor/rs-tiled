@@ -1,4 +1,4 @@
-#![feature(globs, macro_rules, struct_variant)]
+#![feature(globs, macro_rules, struct_variant, slicing_syntax)]
 extern crate flate2;
 extern crate xml;
 extern crate serialize;
