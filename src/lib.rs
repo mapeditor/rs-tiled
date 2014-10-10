@@ -61,6 +61,7 @@ macro_rules! parse_tag {
                         break;
                     }
                 }
+                EndDocument => return Err(PrematureEnd("Document ended before we expected.".to_string())),
                 _ => {}
             }
         }
@@ -77,6 +78,7 @@ pub enum TiledError {
     /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
     DecompressingError(IoError),
     DecodingError(FromBase64Error),
+    PrematureEnd(String),
     Other(String)
 }
 
@@ -455,6 +457,7 @@ pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<Map, TiledError> 
                     return Map::new(parser, attributes);
                 }
             }
+            EndDocument => return Err(PrematureEnd("Document ended before map was parsed".to_string())),
             _ => {}
         }
     }
