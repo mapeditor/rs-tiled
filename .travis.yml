@@ -1,1 +1,12 @@
+env:
+    global:
+        - secure: zpxgR0Nn7YhCRXPjfR/gcdxAObeJLBoRMW0qeKiyuc4V6Y1guZ9EfnvJ5uL4pRXnP0LZrXm/WwYicXm7J0vTwQwq/4Bf0NXykysZfVrHFTY5Wook/QXJd8OajCwuJa8d/wr6Dx/wGe/80gi8hZibraMS5QkWKgtzz9HCFLM99uw=
 language: rust
+script:
+    - cargo build
+    - cargo test
+    - cargo doc
+after_success:
+    - cp -R target/doc doc
+    - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
+    - rm -r doc 
