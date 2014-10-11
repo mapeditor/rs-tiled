@@ -449,12 +449,13 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, wid
 
 /// Parse a buffer hopefully containing the contents of a Tiled file and try to
 /// parse it.
-pub fn parse<B: Buffer>(parser: &mut EventReader<B>) -> Result<Map, TiledError> {
+pub fn parse<B: Buffer>(reader: B) -> Result<Map, TiledError> {
+    let mut parser = EventReader::new(reader);
     loop {
         match parser.next() {
             StartElement {name, attributes, ..}  => {
                 if name.local_name[] == "map" {
-                    return Map::new(parser, attributes);
+                    return Map::new(&mut parser, attributes);
                 }
             }
             EndDocument => return Err(PrematureEnd("Document ended before map was parsed".to_string())),
