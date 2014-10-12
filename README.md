@@ -4,6 +4,8 @@
 
 Read maps from the [Tiled Map Editor](http://www.mapeditor.org/) into rust for use in video games. It is game engine agnostic and pretty barebones at the moment. Documentation is available [on rust-ci](http://rust-ci.org/mattyhall/rs-tiled/doc/tiled/).
 
+Code contributions are welcome as are bug reports, documentation, suggestions and critism.
+
 
 ### Example
 
