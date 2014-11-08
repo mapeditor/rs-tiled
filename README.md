@@ -30,7 +30,6 @@ fn main() {
 ### Things missing
 There are a few things missing at the moment:
 
-  * Storing any colour - eg. transparency colours on images or background colours on maps.
   * Terrain
   * Loading files that aren't base64 encoded and compressed with zlib
   * Tile flipping
