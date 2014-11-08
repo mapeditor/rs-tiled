@@ -131,17 +131,17 @@ fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties
 /// All Tiled files will be parsed into this. Holds all the layers and tilesets
 #[deriving(Show)]
 pub struct Map {
-    version: String,
-    orientation: Orientation,
-    width: int,
-    height: int,
-    tile_width: int,
-    tile_height: int,
-    tilesets: Vec<Tileset>,
-    layers: Vec<Layer>,
-    object_groups: Vec<ObjectGroup>,
-    properties: Properties,
-    background_colour: Option<Colour>,
+    pub version: String,
+    pub orientation: Orientation,
+    pub width: int,
+    pub height: int,
+    pub tile_width: int,
+    pub tile_height: int,
+    pub tilesets: Vec<Tileset>,
+    pub layers: Vec<Layer>,
+    pub object_groups: Vec<ObjectGroup>,
+    pub properties: Properties,
+    pub background_colour: Option<Colour>,
 }
 
 impl Map {
