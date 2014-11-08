@@ -133,10 +133,10 @@ fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties
 pub struct Map {
     pub version: String,
     pub orientation: Orientation,
-    pub width: int,
-    pub height: int,
-    pub tile_width: int,
-    pub tile_height: int,
+    pub width: u32,
+    pub height: u32,
+    pub tile_width: u32,
+    pub tile_height: u32,
     pub tilesets: Vec<Tileset>,
     pub layers: Vec<Layer>,
     pub object_groups: Vec<ObjectGroup>,
@@ -151,7 +151,7 @@ impl Map {
             optionals: [("backgroundcolor", colour, |v:String| from_str(v[]))], 
             required: [("version", version, |v| Some(v)),
                        ("orientation", orientation, |v:String| from_str(v[])),
-                       ("width", width, |v:String| from_str::<int>(v[])),
+                       ("width", width, |v:String| from_str(v[])),
                        ("height", height, |v:String| from_str(v[])),
                        ("tilewidth", tile_width, |v:String| from_str(v[])),
                        ("tileheight", tile_height, |v:String| from_str(v[]))],
@@ -167,7 +167,7 @@ impl Map {
                         Ok(())
                    },
                    "layer" => |attrs| {
-                        layers.push(try!(Layer::new(parser, attrs, w as uint)));
+                        layers.push(try!(Layer::new(parser, attrs, w )));
                         Ok(())
                    },
                    "properties" => |_| {
@@ -187,7 +187,7 @@ impl Map {
     }
 
     /// This function will return the correct Tileset given a GID.
-    pub fn get_tileset_by_gid(&self, gid: uint) -> Option<&Tileset> {
+    pub fn get_tileset_by_gid(&self, gid: u32) -> Option<&Tileset> {
         let mut maximum_gid: int = -1;
         let mut maximum_ts = None;
         for tileset in self.tilesets.iter() {
@@ -222,12 +222,12 @@ impl FromStr for Orientation {
 #[deriving(Show)]
 pub struct Tileset {
     /// The GID of the first tile stored
-    pub first_gid: uint,
+    pub first_gid: u32,
     pub name: String,
-    pub tile_width: uint,
-    pub tile_height: uint,
-    pub spacing: uint,
-    pub margin: uint,
+    pub tile_width: u32,
+    pub tile_height: u32,
+    pub spacing: u32,
+    pub margin: u32,
     /// The Tiled spec says that a tileset can have mutliple images so a `Vec` 
     /// is used. Usually you will only use one.
     pub images: Vec<Image>
@@ -296,7 +296,7 @@ pub struct Layer {
 }
 
 impl Layer {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Layer, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: u32) -> Result<Layer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| from_str(v[])),
@@ -352,8 +352,8 @@ impl ObjectGroup {
 
 #[deriving(Show)]
 pub enum Object {
-    Rect {pub x: int, pub y: int, pub width: uint, pub height: uint, pub visible: bool},
-    Ellipse {pub x: int, pub y: int, pub width: uint, pub height: uint, pub visible: bool},
+    Rect {pub x: int, pub y: int, pub width: u32, pub height: u32, pub visible: bool},
+    Ellipse {pub x: int, pub y: int, pub width: u32, pub height: u32, pub visible: bool},
     Polyline {pub x: int, pub y: int, pub points: Vec<(int, int)>, pub visible: bool},
     Polygon {pub x: int, pub y: int, pub points: Vec<(int, int)>, pub visible: bool}
 }
@@ -362,8 +362,8 @@ impl Object {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
         let ((w, h, v), (x, y)) = get_attrs!(
             attrs,
-            optionals: [("width", width, |v:String| from_str::<int>(v[])),
-                        ("height", height, |v:String| from_str::<int>(v[])),
+            optionals: [("width", width, |v:String| from_str(v[])),
+                        ("height", height, |v:String| from_str(v[])),
                         ("visible", visible, |v:String| from_str(v[]))],
             required: [("x", x, |v:String| from_str(v[])),
                        ("y", y, |v:String| from_str(v[]))],
@@ -377,7 +377,7 @@ impl Object {
                         }
                         let (w, h) = (w.unwrap(), h.unwrap());
                         obj = Some(Ellipse {x: x, y: y, 
-                                            width: w as uint, height: h as uint,
+                                            width: w , height: h ,
                                             visible: v});
                         Ok(())
                     },
@@ -394,7 +394,7 @@ impl Object {
         } else if w.is_some() && h.is_some() {
             let w = w.unwrap();
             let h = h.unwrap();
-            Ok(Rect {x: x, y: y, width: w as uint, height: h as uint, visible: v})
+            Ok(Rect {x: x, y: y, width: w, height: h, visible: v})
         } else {
             Err(MalformedAttributes("A rect must have a width and a height".to_string()))
         }
@@ -438,7 +438,7 @@ impl Object {
     }
 }
 
-fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: uint) -> Result<Vec<Vec<u32>>, TiledError> {
+fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
     let ((), (e, c)) = get_attrs!(
         attrs,
         optionals: [],
@@ -462,7 +462,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, wid
                                 Err(IoError{kind, ..}) if kind == EndOfFile => return Ok(data),
                                 Err(e) => return Err(DecompressingError(e))
                             }
-                            if row.len() == width {
+                            if row.len() == width as uint {
                                 data.push(row);
                                 row = Vec::new();
                             }
