@@ -11,6 +11,7 @@ use xml::common::Attribute;
 use xml::reader::events::*;
 use serialize::base64::{FromBase64, FromBase64Error};
 use flate2::reader::ZlibDecoder;
+use std::num::from_str_radix;
 
 // Loops through the attributes once and pulls out the ones we ask it to. It
 // will check that the required ones are there. This could have been done with
@@ -68,6 +69,33 @@ macro_rules! parse_tag {
     }
 }
 
+#[deriving(Show)]
+pub struct Colour {
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8
+}
+
+impl FromStr for Colour {
+    fn from_str(s: &str) -> Option<Colour> {
+        let s = if s.starts_with("#") {
+            s[1..]
+        } else { 
+            s 
+        };
+        if s.len() != 6 {
+            return None;
+        }
+        let r = from_str_radix(s[0..2], 16);
+        let g = from_str_radix(s[2..4], 16);
+        let b = from_str_radix(s[4..6], 16);
+        if r.is_some() && g.is_some() && b.is_some() {
+            return Some(Colour {red: r.unwrap(), green: g.unwrap(), blue: b.unwrap()})
+        }
+        None
+    }
+}
+
 /// Errors which occured when parsing the file
 #[deriving(Show)]
 pub enum TiledError {
@@ -112,14 +140,15 @@ pub struct Map {
     tilesets: Vec<Tileset>,
     layers: Vec<Layer>,
     object_groups: Vec<ObjectGroup>,
-    properties: Properties
+    properties: Properties,
+    background_colour: Option<Colour>,
 }
 
 impl Map {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Map, TiledError>  {
-        let ((), (v, o, w, h, tw, th)) = get_attrs!(
+        let (c, (v, o, w, h, tw, th)) = get_attrs!(
             attrs, 
-            optionals: [], 
+            optionals: [("backgroundcolor", colour, |v:String| from_str(v[]))], 
             required: [("version", version, |v| Some(v)),
                        ("orientation", orientation, |v:String| from_str(v[])),
                        ("width", width, |v:String| from_str::<int>(v[])),
@@ -153,7 +182,8 @@ impl Map {
                 width: w, height: h, 
                 tile_width: tw, tile_height: th,
                 tilesets: tilesets, layers: layers, object_groups: object_groups,
-                properties: properties})
+                properties: properties,
+                background_colour: c,})
     }
 
     /// This function will return the correct Tileset given a GID.
@@ -235,21 +265,22 @@ pub struct Image {
     /// The filepath of the image
     pub source: String,
     pub width: int,
-    pub height: int
+    pub height: int,
+    pub transparent_colour: Option<Colour>,
 }
 
 impl Image {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Image, TiledError> {
-        let ((), (s, w, h)) = get_attrs!(
+        let (c, (s, w, h)) = get_attrs!(
             attrs,
-            optionals: [],
+            optionals: [("trans", trans, |v:String| from_str(v[]))],
             required: [("source", source, |v| Some(v)),
                        ("width", width, |v:String| from_str(v[])),
                        ("height", height, |v:String| from_str(v[]))],
             MalformedAttributes("image must have a source, width and height with correct types".to_string()));
         
         parse_tag!(parser, "image", "" => |_| Ok(()));
-        Ok(Image {source: s, width: w, height: h})
+        Ok(Image {source: s, width: w, height: h, transparent_colour: c})
     }
 }
 
@@ -293,15 +324,17 @@ pub struct ObjectGroup {
     pub name: String,
     pub opacity: f32,
     pub visible: bool,
-    pub objects: Vec<Object>
+    pub objects: Vec<Object>,
+    pub colour: Option<Colour>,
 }
 
 impl ObjectGroup {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<ObjectGroup, TiledError> {
-        let ((o, v), n) = get_attrs!(
+        let ((o, v, c), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| from_str(v[])),
-                        ("visible", visible, |v:String| from_str(v[]).map(|x:int| x == 1))],
+                        ("visible", visible, |v:String| from_str(v[]).map(|x:int| x == 1)),
+                        ("color", colour, |v:String| from_str(v[]))],
             required: [("name", name, |v| Some(v))],
             MalformedAttributes("object groups must have a name".to_string()));
         let mut objects = Vec::new();
@@ -312,7 +345,8 @@ impl ObjectGroup {
                    });
         Ok(ObjectGroup {name: n, 
                         opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true), 
-                        objects: objects})
+                        objects: objects,
+                        colour: c})
     }
 }
 

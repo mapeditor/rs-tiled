@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" width="100" height="100" tilewidth="32" tileheight="32">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" backgroundcolor="#ff00ff">
  <tileset firstgid="1" name="tilesheet" tilewidth="32" tileheight="32">
   <image source="tilesheet.png" width="448" height="192"/>
   <tile id="1">
@@ -17,7 +17,7 @@
    eJzt1zEKwzAMBVBdIScIJXPS+9+uDY1BuHbpULvLeyDIkEkfIXmLiK2qW6cYb7lqv+p41r1TcpmjZFLPyamVEXOcGSzpu66SixkZb41Xz9dO7fE+O4yR+703KmdyhExGK32v+1zv+rxLZDJO7vO5G3KvSyY1eYxT31Dlrm3t9AhZzNC6a+v3RsmhNzP83qdc8ttdHuO07thWLlt4E87w7S6wM+bo7e3ef8z1KRt5/N+388N88gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIHsArPIXTA==
   </data>
  </layer>
- <objectgroup name="Object group" width="100" height="100">
+ <objectgroup name="Object group">
   <object x="14" y="9" width="285" height="135"/>
   <object x="329" y="217" width="102" height="109">
    <ellipse/>
