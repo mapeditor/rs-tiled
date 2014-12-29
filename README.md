@@ -4,7 +4,20 @@
 
 Read maps from the [Tiled Map Editor](http://www.mapeditor.org/) into rust for use in video games. It is game engine agnostic and pretty barebones at the moment. Documentation is available [on rust-ci](http://rust-ci.org/mattyhall/rs-tiled/doc/tiled/).
 
-Code contributions are welcome as are bug reports, documentation, suggestions and critism.
+Code contributions are welcome as are bug reports, documentation, suggestions and criticism.
+
+
+### How to use with Cargo
+Whilst Rust < 1.0 the master branch of this repo will track rust nightly as closely as possible. This means that this library has to build its dependencies from git, as often the version of rust-xml on [crates.io](http://crates.io) does not compile with the latest version of rustc.
+
+The long and the short of it being the recommended way of using rs-tiled is adding this to your ``Cargo.toml``:
+
+```
+[dependencies.tiled]
+git = "https://github.com/mattyhall/rs-tiled.git"
+```
+
+[There is a package on crates.io](https://crates.io/crates/tiled) but it is unlikely to work until the language stabalises.
 
 
 ### Example
