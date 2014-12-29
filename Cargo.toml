@@ -18,5 +18,8 @@ name = "example"
 path = "examples/main.rs"
 
 [dependencies]
-flate2 = "~0.0.3"
-rust-xml = "~0.1.1"
+flate2 = "*"
+
+[dependencies.xml-rs]
+git = "https://github.com/netvl/xml-rs.git"
+

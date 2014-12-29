@@ -8,7 +8,7 @@ use std::str::FromStr;
 use std::collections::HashMap;
 use xml::reader::EventReader;
 use xml::reader::events::XmlEvent::*;
-use xml::common::Attribute;
+use xml::attribute::OwnedAttribute;
 use serialize::base64::{FromBase64, FromBase64Error};
 use flate2::reader::ZlibDecoder;
 use std::num::from_str_radix;
@@ -115,7 +115,7 @@ pub type Properties = HashMap<String, String>;
 fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties, TiledError> {
     let mut p = HashMap::new();
     parse_tag!(parser, "properties",
-               "property" => |attrs:Vec<Attribute>| {
+               "property" => |attrs:Vec<OwnedAttribute>| {
                     let ((), (k, v)) = get_attrs!(
                         attrs,
                         optionals: [],
@@ -145,7 +145,7 @@ pub struct Map {
 }
 
 impl Map {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Map, TiledError>  {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Map, TiledError>  {
         let (c, (v, o, w, h, tw, th)) = get_attrs!(
             attrs, 
             optionals: [("backgroundcolor", colour, |v:String| from_str(v[]))], 
@@ -234,7 +234,7 @@ pub struct Tileset {
 }
 
 impl Tileset {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Tileset, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
         let ((s, m), (g, n, w, h)) = get_attrs!(
            attrs,
            optionals: [("spacing", spacing, |v:String| from_str(v[])),
@@ -270,7 +270,7 @@ pub struct Image {
 }
 
 impl Image {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Image, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Image, TiledError> {
         let (c, (s, w, h)) = get_attrs!(
             attrs,
             optionals: [("trans", trans, |v:String| from_str(v[]))],
@@ -296,7 +296,7 @@ pub struct Layer {
 }
 
 impl Layer {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: u32) -> Result<Layer, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Layer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| from_str(v[])),
@@ -329,7 +329,7 @@ pub struct ObjectGroup {
 }
 
 impl ObjectGroup {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<ObjectGroup, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<ObjectGroup, TiledError> {
         let ((o, v, c), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| from_str(v[])),
@@ -359,7 +359,7 @@ pub enum Object {
 }
 
 impl Object {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
         let ((w, h, v), (x, y)) = get_attrs!(
             attrs,
             optionals: [("width", width, |v:String| from_str(v[])),
@@ -400,7 +400,7 @@ impl Object {
         }
     }
 
-    fn new_polyline(x: int, y: int, v: bool, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+    fn new_polyline(x: int, y: int, v: bool, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
@@ -410,7 +410,7 @@ impl Object {
        Ok(Object::Polyline {x: x, y: y, points: points, visible: v})
     }
 
-    fn new_polygon(x: int, y: int, v: bool, attrs: Vec<Attribute>) -> Result<Object, TiledError> {
+    fn new_polygon(x: int, y: int, v: bool, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
@@ -438,7 +438,7 @@ impl Object {
     }
 }
 
-fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<Attribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
+fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
     let ((), (e, c)) = get_attrs!(
         attrs,
         optionals: [],
