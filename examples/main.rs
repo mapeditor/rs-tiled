@@ -10,6 +10,6 @@ fn main() {
     println!("Opened file");
     let reader = BufferedReader::new(file);
     let map = parse(reader).unwrap();
-    println!("{}", map);
-    println!("{}", map.get_tileset_by_gid(22));
+    println!("{:?}", map);
+    println!("{:?}", map.get_tileset_by_gid(22));
 }
