@@ -19,6 +19,7 @@ path = "examples/main.rs"
 
 [dependencies]
 flate2 = "*"
+rustc-serialize = "*"
 
 [dependencies.xml-rs]
 git = "https://github.com/netvl/xml-rs.git"

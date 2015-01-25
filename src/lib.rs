@@ -2,7 +2,7 @@
 #![feature(slicing_syntax)]
 extern crate flate2;
 extern crate xml;
-extern crate serialize;
+extern crate "rustc-serialize" as serialize;
 
 use std::io::{BufReader, IoError, EndOfFile};
 use std::str::FromStr;
