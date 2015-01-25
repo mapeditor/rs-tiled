@@ -7,6 +7,7 @@ extern crate serialize;
 use std::io::{BufReader, IoError, EndOfFile};
 use std::str::FromStr;
 use std::collections::HashMap;
+use std::fmt;
 use xml::reader::EventReader;
 use xml::reader::events::XmlEvent::*;
 use xml::attribute::OwnedAttribute;
@@ -109,6 +110,18 @@ pub enum TiledError {
     DecodingError(FromBase64Error),
     PrematureEnd(String),
     Other(String)
+}
+
+impl fmt::Display for TiledError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match *self {
+            TiledError::MalformedAttributes(ref s) => write!(fmt, "{}", s),
+            TiledError::DecompressingError(ref e) => write!(fmt, "{}", e),
+            TiledError::DecodingError(ref e) => write!(fmt, "{}", e),
+            TiledError::PrematureEnd(ref e) => write!(fmt, "{}", e),
+            TiledError::Other(ref s) => write!(fmt, "{}", s),
+        }
+    }
 }
 
 pub type Properties = HashMap<String, String>;
