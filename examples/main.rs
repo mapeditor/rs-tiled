@@ -1,8 +1,7 @@
 extern crate serialize;
 extern crate tiled;
 
-use std::io::File;
-use std::io::BufferedReader;
+use std::old_io::{File, BufferedReader};
 use tiled::parse;
 
 fn main() {

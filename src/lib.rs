@@ -4,7 +4,7 @@ extern crate flate2;
 extern crate xml;
 extern crate "rustc-serialize" as serialize;
 
-use std::io::{BufReader, IoError, EndOfFile};
+use std::old_io::{BufReader, IoError, EndOfFile};
 use std::str::FromStr;
 use std::collections::HashMap;
 use std::fmt;
