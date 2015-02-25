@@ -4,15 +4,15 @@ extern crate flate2;
 extern crate xml;
 extern crate "rustc-serialize" as serialize;
 
-use std::old_io::{BufReader, IoError, EndOfFile};
 use std::str::FromStr;
 use std::collections::HashMap;
+use std::io::{BufReader, Read, Error};
 use std::fmt;
 use xml::reader::EventReader;
 use xml::reader::events::XmlEvent::*;
 use xml::attribute::OwnedAttribute;
 use serialize::base64::{FromBase64, FromBase64Error};
-use flate2::reader::ZlibDecoder;
+use flate2::read::ZlibDecoder;
 use std::num::from_str_radix;
 
 enum ParseTileError {
@@ -113,7 +113,7 @@ pub enum TiledError {
     MalformedAttributes(String),
     /// An error occured when decompressing using the 
     /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
-    DecompressingError(IoError),
+    DecompressingError(Error),
     DecodingError(FromBase64Error),
     PrematureEnd(String),
     Other(String)
@@ -477,19 +477,27 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>
                 match s.trim().from_base64() {
                     Ok(v) => {
                         let mut zd = ZlibDecoder::new(BufReader::new(v.as_slice()));
-                        let mut data = Vec::new();
-                        let mut row = Vec::new();
-                        loop {
-                            match zd.read_le_u32() {
-                                Ok(v) => row.push(v),
-                                Err(IoError{kind, ..}) if kind == EndOfFile => return Ok(data),
-                                Err(e) => return Err(TiledError::DecompressingError(e))
-                            }
-                            if row.len() as u32 == width {
-                                data.push(row);
-                                row = Vec::new();
-                            }
+                        let mut all = Vec::new();
+                        match zd.read_to_end(&mut all) {
+                            Ok(v) => {},
+                            Err(e) => return Err(TiledError::DecompressingError(e))
                         }
+                        let mut data = Vec::new();
+                        for chunk in all.chunks((width * 4) as usize) {
+                            println!("{:?}", chunk);
+                            let mut row = Vec::new();
+                            for i in 0 .. width - 1 {
+                                let start: usize = i as usize * 4;
+                                let n = ((chunk[start + 3] as u32) << 24) +
+                                        ((chunk[start + 2] as u32) << 16) +
+                                        ((chunk[start + 1] as u32) <<  8) +
+                                        chunk[start] as u32;
+                                row.push(n);
+                            }
+                            data.push(row);
+                        }
+                        println!("{} {}", width, data.len());
+                        return Ok(data)
                     }
                     Err(e) => return Err(TiledError::DecodingError(e))
                 }
