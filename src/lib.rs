@@ -462,46 +462,37 @@ impl Object {
 }
 
 fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
-    let ((), (e, c)) = get_attrs!(
+    let ((e, c), ()) = get_attrs!(
         attrs,
-        optionals: [],
-        required: [("encoding", encoding, |&:v| Some(v)),
+        optionals: [("encoding", encoding, |&:v| Some(v)),
                    ("compression", compression, |&:v| Some(v))],
+        required: [],
         TiledError::MalformedAttributes("data must have an encoding and a compression".to_string()));
-    if !(e == "base64" && c == "zlib") {
-        return Err(TiledError::Other("Only base64 and zlib allowed for the moment".to_string()));
-    }
+
+    match (e,c) {
+        (None,None) => return Err(TiledError::Other("XML format is currently not supported".to_string())),
+        (Some(e),None) =>
+            match e.as_slice() {
+                "base64" => return parse_base64(parser).map(|v| convert_to_u32(&v,width)),
+                "csv" => return Err(TiledError::Other("csv encoding is currently not supported".to_string())),
+                e => return Err(TiledError::Other(format!("Unknown encoding format {}",e))),
+            },
+        (Some(e),Some(c)) =>
+            match (e.as_slice(),c.as_slice()) {
+                ("base64","zlib") => return parse_base64(parser).and_then(decode_zlib).map(|v| convert_to_u32(&v,width) ),
+                ("base64","gzip") => return Err(TiledError::Other("base64 encoding and gzip compression is currently not supported".to_string()))
+                (e,c) => return Err(TiledError::Other(format!("Unknown combination of {} encoding and {} compression",e,c)))
+            },
+        _ => return Err(TiledError::Other("Missing encoding format".to_string())),
+    };
+}
+
+fn parse_base64<B: Buffer>(parser: &mut EventReader<B>) -> Result<Vec<u8>, TiledError> {
     loop {
         match parser.next() {
-            Characters(s) => {
-                match s.trim().from_base64() {
-                    Ok(v) => {
-                        let mut zd = ZlibDecoder::new(BufReader::new(v.as_slice()));
-                        let mut all = Vec::new();
-                        match zd.read_to_end(&mut all) {
-                            Ok(v) => {},
-                            Err(e) => return Err(TiledError::DecompressingError(e))
-                        }
-                        let mut data = Vec::new();
-                        for chunk in all.chunks((width * 4) as usize) {
-                            println!("{:?}", chunk);
-                            let mut row = Vec::new();
-                            for i in 0 .. width - 1 {
-                                let start: usize = i as usize * 4;
-                                let n = ((chunk[start + 3] as u32) << 24) +
-                                        ((chunk[start + 2] as u32) << 16) +
-                                        ((chunk[start + 1] as u32) <<  8) +
-                                        chunk[start] as u32;
-                                row.push(n);
-                            }
-                            data.push(row);
-                        }
-                        println!("{} {}", width, data.len());
-                        return Ok(data)
-                    }
-                    Err(e) => return Err(TiledError::DecodingError(e))
-                }
-            }
+            Characters(s) => return s.trim()
+                                    .from_base64()
+                                    .map_err(TiledError::DecodingError),
             EndElement {name, ..} => {
                 if name.local_name == "data" {
                     return Ok(Vec::new());
@@ -510,6 +501,33 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>
             _ => {}
         }
     }
+}
+
+fn decode_zlib(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
+    let mut zd = ZlibDecoder::new(BufReader::new(data.as_slice()));
+    let mut data = Vec::new();
+    match zd.read_to_end(&mut data) {
+        Ok(v) => {},
+        Err(e) => return Err(TiledError::DecompressingError(e))
+    }
+    Ok(data)
+}
+
+fn convert_to_u32(all : &Vec<u8>,width : u32) -> Vec<Vec<u32>> {
+    let mut data = Vec::new();
+    for chunk in all.chunks((width * 4) as usize) {
+        let mut row = Vec::new();
+        for i in 0 .. width - 1 {
+            let start: usize = i as usize * 4;
+            let n = ((chunk[start + 3] as u32) << 24) +
+                    ((chunk[start + 2] as u32) << 16) +
+                    ((chunk[start + 1] as u32) <<  8) +
+                    chunk[start] as u32;
+            row.push(n);
+        }
+        data.push(row);
+    }
+    data
 }
 
 /// Parse a buffer hopefully containing the contents of a Tiled file and try to
