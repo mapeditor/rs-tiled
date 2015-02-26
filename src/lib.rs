@@ -12,7 +12,7 @@ use xml::reader::EventReader;
 use xml::reader::events::XmlEvent::*;
 use xml::attribute::OwnedAttribute;
 use serialize::base64::{FromBase64, FromBase64Error};
-use flate2::read::ZlibDecoder;
+use flate2::read::{ZlibDecoder, GzDecoder};
 use std::num::from_str_radix;
 
 enum ParseTileError {
@@ -480,7 +480,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>
         (Some(e),Some(c)) =>
             match (e.as_slice(),c.as_slice()) {
                 ("base64","zlib") => return parse_base64(parser).and_then(decode_zlib).map(|v| convert_to_u32(&v,width) ),
-                ("base64","gzip") => return Err(TiledError::Other("base64 encoding and gzip compression is currently not supported".to_string())),
+                ("base64","gzip") => return parse_base64(parser).and_then(decode_gzip).map(|v| convert_to_u32(&v,width)),
                 (e,c) => return Err(TiledError::Other(format!("Unknown combination of {} encoding and {} compression",e,c)))
             },
         _ => return Err(TiledError::Other("Missing encoding format".to_string())),
@@ -507,6 +507,19 @@ fn decode_zlib(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
     let mut zd = ZlibDecoder::new(BufReader::new(data.as_slice()));
     let mut data = Vec::new();
     match zd.read_to_end(&mut data) {
+        Ok(v) => {},
+        Err(e) => return Err(TiledError::DecompressingError(e))
+    }
+    Ok(data)
+}
+
+fn decode_gzip(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
+    let mut gzd = match GzDecoder::new(BufReader::new(data.as_slice())) {
+        Ok(gzd) => gzd,
+        Err(e) => return Err(TiledError::DecompressingError(e))
+    };
+    let mut data = Vec::new();
+    match gzd.read_to_end(&mut data) {
         Ok(v) => {},
         Err(e) => return Err(TiledError::DecompressingError(e))
     }
