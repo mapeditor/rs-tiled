@@ -27,7 +27,7 @@ enum ParseTileError {
 // This is probably a really terrible way to do this. It does cut down on lines
 // though which is nice.
 macro_rules! get_attrs {
-    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),*], 
+    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),*],
      required: [$(($name:pat, $var:ident, $method:expr)),*], $err:expr) => {
         {
             $(let mut $oVar = None;)*
@@ -85,12 +85,12 @@ pub struct Colour {
 
 impl FromStr for Colour {
     type Err = ParseTileError;
-        
+
     fn from_str(s: &str) -> Result<Colour, ParseTileError> {
         let s = if s.starts_with("#") {
             &s[1..]
-        } else { 
-            s 
+        } else {
+            s
         };
         if s.len() != 6 {
             return Err(ParseTileError::ColourError);
@@ -111,7 +111,7 @@ pub enum TiledError {
     /// A attribute was missing, had the wrong type of wasn't formated
     /// correctly.
     MalformedAttributes(String),
-    /// An error occured when decompressing using the 
+    /// An error occured when decompressing using the
     /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
     DecompressingError(Error),
     DecodingError(FromBase64Error),
@@ -168,8 +168,8 @@ pub struct Map {
 impl Map {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Map, TiledError>  {
         let (c, (v, o, w, h, tw, th)) = get_attrs!(
-            attrs, 
-            optionals: [("backgroundcolor", colour, |v:String| v.parse().ok())], 
+            attrs,
+            optionals: [("backgroundcolor", colour, |v:String| v.parse().ok())],
             required: [("version", version, |&:v| Some(v)),
                        ("orientation", orientation, |&:v:String| v.parse().ok()),
                        ("width", width, |&:v:String| v.parse().ok()),
@@ -182,7 +182,7 @@ impl Map {
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
         let mut object_groups = Vec::new();
-        parse_tag!(parser, "map", 
+        parse_tag!(parser, "map",
                    "tileset" => | attrs| {
                         tilesets.push(try!(Tileset::new(parser, attrs)));
                         Ok(())
@@ -200,7 +200,7 @@ impl Map {
                        Ok(())
                    });
         Ok(Map {version: v, orientation: o,
-                width: w, height: h, 
+                width: w, height: h,
                 tile_width: tw, tile_height: th,
                 tilesets: tilesets, layers: layers, object_groups: object_groups,
                 properties: properties,
@@ -230,7 +230,7 @@ pub enum Orientation {
 
 impl FromStr for Orientation {
     type Err = ParseTileError;
-        
+
     fn from_str(s: &str) -> Result<Orientation, ParseTileError> {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
@@ -251,7 +251,7 @@ pub struct Tileset {
     pub tile_height: u32,
     pub spacing: u32,
     pub margin: u32,
-    /// The Tiled spec says that a tileset can have mutliple images so a `Vec` 
+    /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
     /// is used. Usually you will only use one.
     pub images: Vec<Image>
 }
@@ -274,9 +274,9 @@ impl Tileset {
                         images.push(try!(Image::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(Tileset {first_gid: g, 
-                    name: n, 
-                    tile_width: w, tile_height: h, 
+        Ok(Tileset {first_gid: g,
+                    name: n,
+                    tile_width: w, tile_height: h,
                     spacing: s.unwrap_or(0),
                     margin: m.unwrap_or(0),
                     images: images})
@@ -301,7 +301,7 @@ impl Image {
                        ("width", width, |&:v:String| v.parse().ok()),
                        ("height", height, |&:v:String| v.parse().ok())],
             TiledError::MalformedAttributes("image must have a source, width and height with correct types".to_string()));
-        
+
         parse_tag!(parser, "image", "" => |&:_| Ok(()));
         Ok(Image {source: s, width: w, height: h, transparent_colour: c})
     }
@@ -366,8 +366,8 @@ impl ObjectGroup {
                         objects.push(try!(Object::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(ObjectGroup {name: n, 
-                        opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true), 
+        Ok(ObjectGroup {name: n,
+                        opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true),
                         objects: objects,
                         colour: c})
     }
@@ -399,7 +399,7 @@ impl Object {
                             return Err(TiledError::MalformedAttributes("An ellipse must have a width and height".to_string()));
                         }
                         let (w, h) = (w.unwrap(), h.unwrap());
-                        obj = Some(Object::Ellipse {x: x, y: y, 
+                        obj = Some(Object::Ellipse {x: x, y: y,
                                             width: w , height: h ,
                                             visible: v});
                         Ok(())
@@ -480,7 +480,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>
         (Some(e),Some(c)) =>
             match (e.as_slice(),c.as_slice()) {
                 ("base64","zlib") => return parse_base64(parser).and_then(decode_zlib).map(|v| convert_to_u32(&v,width) ),
-                ("base64","gzip") => return Err(TiledError::Other("base64 encoding and gzip compression is currently not supported".to_string()))
+                ("base64","gzip") => return Err(TiledError::Other("base64 encoding and gzip compression is currently not supported".to_string())),
                 (e,c) => return Err(TiledError::Other(format!("Unknown combination of {} encoding and {} compression",e,c)))
             },
         _ => return Err(TiledError::Other("Missing encoding format".to_string())),
