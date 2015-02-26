@@ -475,7 +475,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>
         (Some(e),None) =>
             match e.as_slice() {
                 "base64" => return parse_base64(parser).map(|v| convert_to_u32(&v,width)),
-                "csv" => return Err(TiledError::Other("csv encoding is currently not supported".to_string())),
+                "csv" => return decode_csv(parser),
                 e => return Err(TiledError::Other(format!("Unknown encoding format {}",e))),
             },
         (Some(e),Some(c)) =>
@@ -525,6 +525,29 @@ fn decode_gzip(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
         Err(e) => return Err(TiledError::DecompressingError(e))
     }
     Ok(data)
+}
+
+fn decode_csv<B: Buffer>(parser: &mut EventReader<B>) -> Result<Vec<Vec<u32>>, TiledError> {
+    loop {
+        match parser.next() {
+            Characters(s) => {
+                let mut rows: Vec<Vec<u32>> = Vec::new();
+                for row in s.split('\n') {
+                    if row.trim() == "" {
+                        continue;
+                    }
+                    rows.push(row.split(',').filter(|v| v.trim() != "").map(|v| v.parse().unwrap()).collect());
+                }
+                return Ok(rows);
+            }
+            EndElement {name, ..} => {
+                if name.local_name == "data" {
+                    return Ok(Vec::new());
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 fn convert_to_u32(all : &Vec<u8>,width : u32) -> Vec<Vec<u32>> {
