@@ -504,7 +504,7 @@ fn parse_base64<B: Buffer>(parser: &mut EventReader<B>) -> Result<Vec<u8>, Tiled
     }
 }
 
-fn decode_zlib(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
+fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     let mut zd = ZlibDecoder::new(BufReader::new(data.as_slice()));
     let mut data = Vec::new();
     match zd.read_to_end(&mut data) {
@@ -514,7 +514,7 @@ fn decode_zlib(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
-fn decode_gzip(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
+fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     let mut gzd = match GzDecoder::new(BufReader::new(data.as_slice())) {
         Ok(gzd) => gzd,
         Err(e) => return Err(TiledError::DecompressingError(e))
@@ -550,7 +550,7 @@ fn decode_csv<B: Buffer>(parser: &mut EventReader<B>) -> Result<Vec<Vec<u32>>, T
     }
 }
 
-fn convert_to_u32(all : &Vec<u8>,width : u32) -> Vec<Vec<u32>> {
+fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
     let mut data = Vec::new();
     for chunk in all.chunks((width * 4) as usize) {
         let mut row = Vec::new();
