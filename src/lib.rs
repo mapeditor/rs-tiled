@@ -12,7 +12,7 @@ use xml::reader::EventReader;
 use xml::reader::events::XmlEvent::*;
 use xml::attribute::OwnedAttribute;
 use serialize::base64::{FromBase64, FromBase64Error};
-use flate2::read::ZlibDecoder;
+use flate2::read::{ZlibDecoder, GzDecoder};
 use std::num::from_str_radix;
 
 enum ParseTileError {
@@ -27,7 +27,7 @@ enum ParseTileError {
 // This is probably a really terrible way to do this. It does cut down on lines
 // though which is nice.
 macro_rules! get_attrs {
-    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),*], 
+    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),*],
      required: [$(($name:pat, $var:ident, $method:expr)),*], $err:expr) => {
         {
             $(let mut $oVar = None;)*
@@ -85,12 +85,12 @@ pub struct Colour {
 
 impl FromStr for Colour {
     type Err = ParseTileError;
-        
+
     fn from_str(s: &str) -> Result<Colour, ParseTileError> {
         let s = if s.starts_with("#") {
             &s[1..]
-        } else { 
-            s 
+        } else {
+            s
         };
         if s.len() != 6 {
             return Err(ParseTileError::ColourError);
@@ -111,7 +111,7 @@ pub enum TiledError {
     /// A attribute was missing, had the wrong type of wasn't formated
     /// correctly.
     MalformedAttributes(String),
-    /// An error occured when decompressing using the 
+    /// An error occured when decompressing using the
     /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
     DecompressingError(Error),
     DecodingError(FromBase64Error),
@@ -168,8 +168,8 @@ pub struct Map {
 impl Map {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Map, TiledError>  {
         let (c, (v, o, w, h, tw, th)) = get_attrs!(
-            attrs, 
-            optionals: [("backgroundcolor", colour, |v:String| v.parse().ok())], 
+            attrs,
+            optionals: [("backgroundcolor", colour, |v:String| v.parse().ok())],
             required: [("version", version, |&:v| Some(v)),
                        ("orientation", orientation, |&:v:String| v.parse().ok()),
                        ("width", width, |&:v:String| v.parse().ok()),
@@ -182,7 +182,7 @@ impl Map {
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
         let mut object_groups = Vec::new();
-        parse_tag!(parser, "map", 
+        parse_tag!(parser, "map",
                    "tileset" => | attrs| {
                         tilesets.push(try!(Tileset::new(parser, attrs)));
                         Ok(())
@@ -200,7 +200,7 @@ impl Map {
                        Ok(())
                    });
         Ok(Map {version: v, orientation: o,
-                width: w, height: h, 
+                width: w, height: h,
                 tile_width: tw, tile_height: th,
                 tilesets: tilesets, layers: layers, object_groups: object_groups,
                 properties: properties,
@@ -230,7 +230,7 @@ pub enum Orientation {
 
 impl FromStr for Orientation {
     type Err = ParseTileError;
-        
+
     fn from_str(s: &str) -> Result<Orientation, ParseTileError> {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
@@ -251,7 +251,7 @@ pub struct Tileset {
     pub tile_height: u32,
     pub spacing: u32,
     pub margin: u32,
-    /// The Tiled spec says that a tileset can have mutliple images so a `Vec` 
+    /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
     /// is used. Usually you will only use one.
     pub images: Vec<Image>
 }
@@ -274,9 +274,9 @@ impl Tileset {
                         images.push(try!(Image::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(Tileset {first_gid: g, 
-                    name: n, 
-                    tile_width: w, tile_height: h, 
+        Ok(Tileset {first_gid: g,
+                    name: n,
+                    tile_width: w, tile_height: h,
                     spacing: s.unwrap_or(0),
                     margin: m.unwrap_or(0),
                     images: images})
@@ -301,7 +301,7 @@ impl Image {
                        ("width", width, |&:v:String| v.parse().ok()),
                        ("height", height, |&:v:String| v.parse().ok())],
             TiledError::MalformedAttributes("image must have a source, width and height with correct types".to_string()));
-        
+
         parse_tag!(parser, "image", "" => |&:_| Ok(()));
         Ok(Image {source: s, width: w, height: h, transparent_colour: c})
     }
@@ -366,8 +366,8 @@ impl ObjectGroup {
                         objects.push(try!(Object::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(ObjectGroup {name: n, 
-                        opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true), 
+        Ok(ObjectGroup {name: n,
+                        opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true),
                         objects: objects,
                         colour: c})
     }
@@ -399,7 +399,7 @@ impl Object {
                             return Err(TiledError::MalformedAttributes("An ellipse must have a width and height".to_string()));
                         }
                         let (w, h) = (w.unwrap(), h.unwrap());
-                        obj = Some(Object::Ellipse {x: x, y: y, 
+                        obj = Some(Object::Ellipse {x: x, y: y,
                                             width: w , height: h ,
                                             visible: v});
                         Ok(())
@@ -462,46 +462,37 @@ impl Object {
 }
 
 fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
-    let ((), (e, c)) = get_attrs!(
+    let ((e, c), ()) = get_attrs!(
         attrs,
-        optionals: [],
-        required: [("encoding", encoding, |&:v| Some(v)),
+        optionals: [("encoding", encoding, |&:v| Some(v)),
                    ("compression", compression, |&:v| Some(v))],
+        required: [],
         TiledError::MalformedAttributes("data must have an encoding and a compression".to_string()));
-    if !(e == "base64" && c == "zlib") {
-        return Err(TiledError::Other("Only base64 and zlib allowed for the moment".to_string()));
-    }
+
+    match (e,c) {
+        (None,None) => return Err(TiledError::Other("XML format is currently not supported".to_string())),
+        (Some(e),None) =>
+            match e.as_slice() {
+                "base64" => return parse_base64(parser).map(|v| convert_to_u32(&v,width)),
+                "csv" => return Err(TiledError::Other("csv encoding is currently not supported".to_string())),
+                e => return Err(TiledError::Other(format!("Unknown encoding format {}",e))),
+            },
+        (Some(e),Some(c)) =>
+            match (e.as_slice(),c.as_slice()) {
+                ("base64","zlib") => return parse_base64(parser).and_then(decode_zlib).map(|v| convert_to_u32(&v,width) ),
+                ("base64","gzip") => return parse_base64(parser).and_then(decode_gzip).map(|v| convert_to_u32(&v,width)),
+                (e,c) => return Err(TiledError::Other(format!("Unknown combination of {} encoding and {} compression",e,c)))
+            },
+        _ => return Err(TiledError::Other("Missing encoding format".to_string())),
+    };
+}
+
+fn parse_base64<B: Buffer>(parser: &mut EventReader<B>) -> Result<Vec<u8>, TiledError> {
     loop {
         match parser.next() {
-            Characters(s) => {
-                match s.trim().from_base64() {
-                    Ok(v) => {
-                        let mut zd = ZlibDecoder::new(BufReader::new(v.as_slice()));
-                        let mut all = Vec::new();
-                        match zd.read_to_end(&mut all) {
-                            Ok(v) => {},
-                            Err(e) => return Err(TiledError::DecompressingError(e))
-                        }
-                        let mut data = Vec::new();
-                        for chunk in all.chunks((width * 4) as usize) {
-                            println!("{:?}", chunk);
-                            let mut row = Vec::new();
-                            for i in 0 .. width - 1 {
-                                let start: usize = i as usize * 4;
-                                let n = ((chunk[start + 3] as u32) << 24) +
-                                        ((chunk[start + 2] as u32) << 16) +
-                                        ((chunk[start + 1] as u32) <<  8) +
-                                        chunk[start] as u32;
-                                row.push(n);
-                            }
-                            data.push(row);
-                        }
-                        println!("{} {}", width, data.len());
-                        return Ok(data)
-                    }
-                    Err(e) => return Err(TiledError::DecodingError(e))
-                }
-            }
+            Characters(s) => return s.trim()
+                                    .from_base64()
+                                    .map_err(TiledError::DecodingError),
             EndElement {name, ..} => {
                 if name.local_name == "data" {
                     return Ok(Vec::new());
@@ -510,6 +501,46 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>
             _ => {}
         }
     }
+}
+
+fn decode_zlib(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
+    let mut zd = ZlibDecoder::new(BufReader::new(data.as_slice()));
+    let mut data = Vec::new();
+    match zd.read_to_end(&mut data) {
+        Ok(v) => {},
+        Err(e) => return Err(TiledError::DecompressingError(e))
+    }
+    Ok(data)
+}
+
+fn decode_gzip(data : Vec<u8>) -> Result<Vec<u8>, TiledError> {
+    let mut gzd = match GzDecoder::new(BufReader::new(data.as_slice())) {
+        Ok(gzd) => gzd,
+        Err(e) => return Err(TiledError::DecompressingError(e))
+    };
+    let mut data = Vec::new();
+    match gzd.read_to_end(&mut data) {
+        Ok(v) => {},
+        Err(e) => return Err(TiledError::DecompressingError(e))
+    }
+    Ok(data)
+}
+
+fn convert_to_u32(all : &Vec<u8>,width : u32) -> Vec<Vec<u32>> {
+    let mut data = Vec::new();
+    for chunk in all.chunks((width * 4) as usize) {
+        let mut row = Vec::new();
+        for i in 0 .. width - 1 {
+            let start: usize = i as usize * 4;
+            let n = ((chunk[start + 3] as u32) << 24) +
+                    ((chunk[start + 2] as u32) << 16) +
+                    ((chunk[start + 1] as u32) <<  8) +
+                    chunk[start] as u32;
+            row.push(n);
+        }
+        data.push(row);
+    }
+    data
 }
 
 /// Parse a buffer hopefully containing the contents of a Tiled file and try to
