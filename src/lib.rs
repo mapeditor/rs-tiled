@@ -15,6 +15,7 @@ use serialize::base64::{FromBase64, FromBase64Error};
 use flate2::read::{ZlibDecoder, GzDecoder};
 use std::num::from_str_radix;
 
+#[derive(Debug)]
 enum ParseTileError {
     ColourError,
     OrientationError,
@@ -76,7 +77,7 @@ macro_rules! parse_tag {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Colour {
     pub red: u8,
     pub green: u8,
@@ -150,7 +151,7 @@ fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties
 }
 
 /// All Tiled files will be parsed i32o this. Holds all the layers and tilesets
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Map {
     pub version: String,
     pub orientation: Orientation,
@@ -221,7 +222,7 @@ impl Map {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Orientation {
     Orthogonal,
     Isometric,
@@ -242,7 +243,7 @@ impl FromStr for Orientation {
 }
 
 /// A tileset, usually the tilesheet image.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Tileset {
     /// The GID of the first tile stored
     pub first_gid: u32,
@@ -283,7 +284,7 @@ impl Tileset {
    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Image {
     /// The filepath of the image
     pub source: String,
@@ -307,7 +308,7 @@ impl Image {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Layer {
     pub name: String,
     pub opacity: f32,
@@ -342,7 +343,7 @@ impl Layer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ObjectGroup {
     pub name: String,
     pub opacity: f32,
@@ -373,7 +374,7 @@ impl ObjectGroup {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Object {
      Rect { x: i32,  y: i32,  width: u32,  height: u32,  visible: bool},
      Ellipse { x: i32,  y: i32,  width: u32,  height: u32,  visible: bool},
