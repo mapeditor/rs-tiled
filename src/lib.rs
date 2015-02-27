@@ -448,7 +448,7 @@ impl Object {
         let pairs = s.split(' ');
         let mut points = Vec::new();
         for v in pairs.map(|&:p| p.splitn(1, ',')) {
-            let v: Vec<&str> = v.clone().collect();
+            let v: Vec<&str> = v.collect();
             if v.len() != 2 {
                 return Err(TiledError::MalformedAttributes("one of a polyline's points does not have an x and y coordinate".to_string()));
             }
