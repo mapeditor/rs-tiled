@@ -141,8 +141,8 @@ fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties
                     let ((), (k, v)) = get_attrs!(
                         attrs,
                         optionals: [],
-                        required: [("name", key, |&:v| Some(v)),
-                                   ("value", value, |&:v| Some(v))],
+                        required: [("name", key, |v| Some(v)),
+                                   ("value", value, |v| Some(v))],
                         TiledError::MalformedAttributes("property must have a name and a value".to_string()));
                     p.insert(k, v);
                     Ok(())
@@ -171,12 +171,12 @@ impl Map {
         let (c, (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [("backgroundcolor", colour, |v:String| v.parse().ok())],
-            required: [("version", version, |&:v| Some(v)),
-                       ("orientation", orientation, |&:v:String| v.parse().ok()),
-                       ("width", width, |&:v:String| v.parse().ok()),
-                       ("height", height, |&:v:String| v.parse().ok()),
-                       ("tilewidth", tile_width, |&:v:String| v.parse().ok()),
-                       ("tileheight", tile_height, |&:v:String| v.parse().ok())],
+            required: [("version", version, |v| Some(v)),
+                       ("orientation", orientation, |v:String| v.parse().ok()),
+                       ("width", width, |v:String| v.parse().ok()),
+                       ("height", height, |v:String| v.parse().ok()),
+                       ("tilewidth", tile_width, |v:String| v.parse().ok()),
+                       ("tileheight", tile_height, |v:String| v.parse().ok())],
             TiledError::MalformedAttributes("map must have a version, width and height with correct types".to_string()));
 
         let mut tilesets = Vec::new();
@@ -261,12 +261,12 @@ impl Tileset {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
         let ((s, m), (g, n, w, h)) = get_attrs!(
            attrs,
-           optionals: [("spacing", spacing, |&:v:String| v.parse().ok()),
-                       ("margin", margin, |&:v:String| v.parse().ok())],
-           required: [("firstgid", first_gid, |&:v:String| v.parse().ok()),
-                      ("name", name, |&:v| Some(v)),
-                      ("tilewidth", width, |&:v:String| v.parse().ok()),
-                      ("tileheight", height, |&:v:String| v.parse().ok())],
+           optionals: [("spacing", spacing, |v:String| v.parse().ok()),
+                       ("margin", margin, |v:String| v.parse().ok())],
+           required: [("firstgid", first_gid, |v:String| v.parse().ok()),
+                      ("name", name, |v| Some(v)),
+                      ("tilewidth", width, |v:String| v.parse().ok()),
+                      ("tileheight", height, |v:String| v.parse().ok())],
            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string()));
 
         let mut images = Vec::new();
@@ -297,13 +297,13 @@ impl Image {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Image, TiledError> {
         let (c, (s, w, h)) = get_attrs!(
             attrs,
-            optionals: [("trans", trans, |&:v:String| v.parse().ok())],
-            required: [("source", source, |&:v| Some(v)),
-                       ("width", width, |&:v:String| v.parse().ok()),
-                       ("height", height, |&:v:String| v.parse().ok())],
+            optionals: [("trans", trans, |v:String| v.parse().ok())],
+            required: [("source", source, |v| Some(v)),
+                       ("width", width, |v:String| v.parse().ok()),
+                       ("height", height, |v:String| v.parse().ok())],
             TiledError::MalformedAttributes("image must have a source, width and height with correct types".to_string()));
 
-        parse_tag!(parser, "image", "" => |&:_| Ok(()));
+        parse_tag!(parser, "image", "" => |_| Ok(()));
         Ok(Image {source: s, width: w, height: h, transparent_colour: c})
     }
 }
@@ -323,9 +323,9 @@ impl Layer {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Layer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
-            optionals: [("opacity", opacity, |&:v:String| v.parse().ok()),
-                        ("visible", visible, |&:v:String| v.parse().ok().map(|x:i32| x == 1))],
-            required: [("name", name, |&:v| Some(v))],
+            optionals: [("opacity", opacity, |v:String| v.parse().ok()),
+                        ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1))],
+            required: [("name", name, |v| Some(v))],
             TiledError::MalformedAttributes("layer must have a name".to_string()));
         let mut tiles = Vec::new();
         let mut properties = HashMap::new();
@@ -356,10 +356,10 @@ impl ObjectGroup {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<ObjectGroup, TiledError> {
         let ((o, v, c), n) = get_attrs!(
             attrs,
-            optionals: [("opacity", opacity, |&:v:String| v.parse().ok()),
-                        ("visible", visible, |&:v:String| v.parse().ok().map(|x:i32| x == 1)),
-                        ("color", colour, |&:v:String| v.parse().ok())],
-            required: [("name", name, |&:v| Some(v))],
+            optionals: [("opacity", opacity, |v:String| v.parse().ok()),
+                        ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
+                        ("color", colour, |v:String| v.parse().ok())],
+            required: [("name", name, |v| Some(v))],
             TiledError::MalformedAttributes("object groups must have a name".to_string()));
         let mut objects = Vec::new();
         parse_tag!(parser, "objectgroup",
@@ -386,11 +386,11 @@ impl Object {
     fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
         let ((w, h, v), (x, y)) = get_attrs!(
             attrs,
-            optionals: [("width", width, |&:v:String| v.parse().ok()),
-                        ("height", height, |&:v:String| v.parse().ok()),
-                        ("visible", visible, |&:v:String| v.parse().ok())],
-            required: [("x", x, |&:v:String| v.parse().ok()),
-                       ("y", y, |&:v:String| v.parse().ok())],
+            optionals: [("width", width, |v:String| v.parse().ok()),
+                        ("height", height, |v:String| v.parse().ok()),
+                        ("visible", visible, |v:String| v.parse().ok())],
+            required: [("x", x, |v:String| v.parse().ok()),
+                       ("y", y, |v:String| v.parse().ok())],
             TiledError::MalformedAttributes("objects must have an x and a y number".to_string()));
         let mut obj = None;
         let v = v.unwrap_or(true);
@@ -428,7 +428,7 @@ impl Object {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
-            required: [("points", points, |&:v| Some(v))],
+            required: [("points", points, |v| Some(v))],
             TiledError::MalformedAttributes("A polyline must have points".to_string()));
        let points = try!(Object::parse_points(s));
        Ok(Object::Polyline {x: x, y: y, points: points, visible: v})
@@ -438,7 +438,7 @@ impl Object {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
-            required: [("points", points, |&:v| Some(v))],
+            required: [("points", points, |v| Some(v))],
             TiledError::MalformedAttributes("A polygon must have points".to_string()));
        let points = try!(Object::parse_points(s));
        Ok(Object::Polygon {x: x, y: y, points: points, visible: v})
@@ -447,7 +447,7 @@ impl Object {
     fn parse_points(s: String) -> Result<Vec<(i32, i32)>, TiledError> {
         let pairs = s.split(' ');
         let mut points = Vec::new();
-        for v in pairs.map(|&:p| p.splitn(1, ',')) {
+        for v in pairs.map(|p| p.splitn(1, ',')) {
             let v: Vec<&str> = v.collect();
             if v.len() != 2 {
                 return Err(TiledError::MalformedAttributes("one of a polyline's points does not have an x and y coordinate".to_string()));
@@ -465,8 +465,8 @@ impl Object {
 fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
     let ((e, c), ()) = get_attrs!(
         attrs,
-        optionals: [("encoding", encoding, |&:v| Some(v)),
-                   ("compression", compression, |&:v| Some(v))],
+        optionals: [("encoding", encoding, |v| Some(v)),
+                   ("compression", compression, |v| Some(v))],
         required: [],
         TiledError::MalformedAttributes("data must have an encoding and a compression".to_string()));
 
