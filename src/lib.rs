@@ -16,7 +16,7 @@ use flate2::read::{ZlibDecoder, GzDecoder};
 use std::num::from_str_radix;
 
 #[derive(Debug)]
-enum ParseTileError {
+pub enum ParseTileError {
     ColourError,
     OrientationError,
 }
