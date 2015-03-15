@@ -134,7 +134,7 @@ impl fmt::Display for TiledError {
 
 pub type Properties = HashMap<String, String>;
 
-fn parse_properties<B: Buffer>(parser: &mut EventReader<B>) -> Result<Properties, TiledError> {
+fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, TiledError> {
     let mut p = HashMap::new();
     parse_tag!(parser, "properties",
                "property" => |attrs:Vec<OwnedAttribute>| {
@@ -167,7 +167,7 @@ pub struct Map {
 }
 
 impl Map {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Map, TiledError>  {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Map, TiledError>  {
         let (c, (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [("backgroundcolor", colour, |v:String| v.parse().ok())],
@@ -258,7 +258,7 @@ pub struct Tileset {
 }
 
 impl Tileset {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
         let ((s, m), (g, n, w, h)) = get_attrs!(
            attrs,
            optionals: [("spacing", spacing, |v:String| v.parse().ok()),
@@ -294,7 +294,7 @@ pub struct Image {
 }
 
 impl Image {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Image, TiledError> {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Image, TiledError> {
         let (c, (s, w, h)) = get_attrs!(
             attrs,
             optionals: [("trans", trans, |v:String| v.parse().ok())],
@@ -320,7 +320,7 @@ pub struct Layer {
 }
 
 impl Layer {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Layer, TiledError> {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Layer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| v.parse().ok()),
@@ -353,7 +353,7 @@ pub struct ObjectGroup {
 }
 
 impl ObjectGroup {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<ObjectGroup, TiledError> {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<ObjectGroup, TiledError> {
         let ((o, v, c), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| v.parse().ok()),
@@ -383,7 +383,7 @@ pub enum Object {
 }
 
 impl Object {
-    fn new<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
         let ((w, h, v), (x, y)) = get_attrs!(
             attrs,
             optionals: [("width", width, |v:String| v.parse().ok()),
@@ -462,7 +462,7 @@ impl Object {
     }
 }
 
-fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
+fn parse_data<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
     let ((e, c), ()) = get_attrs!(
         attrs,
         optionals: [("encoding", encoding, |v| Some(v)),
@@ -488,7 +488,7 @@ fn parse_data<B: Buffer>(parser: &mut EventReader<B>, attrs: Vec<OwnedAttribute>
     };
 }
 
-fn parse_base64<B: Buffer>(parser: &mut EventReader<B>) -> Result<Vec<u8>, TiledError> {
+fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledError> {
     loop {
         match parser.next() {
             Characters(s) => return s.trim()
@@ -527,7 +527,7 @@ fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
-fn decode_csv<B: Buffer>(parser: &mut EventReader<B>) -> Result<Vec<Vec<u32>>, TiledError> {
+fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<u32>>, TiledError> {
     loop {
         match parser.next() {
             Characters(s) => {
@@ -569,7 +569,7 @@ fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
 
 /// Parse a buffer hopefully containing the contents of a Tiled file and try to
 /// parse it.
-pub fn parse<B: Buffer>(reader: B) -> Result<Map, TiledError> {
+pub fn parse<R: Read>(reader: R) -> Result<Map, TiledError> {
     let mut parser = EventReader::new(reader);
     loop {
         match parser.next() {

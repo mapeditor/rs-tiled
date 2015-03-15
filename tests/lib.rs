@@ -1,12 +1,11 @@
 extern crate tiled;
 
-use std::old_io::{File, BufferedReader};
+use std::fs::File;
 use tiled::{Map, TiledError, parse};
 
 fn read_from_file(p: &Path) -> Result<Map, TiledError> {
     let file = File::open(p).unwrap();
-    let reader = BufferedReader::new(file);
-    return parse(reader);
+    return parse(file);
 }
 
 #[test]

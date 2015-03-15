@@ -1,14 +1,13 @@
 extern crate serialize;
 extern crate tiled;
 
-use std::old_io::{File, BufferedReader};
+use std::fs::File;
 use tiled::parse;
 
 fn main() {
     let file = File::open(&Path::new("assets/tiled_base64_zlib.tmx")).unwrap();
     println!("Opened file");
-    let reader = BufferedReader::new(file);
-    let map = parse(reader).unwrap();
+    let map = parse(file).unwrap();
     println!("{:?}", map);
     println!("{:?}", map.get_tileset_by_gid(22));
 }
