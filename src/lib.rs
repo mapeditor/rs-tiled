@@ -1,8 +1,8 @@
 #![allow(unstable)]
-#![feature(slicing_syntax)]
+#![feature(slicing_syntax, core)]
 extern crate flate2;
 extern crate xml;
-extern crate "rustc-serialize" as serialize;
+extern crate rustc_serialize as serialize;
 
 use std::str::FromStr;
 use std::collections::HashMap;

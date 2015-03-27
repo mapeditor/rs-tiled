@@ -1,4 +1,3 @@
-extern crate serialize;
 extern crate tiled;
 
 use std::path::Path;
