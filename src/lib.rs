@@ -1,5 +1,5 @@
 #![allow(unstable)]
-#![feature(slicing_syntax, core)]
+#![feature(slicing_syntax, core, convert)]
 extern crate flate2;
 extern crate xml;
 extern crate rustc_serialize as serialize;
@@ -447,7 +447,7 @@ impl Object {
     fn parse_points(s: String) -> Result<Vec<(i32, i32)>, TiledError> {
         let pairs = s.split(' ');
         let mut points = Vec::new();
-        for v in pairs.map(|p| p.splitn(1, ',')) {
+        for v in pairs.map(|p| p.split(',')) {
             let v: Vec<&str> = v.collect();
             if v.len() != 2 {
                 return Err(TiledError::MalformedAttributes("one of a polyline's points does not have an x and y coordinate".to_string()));
