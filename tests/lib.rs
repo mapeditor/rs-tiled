@@ -17,4 +17,5 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     let c = read_from_file(&Path::new("assets/tiled_csv.tmx")).unwrap();
     assert_eq!(z, g);
     assert_eq!(z, r);
+    assert_eq!(z, c);
 }

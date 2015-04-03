@@ -554,7 +554,7 @@ fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
     let mut data = Vec::new();
     for chunk in all.chunks((width * 4) as usize) {
         let mut row = Vec::new();
-        for i in 0 .. width - 1 {
+        for i in 0 .. width {
             let start: usize = i as usize * 4;
             let n = ((chunk[start + 3] as u32) << 24) +
                     ((chunk[start + 2] as u32) << 16) +
