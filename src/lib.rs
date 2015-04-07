@@ -1,5 +1,4 @@
-#![allow(unstable)]
-#![feature(slicing_syntax, core, convert)]
+#![feature(convert)]
 extern crate flate2;
 extern crate xml;
 extern crate rustc_serialize as serialize;
@@ -13,7 +12,6 @@ use xml::reader::events::XmlEvent::*;
 use xml::attribute::OwnedAttribute;
 use serialize::base64::{FromBase64, FromBase64Error};
 use flate2::read::{ZlibDecoder, GzDecoder};
-use std::num::from_str_radix;
 
 #[derive(Debug)]
 pub enum ParseTileError {
@@ -34,7 +32,7 @@ macro_rules! get_attrs {
             $(let mut $oVar = None;)*
             $(let mut $var = None;)*
             for attr in $attrs.iter() {
-                match attr.name.local_name.as_slice() {
+                match attr.name.local_name.as_ref() {
                     $($oName => $oVar = $oMethod(attr.value.clone()),)*
                     $($name => $var = $method(attr.value.clone()),)*
                     _ => {}
@@ -96,9 +94,9 @@ impl FromStr for Colour {
         if s.len() != 6 {
             return Err(ParseTileError::ColourError);
         }
-        let r = from_str_radix(&s[0..2], 16);
-        let g = from_str_radix(&s[2..4], 16);
-        let b = from_str_radix(&s[4..6], 16);
+        let r = u8::from_str_radix(&s[0..2], 16);
+        let g = u8::from_str_radix(&s[2..4], 16);
+        let b = u8::from_str_radix(&s[4..6], 16);
         if r.is_ok() && g.is_ok() && b.is_ok() {
             return Ok(Colour {red: r.unwrap(), green: g.unwrap(), blue: b.unwrap()})
         }
@@ -473,13 +471,13 @@ fn parse_data<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, 
     match (e,c) {
         (None,None) => return Err(TiledError::Other("XML format is currently not supported".to_string())),
         (Some(e),None) =>
-            match e.as_slice() {
+            match e.as_ref() {
                 "base64" => return parse_base64(parser).map(|v| convert_to_u32(&v,width)),
                 "csv" => return decode_csv(parser),
                 e => return Err(TiledError::Other(format!("Unknown encoding format {}",e))),
             },
         (Some(e),Some(c)) =>
-            match (e.as_slice(),c.as_slice()) {
+            match (e.as_ref(),c.as_ref()) {
                 ("base64","zlib") => return parse_base64(parser).and_then(decode_zlib).map(|v| convert_to_u32(&v,width) ),
                 ("base64","gzip") => return parse_base64(parser).and_then(decode_gzip).map(|v| convert_to_u32(&v,width)),
                 (e,c) => return Err(TiledError::Other(format!("Unknown combination of {} encoding and {} compression",e,c)))
@@ -508,7 +506,7 @@ fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     let mut zd = ZlibDecoder::new(BufReader::new(data.as_slice()));
     let mut data = Vec::new();
     match zd.read_to_end(&mut data) {
-        Ok(v) => {},
+        Ok(_v) => {},
         Err(e) => return Err(TiledError::DecompressingError(e))
     }
     Ok(data)
@@ -521,7 +519,7 @@ fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     };
     let mut data = Vec::new();
     match gzd.read_to_end(&mut data) {
-        Ok(v) => {},
+        Ok(_v) => {},
         Err(e) => return Err(TiledError::DecompressingError(e))
     }
     Ok(data)
