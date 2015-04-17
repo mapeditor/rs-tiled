@@ -148,7 +148,7 @@ fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, 
     Ok(p)
 }
 
-/// All Tiled files will be parsed i32o this. Holds all the layers and tilesets
+/// All Tiled files will be parsed into this. Holds all the layers and tilesets
 #[derive(Debug, PartialEq)]
 pub struct Map {
     pub version: String,
