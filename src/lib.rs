@@ -372,12 +372,12 @@ impl ObjectGroup {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum Object {
-     Rect { x: i32,  y: i32,  width: u32,  height: u32,  visible: bool},
-     Ellipse { x: i32,  y: i32,  width: u32,  height: u32,  visible: bool},
-     Polyline { x: i32,  y: i32,  points: Vec<(i32, i32)>,  visible: bool},
-     Polygon { x: i32,  y: i32,  points: Vec<(i32, i32)>,  visible: bool}
+     Rect { x: f32,  y: f32,  width: f32,  height: f32,  visible: bool},
+     Ellipse { x: f32,  y: f32,  width: f32,  height: f32,  visible: bool},
+     Polyline { x: f32,  y: f32,  points: Vec<(f32, f32)>,  visible: bool},
+     Polygon { x: f32,  y: f32,  points: Vec<(f32, f32)>,  visible: bool}
 }
 
 impl Object {
@@ -422,7 +422,7 @@ impl Object {
         }
     }
 
-    fn new_polyline(x: i32, y: i32, v: bool, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
+    fn new_polyline(x: f32, y: f32, v: bool, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
@@ -432,7 +432,7 @@ impl Object {
        Ok(Object::Polyline {x: x, y: y, points: points, visible: v})
     }
 
-    fn new_polygon(x: i32, y: i32, v: bool, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
+    fn new_polygon(x: f32, y: f32, v: bool, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
@@ -442,7 +442,7 @@ impl Object {
        Ok(Object::Polygon {x: x, y: y, points: points, visible: v})
     }
 
-    fn parse_points(s: String) -> Result<Vec<(i32, i32)>, TiledError> {
+    fn parse_points(s: String) -> Result<Vec<(f32, f32)>, TiledError> {
         let pairs = s.split(' ');
         let mut points = Vec::new();
         for v in pairs.map(|p| p.split(',')) {
