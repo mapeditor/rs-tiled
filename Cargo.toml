@@ -1,7 +1,7 @@
 [package]
 
 name = "tiled"
-version = "0.1.2"
+version = "0.1.3"
 description = "A rust crate for loading in maps created by the Tiled editor"
 repository = "https://github.com/mattyhall/rs-tiled.git"
 documentation = "http://rust-ci.org/mattyhall/rs-tiled/doc/tiled/"
@@ -20,6 +20,4 @@ path = "examples/main.rs"
 [dependencies]
 flate2 = "*"
 rustc-serialize = "*"
-
-[dependencies.xml-rs]
-git = "https://github.com/netvl/xml-rs.git"
+xml-rs = "*"
