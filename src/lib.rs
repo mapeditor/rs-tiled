@@ -1,4 +1,3 @@
-#![feature(convert)]
 extern crate flate2;
 extern crate xml;
 extern crate rustc_serialize as serialize;
@@ -503,7 +502,7 @@ fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledEr
 }
 
 fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    let mut zd = ZlibDecoder::new(BufReader::new(data.as_slice()));
+    let mut zd = ZlibDecoder::new(BufReader::new(&data[..]));
     let mut data = Vec::new();
     match zd.read_to_end(&mut data) {
         Ok(_v) => {},
@@ -513,7 +512,7 @@ fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 }
 
 fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    let mut gzd = match GzDecoder::new(BufReader::new(data.as_slice())) {
+    let mut gzd = match GzDecoder::new(BufReader::new(&data[..])) {
         Ok(gzd) => gzd,
         Err(e) => return Err(TiledError::DecompressingError(e))
     };
