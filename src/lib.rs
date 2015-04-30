@@ -391,12 +391,10 @@ impl Object {
             TiledError::MalformedAttributes("objects must have an x and a y number".to_string()));
         let mut obj = None;
         let v = v.unwrap_or(true);
+        let w = w.unwrap_or(0f32);
+        let h = h.unwrap_or(0f32);
         parse_tag!(parser, "object",
                    "ellipse" => |_| {
-                        if w.is_none() || h.is_none() {
-                            return Err(TiledError::MalformedAttributes("An ellipse must have a width and height".to_string()));
-                        }
-                        let (w, h) = (w.unwrap(), h.unwrap());
                         obj = Some(Object::Ellipse {x: x, y: y,
                                             width: w , height: h ,
                                             visible: v});
@@ -412,12 +410,8 @@ impl Object {
                     });
         if obj.is_some() {
             Ok(obj.unwrap())
-        } else if w.is_some() && h.is_some() {
-            let w = w.unwrap();
-            let h = h.unwrap();
-            Ok(Object::Rect {x: x, y: y, width: w, height: h, visible: v})
         } else {
-            Err(TiledError::MalformedAttributes("A rect must have a width and a height".to_string()))
+            Ok(Object::Rect {x: x, y: y, width: w, height: h, visible: v})
         }
     }
 
