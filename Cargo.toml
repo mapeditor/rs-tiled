@@ -17,7 +17,26 @@ path = "src/lib.rs"
 name = "example"
 path = "examples/main.rs"
 
+[[example]]
+name = "piston"
+path = "examples/piston.rs"
+
 [dependencies]
 flate2 = "*"
 rustc-serialize = "*"
-xml-rs = "*"
+
+[dependencies.xml-rs]
+git = "https://github.com/netvl/xml-rs.git"
+
+
+[dev-dependencies.pistoncore-sdl2_window]
+git = "https://github.com/pistondevelopers/sdl2_window"
+
+[dev-dependencies.piston]
+git = "https://github.com/pistondevelopers/piston"
+
+[dev-dependencies.piston2d-graphics]
+git = "https://github.com/pistondevelopers/graphics"
+
+[dev-dependencies.piston2d-opengl_graphics]
+git = "https://github.com/pistondevelopers/opengl_graphics"
