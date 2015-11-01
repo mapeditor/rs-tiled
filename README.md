@@ -14,7 +14,7 @@ The long and the short of it being the recommended way of using rs-tiled is addi
 
 ```
 [dependencies.tiled]
-git = "https://github.com/mattyhall/rs-tiled.git"
+version = "0.1"
 ```
 
 [There is a package on crates.io](https://crates.io/crates/tiled) but it is unlikely to work until the language stabalises.
