@@ -233,7 +233,7 @@ impl FromStr for Orientation {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
             "isometric" => Ok(Orientation::Isometric),
-            "Staggered" => Ok(Orientation::Staggered),
+            "staggered" => Ok(Orientation::Staggered),
             _ => Err(ParseTileError::OrientationError)
         }
     }
