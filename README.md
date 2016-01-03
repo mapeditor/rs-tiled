@@ -6,19 +6,13 @@ Read maps from the [Tiled Map Editor](http://www.mapeditor.org/) into rust for u
 
 Code contributions are welcome as are bug reports, documentation, suggestions and criticism.
 
-
-### How to use with Cargo
-Whilst Rust < 1.0 the master branch of this repo will track rust nightly as closely as possible. This means that this library has to build its dependencies from git, as often the version of rust-xml on [crates.io](http://crates.io) does not compile with the latest version of rustc.
-
-The long and the short of it being the recommended way of using rs-tiled is adding this to your ``Cargo.toml``:
+[There is a package on crates.io](https://crates.io/crates/tiled), to use simply add:
 
 ```
-[dependencies.tiled]
-version = "0.1"
+tiled = "0.1.4"
 ```
 
-[There is a package on crates.io](https://crates.io/crates/tiled) but it is unlikely to work until the language stabalises.
-
+to the dependencies section of your Cargo.toml.
 
 ### Example
 
