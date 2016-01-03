@@ -223,7 +223,8 @@ impl Map {
 pub enum Orientation {
     Orthogonal,
     Isometric,
-    Staggered
+    Staggered,
+    Hexagonal
 }
 
 impl FromStr for Orientation {
@@ -233,7 +234,8 @@ impl FromStr for Orientation {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
             "isometric" => Ok(Orientation::Isometric),
-            "Staggered" => Ok(Orientation::Staggered),
+            "staggered" => Ok(Orientation::Staggered),
+            "hexagonal" => Ok(Orientation::Hexagonal),
             _ => Err(ParseTileError::OrientationError)
         }
     }
