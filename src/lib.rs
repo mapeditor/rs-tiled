@@ -1,15 +1,15 @@
 extern crate flate2;
 extern crate xml;
-extern crate rustc_serialize as serialize;
+extern crate base64;
 
 use std::str::FromStr;
 use std::collections::HashMap;
 use std::io::{BufReader, Read, Error};
 use std::fmt;
-use xml::reader::EventReader;
-use xml::reader::events::XmlEvent::*;
+use xml::reader::{EventReader, Error as XmlError};
+use xml::reader::XmlEvent;
 use xml::attribute::OwnedAttribute;
-use serialize::base64::{FromBase64, FromBase64Error};
+use base64::{u8de as decode_base64, Base64Error};
 use flate2::read::{ZlibDecoder, GzDecoder};
 
 #[derive(Debug)]
@@ -52,8 +52,8 @@ macro_rules! get_attrs {
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, $($open_tag:expr => $open_method:expr),*) => {
         loop {
-            match $parser.next() {
-                StartElement {name, attributes, ..} => {
+            match try!($parser.next().map_err(TiledError::XmlDecodingError)) {
+                XmlEvent::StartElement {name, attributes, ..} => {
                     if false {}
                     $(else if name.local_name == $open_tag {
                         match $open_method(attributes) {
@@ -62,12 +62,12 @@ macro_rules! parse_tag {
                         };
                     })*
                 }
-                EndElement {name, ..} => {
+                XmlEvent::EndElement {name, ..} => {
                     if name.local_name == $close_tag {
                         break;
                     }
                 }
-                EndDocument => return Err(TiledError::PrematureEnd("Document ended before we expected.".to_string())),
+                XmlEvent::EndDocument => return Err(TiledError::PrematureEnd("Document ended before we expected.".to_string())),
                 _ => {}
             }
         }
@@ -112,7 +112,8 @@ pub enum TiledError {
     /// An error occured when decompressing using the
     /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
     DecompressingError(Error),
-    DecodingError(FromBase64Error),
+    Base64DecodingError(Base64Error),
+    XmlDecodingError(XmlError),
     PrematureEnd(String),
     Other(String)
 }
@@ -122,7 +123,8 @@ impl fmt::Display for TiledError {
         match *self {
             TiledError::MalformedAttributes(ref s) => write!(fmt, "{}", s),
             TiledError::DecompressingError(ref e) => write!(fmt, "{}", e),
-            TiledError::DecodingError(ref e) => write!(fmt, "{}", e),
+            TiledError::Base64DecodingError(ref e) => write!(fmt, "{}", e),
+            TiledError::XmlDecodingError(ref e) => write!(fmt, "{}", e),
             TiledError::PrematureEnd(ref e) => write!(fmt, "{}", e),
             TiledError::Other(ref s) => write!(fmt, "{}", s),
         }
@@ -483,11 +485,10 @@ fn parse_data<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, 
 
 fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledError> {
     loop {
-        match parser.next() {
-            Characters(s) => return s.trim()
-                                    .from_base64()
-                                    .map_err(TiledError::DecodingError),
-            EndElement {name, ..} => {
+        match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+            XmlEvent::Characters(s) => return decode_base64(s.trim().as_bytes())
+                                    .map_err(TiledError::Base64DecodingError),
+            XmlEvent::EndElement {name, ..} => {
                 if name.local_name == "data" {
                     return Ok(Vec::new());
                 }
@@ -522,8 +523,8 @@ fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 
 fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<u32>>, TiledError> {
     loop {
-        match parser.next() {
-            Characters(s) => {
+        match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+            XmlEvent::Characters(s) => {
                 let mut rows: Vec<Vec<u32>> = Vec::new();
                 for row in s.split('\n') {
                     if row.trim() == "" {
@@ -533,7 +534,7 @@ fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<u32>>, Til
                 }
                 return Ok(rows);
             }
-            EndElement {name, ..} => {
+            XmlEvent::EndElement {name, ..} => {
                 if name.local_name == "data" {
                     return Ok(Vec::new());
                 }
@@ -565,13 +566,13 @@ fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
 pub fn parse<R: Read>(reader: R) -> Result<Map, TiledError> {
     let mut parser = EventReader::new(reader);
     loop {
-        match parser.next() {
-            StartElement {name, attributes, ..}  => {
+        match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+            XmlEvent::StartElement {name, attributes, ..}  => {
                 if name.local_name == "map" {
                     return Map::new(&mut parser, attributes);
                 }
             }
-            EndDocument => return Err(TiledError::PrematureEnd("Document ended before map was parsed".to_string())),
+            XmlEvent::EndDocument => return Err(TiledError::PrematureEnd("Document ended before map was parsed".to_string())),
             _ => {}
         }
     }
