@@ -131,6 +131,31 @@ impl fmt::Display for TiledError {
     }
 }
 
+// This is a skeleton implementation, which should probably be extended in the future.
+impl std::error::Error for TiledError {
+    fn description(&self) -> &str {
+        match *self {
+            TiledError::MalformedAttributes(ref s) => s.as_ref(),
+            TiledError::DecompressingError(ref e) => e.description(),
+            TiledError::Base64DecodingError(ref e) => e.description(),
+            TiledError::XmlDecodingError(ref e) => e.description(),
+            TiledError::PrematureEnd(ref s) => s.as_ref(),
+            TiledError::Other(ref s) => s.as_ref(),
+        }
+    }
+    fn cause(&self) -> Option<&std::error::Error> {
+        match *self {
+            TiledError::MalformedAttributes(_) => None,
+            TiledError::DecompressingError(ref e) => Some(e as &std::error::Error),
+            TiledError::Base64DecodingError(ref e) => Some(e as &std::error::Error),
+            TiledError::XmlDecodingError(ref e) => Some(e as &std::error::Error),
+            TiledError::PrematureEnd(_) => None,
+            TiledError::Other(_) => None,
+        }
+    }
+
+}
+
 pub type Properties = HashMap<String, String>;
 
 fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, TiledError> {
