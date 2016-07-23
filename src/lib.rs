@@ -297,7 +297,7 @@ impl Tileset {
 
         let mut images = Vec::new();
         parse_tag!(parser, "tileset",
-                   "image" => |attrs| {
+                   "tile" => |attrs| {
                         images.push(try!(Image::new(parser, attrs)));
                         Ok(())
                    });
@@ -313,6 +313,7 @@ impl Tileset {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Image {
     /// The filepath of the image
+    pub id: u32,
     pub source: String,
     pub width: i32,
     pub height: i32,
@@ -321,16 +322,29 @@ pub struct Image {
 
 impl Image {
     fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Image, TiledError> {
-        let (c, (s, w, h)) = get_attrs!(
+        let i: ((), (u32)) = get_attrs!(
             attrs,
-            optionals: [("trans", trans, |v:String| v.parse().ok())],
-            required: [("source", source, |v| Some(v)),
-                       ("width", width, |v:String| v.parse().ok()),
-                       ("height", height, |v:String| v.parse().ok())],
-            TiledError::MalformedAttributes("image must have a source, width and height with correct types".to_string()));
+            optionals: [],
+            required: [("id", id, |v:String| v.parse().ok())],
+            TiledError::MalformedAttributes("tile must have an id with the correct type".to_string()));
 
-        parse_tag!(parser, "image", "" => |_| Ok(()));
-        Ok(Image {source: s, width: w, height: h, transparent_colour: c})
+        let mut image = None;
+        parse_tag!(parser, "tile",
+                   "image" => |attrs: Vec<OwnedAttribute>| {
+                       let (c, (s, w, h)) = get_attrs!(
+                            attrs,
+                            optionals: [("trans", trans, |v:String| v.parse().ok())],
+                            required: [("source", source, |v| Some(v)),
+                                    ("width", width, |v:String| v.parse().ok()),
+                                    ("height", height, |v:String| v.parse().ok())],
+                            TiledError::MalformedAttributes("image must have a source, width and height with correct types".to_string()));
+
+                        parse_tag!(parser, "image", "" => |_| Ok(()));
+                        image = Some(Image {id: i.1, source: s, width: w, height: h, transparent_colour: c});
+                        Ok(())
+                   });
+
+        Ok(image.unwrap())
     }
 }
 
