@@ -51,7 +51,7 @@ macro_rules! get_attrs {
 // Not quite as bad.
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, $($open_tag:expr => $open_method:expr),*) => {
-        loop {
+        loop {            
             match try!($parser.next().map_err(TiledError::XmlDecodingError)) {
                 XmlEvent::StartElement {name, attributes, ..} => {
                     if false {}
@@ -280,7 +280,8 @@ pub struct Tileset {
     pub margin: u32,
     /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
     /// is used. Usually you will only use one.
-    pub images: Vec<Image>
+    pub images: Vec<Image>,
+    pub tiles: Vec<Tile>
 }
 
 impl Tileset {
@@ -296,18 +297,49 @@ impl Tileset {
            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string()));
 
         let mut images = Vec::new();
+        let mut tiles = Vec::new();
         parse_tag!(parser, "tileset",
                    "image" => |attrs| {
                         images.push(try!(Image::new(parser, attrs)));
                         Ok(())
+                   },
+                   "tile" => |attrs| {
+                        tiles.push(try!(Tile::new(parser, attrs)));
+                        Ok(())
                    });
+
         Ok(Tileset {first_gid: g,
                     name: n,
                     tile_width: w, tile_height: h,
                     spacing: s.unwrap_or(0),
                     margin: m.unwrap_or(0),
-                    images: images})
+                    images: images,
+                    tiles: tiles})
    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Tile {
+    pub id: u32,
+    pub images: Vec<Image>
+}
+
+impl Tile {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Tile, TiledError> {
+        let (_, i) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [("id", id, |v:String| v.parse().ok())],
+            TiledError::MalformedAttributes("tile must have an id with the correct type".to_string()));
+
+        let mut images = Vec::new();
+        parse_tag!(parser, "tile",
+                   "image" => |attrs| {
+                        images.push(try!(Image::new(parser, attrs)));
+                        Ok(())
+        });
+        Ok(Tile {id: i, images: images})
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -555,7 +587,7 @@ fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<u32>>, Til
                     if row.trim() == "" {
                         continue;
                     }
-                    rows.push(row.split(',').filter(|v| v.trim() != "").map(|v| v.parse().unwrap()).collect());
+                    rows.push(row.split(',').filter(|v| v.trim() != "").map(|v| v.replace('\r', "").parse().unwrap()).collect());
                 }
                 return Ok(rows);
             }
