@@ -9,7 +9,7 @@ Code contributions are welcome as are bug reports, documentation, suggestions an
 [There is a package on crates.io](https://crates.io/crates/tiled), to use simply add:
 
 ```
-tiled = "0.1.4"
+tiled = "0.2.0"
 ```
 
 to the dependencies section of your Cargo.toml.
