@@ -447,7 +447,7 @@ impl Object {
             optionals: [("id", id, |v:String| v.parse().ok()),
                         ("gid", gid, |v:String| v.parse().ok()),
                         ("name", name, |v:String| v.parse().ok()),
-                        ("obj_type", obj_type, |v:String| v.parse().ok()),
+                        ("type", obj_type, |v:String| v.parse().ok()),
                         ("width", width, |v:String| v.parse().ok()),
                         ("height", height, |v:String| v.parse().ok()),
                         ("visible", visible, |v:String| v.parse().ok())],
