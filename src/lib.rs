@@ -51,7 +51,7 @@ macro_rules! get_attrs {
 // Not quite as bad.
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, $($open_tag:expr => $open_method:expr),*) => {
-        loop {            
+        loop {
             match try!($parser.next().map_err(TiledError::XmlDecodingError)) {
                 XmlEvent::StartElement {name, attributes, ..} => {
                     if false {}
@@ -156,21 +156,57 @@ impl std::error::Error for TiledError {
 
 }
 
-pub type Properties = HashMap<String, String>;
+#[derive(Debug, PartialEq)]
+pub enum PropertyValue {
+    BoolValue(bool),
+    FloatValue(f32),
+    IntValue(i32),
+    StringValue(String),
+}
+
+impl PropertyValue {
+    fn new(property_type: String, value: String) -> Result<PropertyValue, TiledError> {
+        use std::error::Error;
+
+        // Check the property type against the value.
+        match property_type.as_str() {
+            "bool" => match value.parse() {
+                Ok(val) => Ok(PropertyValue::BoolValue(val)),
+                Err(err) => Err(TiledError::Other(err.description().into())),
+            },
+            "float" => match value.parse() {
+                Ok(val) => Ok(PropertyValue::FloatValue(val)),
+                Err(err) => Err(TiledError::Other(err.description().into())),
+            },
+            "int" => match value.parse() {
+                Ok(val) => Ok(PropertyValue::IntValue(val)),
+                Err(err) => Err(TiledError::Other(err.description().into())),
+            },
+            "string" => Ok(PropertyValue::StringValue(value)),
+            _ => Err(TiledError::Other(format!("Unknown property type \"{}\"", property_type))),
+        }
+    }
+}
+
+pub type Properties = HashMap<String, PropertyValue>;
 
 fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, TiledError> {
     let mut p = HashMap::new();
-    parse_tag!(parser, "properties",
-               "property" => |attrs:Vec<OwnedAttribute>| {
-                    let ((), (k, v)) = get_attrs!(
-                        attrs,
-                        optionals: [],
-                        required: [("name", key, |v| Some(v)),
-                                   ("value", value, |v| Some(v))],
-                        TiledError::MalformedAttributes("property must have a name and a value".to_string()));
-                    p.insert(k, v);
-                    Ok(())
-               });
+    parse_tag!(
+        parser, "properties",
+        "property" => |attrs:Vec<OwnedAttribute>| {
+             let (t, (k, v)) = get_attrs!(
+                 attrs,
+                 optionals: [("type", property_type, |v| Some(v))],
+                 required: [("name", key, |v| Some(v)),
+                            ("value", value, |v| Some(v))],
+                 TiledError::MalformedAttributes("property must have a name and a value".to_string()));
+             let t = t.unwrap_or("string".into());
+
+             p.insert(k, try!(PropertyValue::new(t, v)));
+             Ok(())
+        }
+    );
     Ok(p)
 }
 
@@ -213,7 +249,7 @@ impl Map {
                         Ok(())
                    },
                    "layer" => |attrs| {
-                        layers.push(try!(Layer::new(parser, attrs, w )));
+                        layers.push(try!(Layer::new(parser, attrs, w)));
                         Ok(())
                    },
                    "properties" => |_| {
@@ -451,20 +487,6 @@ pub enum ObjectShape {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ObjectPropertyValue {
-    BoolValue(bool),
-    FloatValue(f32),
-    IntValue(i32),
-    StringValue(String),
-}
-
-#[derive(Debug, PartialEq)]
-pub struct ObjectProperty {
-    pub name: String,
-    pub value: ObjectPropertyValue,
-}
-
-#[derive(Debug, PartialEq)]
 pub struct Object {
     pub id: u32,
     pub gid: u32,
@@ -474,12 +496,11 @@ pub struct Object {
     pub y: f32,
     pub visible: bool,
     pub shape: ObjectShape,
-    pub properties: Vec<ObjectProperty>,
+    pub properties: Properties,
 }
 
 impl Object {
     fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
-        // TODO: Parse object properties.
         let ((id,gid,n,t,w, h, v), (x, y)) = get_attrs!(
             attrs,
             optionals: [("id", id, |v:String| v.parse().ok()),
@@ -492,7 +513,6 @@ impl Object {
             required: [("x", x, |v:String| v.parse().ok()),
                        ("y", y, |v:String| v.parse().ok())],
             TiledError::MalformedAttributes("objects must have an x and a y number".to_string()));
-        let mut shape = None;
         let v = v.unwrap_or(true);
         let w = w.unwrap_or(0f32);
         let h = h.unwrap_or(0f32);
@@ -500,33 +520,36 @@ impl Object {
         let gid = gid.unwrap_or(0u32);
         let n = n.unwrap_or(String::new());
         let t = t.unwrap_or(String::new());
+        let mut shape = None;
+        let mut properties = HashMap::new();
 
-        parse_tag!(parser, "object",
-                    "ellipse" => |_| {
-                        shape = Some(ObjectShape::Ellipse {
-                            width: w,
-                            height: h,
-                        });
-                        Ok(())
-                    },
-                    "polyline" => |attrs| {
-                        shape = Some(try!(Object::new_polyline(attrs)));
-                        Ok(())
-                    },
-                    "polygon" => |attrs| {
-                        shape = Some(try!(Object::new_polygon(attrs)));
-                        Ok(())
-                    }
+        parse_tag!(
+            parser, "object",
+            "ellipse" => |_| {
+                shape = Some(ObjectShape::Ellipse {
+                    width: w,
+                    height: h,
+                });
+                Ok(())
+            },
+            "polyline" => |attrs| {
+                shape = Some(try!(Object::new_polyline(attrs)));
+                Ok(())
+            },
+            "polygon" => |attrs| {
+                shape = Some(try!(Object::new_polygon(attrs)));
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = try!(parse_properties(parser));
+                Ok(())
+            }
         );
 
-        let shape = if let Some(s) = shape {
-            s
-        } else {
-            ObjectShape::Rect {
-                width: w,
-                height: h,
-            }
-        };
+        let shape = shape.unwrap_or(ObjectShape::Rect {
+            width: w,
+            height: h,
+        });
 
         Ok(Object {
             id: id,
@@ -537,7 +560,7 @@ impl Object {
             y: y,
             visible: v,
             shape: shape,
-            properties: Vec::new(),
+            properties: properties,
         })
     }
 
