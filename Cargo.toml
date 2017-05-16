@@ -9,6 +9,8 @@ readme = "README.md"
 license = "MIT"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
 
+keywords = ["tiled", "tmx", "map"]
+
 [lib]
 name = "tiled"
 path = "src/lib.rs"
