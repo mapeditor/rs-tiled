@@ -4,7 +4,9 @@ extern crate base64;
 
 use std::str::FromStr;
 use std::collections::HashMap;
+use std::fs::File;
 use std::io::{BufReader, Read, Error};
+use std::path::Path;
 use std::fmt;
 use xml::reader::{EventReader, Error as XmlError};
 use xml::reader::XmlEvent;
@@ -227,7 +229,7 @@ pub struct Map {
 }
 
 impl Map {
-    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Map, TiledError>  {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, map_path: Option<&Path>) -> Result<Map, TiledError>  {
         let (c, (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [("backgroundcolor", colour, |v:String| v.parse().ok())],
@@ -245,7 +247,7 @@ impl Map {
         let mut object_groups = Vec::new();
         parse_tag!(parser, "map",
                    "tileset" => | attrs| {
-                        tilesets.push(try!(Tileset::new(parser, attrs)));
+                        tilesets.push(try!(Tileset::new(parser, attrs, map_path)));
                         Ok(())
                    },
                    "layer" => |attrs| {
@@ -321,7 +323,12 @@ pub struct Tileset {
 }
 
 impl Tileset {
-    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, map_path: Option<&Path>) -> Result<Tileset, TiledError> {
+        Tileset::new_internal(parser, &attrs)
+            .or_else(|_| { Tileset::new_external(&attrs, map_path) })
+    }
+
+    fn new_internal<R: Read>(parser: &mut EventReader<R>, attrs: &Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
         let ((s, m), (g, n, w, h)) = get_attrs!(
            attrs,
            optionals: [("spacing", spacing, |v:String| v.parse().ok()),
@@ -351,7 +358,62 @@ impl Tileset {
                     margin: m.unwrap_or(0),
                     images: images,
                     tiles: tiles})
-   }
+    }
+
+    fn new_external(attrs: &Vec<OwnedAttribute>, map_path: Option<&Path>) -> Result<Tileset, TiledError> {
+        let ((), (g, source)) = get_attrs!(
+           attrs,
+           optionals: [],
+           required: [("firstgid", first_gid, |v:String| v.parse().ok()),
+                      ("source", name, |v| Some(v))],
+           TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string()));
+
+        let tileset_path = map_path.ok_or(TiledError::Other("Maps with external tilesets must know their file location.  See parse_with_path(Path).".to_string()))?.with_file_name(source);
+        let file = File::open(&tileset_path).map_err(|_| TiledError::Other(format!("External tileset file not found: {:?}", tileset_path)))?;
+        let mut tileset_parser = EventReader::new(file);
+        loop {
+            match try!(tileset_parser.next().map_err(TiledError::XmlDecodingError)) {
+                XmlEvent::StartElement {name, attributes, ..}  => {
+                    if name.local_name == "tileset" {
+                        return Tileset::parse_external_tileset(g, &mut tileset_parser, &attributes)
+                    }
+                }
+                XmlEvent::EndDocument => return Err(TiledError::PrematureEnd("Tileset Document ended before map was parsed".to_string())),
+                _ => {}
+            }
+        }
+    }
+
+    fn parse_external_tileset<R: Read>(g: u32, parser: &mut EventReader<R>, attrs: &Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
+        let ((s, m), (n, w, h)) = get_attrs!(
+            attrs,
+            optionals: [("spacing", spacing, |v:String| v.parse().ok()),
+                        ("margin", margin, |v:String| v.parse().ok())],
+            required: [("name", name, |v| Some(v)),
+                       ("tilewidth", width, |v:String| v.parse().ok()),
+                       ("tileheight", height, |v:String| v.parse().ok())],
+            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string()));
+
+        let mut images = Vec::new();
+        let mut tiles = Vec::new();
+        parse_tag!(parser, "tileset",
+                   "image" => |attrs| {
+                       images.push(try!(Image::new(parser, attrs)));
+                       Ok(())
+                   },
+                   "tile" => |attrs| {
+                       tiles.push(try!(Tile::new(parser, attrs)));
+                       Ok(())
+                   });
+
+        Ok(Tileset {first_gid: g,
+                    name: n,
+                    tile_width: w, tile_height: h,
+                    spacing: s.unwrap_or(0),
+                    margin: m.unwrap_or(0),
+                    images: images,
+                    tiles: tiles})
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -710,19 +772,31 @@ fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
     data
 }
 
-/// Parse a buffer hopefully containing the contents of a Tiled file and try to
-/// parse it.
-pub fn parse<R: Read>(reader: R) -> Result<Map, TiledError> {
+fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledError> {
     let mut parser = EventReader::new(reader);
     loop {
         match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
             XmlEvent::StartElement {name, attributes, ..}  => {
                 if name.local_name == "map" {
-                    return Map::new(&mut parser, attributes);
+                    return Map::new(&mut parser, attributes, map_path);
                 }
             }
             XmlEvent::EndDocument => return Err(TiledError::PrematureEnd("Document ended before map was parsed".to_string())),
             _ => {}
         }
     }
+}
+
+/// Parse a file hopefully containing a Tiled map and try to parse it.  If the
+/// file has an external tileset, the tileset file will be loaded using a path
+/// relative to the map file's path.
+pub fn parse_file(path: &Path) -> Result<Map, TiledError> {
+    let file = File::open(path).map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path)))?;
+    parse_impl(file, Some(path))
+}
+
+/// Parse a buffer hopefully containing the contents of a Tiled file and try to
+/// parse it.
+pub fn parse<R: Read>(reader: R) -> Result<Map, TiledError> {
+    parse_impl(reader, None)
 }
