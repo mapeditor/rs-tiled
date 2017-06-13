@@ -273,7 +273,7 @@ impl Map {
         let mut maximum_gid: i32 = -1;
         let mut maximum_ts = None;
         for tileset in self.tilesets.iter() {
-            if tileset.first_gid as i32 > maximum_gid && tileset.first_gid < gid {
+            if tileset.first_gid as i32 > maximum_gid && tileset.first_gid <= gid {
                 maximum_gid = tileset.first_gid as i32;
                 maximum_ts = Some(tileset);
             }
