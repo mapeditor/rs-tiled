@@ -307,7 +307,7 @@ impl FromStr for Orientation {
 }
 
 /// A tileset, usually the tilesheet image.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct Tileset {
     /// The GID of the first tile stored
     pub first_gid: u32,
@@ -420,10 +420,11 @@ impl Tileset {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct Tile {
     pub id: u32,
-    pub images: Vec<Image>
+    pub images: Vec<Image>,
+    pub properties: Properties,
 }
 
 impl Tile {
@@ -435,12 +436,17 @@ impl Tile {
             TiledError::MalformedAttributes("tile must have an id with the correct type".to_string()));
 
         let mut images = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "tile",
                    "image" => |attrs| {
-                        images.push(try!(Image::new(parser, attrs)));
-                        Ok(())
-        });
-        Ok(Tile {id: i, images: images})
+                       images.push(Image::new(parser, attrs)?);
+                       Ok(())
+                   },
+                   "properties" => |_| {
+                       properties = parse_properties(parser)?;
+                       Ok(())
+                   });
+        Ok(Tile {id: i, images: images, properties: properties})
     }
 }
 

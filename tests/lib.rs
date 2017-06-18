@@ -2,7 +2,7 @@ extern crate tiled;
 
 use std::path::Path;
 use std::fs::File;
-use tiled::{Map, TiledError, parse, parse_file, parse_tileset};
+use tiled::{Map, TiledError, PropertyValue, parse, parse_file, parse_tileset};
 
 fn read_from_file(p: &Path) -> Result<Map, TiledError> {
     let file = File::open(p).unwrap();
@@ -36,4 +36,15 @@ fn test_just_tileset() {
     let r = read_from_file(&Path::new("assets/tiled_base64.tmx")).unwrap();
     let t = parse_tileset(File::open(Path::new("assets/tilesheet.tsx")).unwrap(), 1).unwrap();
     assert_eq!(r.tilesets[0], t);
+}
+
+#[test]
+fn test_tile_property() {
+    let r = read_from_file(&Path::new("assets/tiled_base64.tmx")).unwrap();
+    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets[0].tiles[0].properties.get("a tile property") {
+        v.clone()
+    } else {
+        String::new()
+    };
+    assert_eq!("123", prop_value);
 }
