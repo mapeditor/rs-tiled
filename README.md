@@ -1,6 +1,7 @@
 # rs-tiled
 
-![Travis](https://travis-ci.org/mattyhall/rs-tiled.svg?branch=master)
+[![Travis](https://travis-ci.org/mattyhall/rs-tiled.svg?branch=master)](https://travis-ci.org/mattyhall/rs-tiled)
+[![Crates.io](https://img.shields.io/crates/v/tiled.svg)](https://crates.io/crates/tiled)
 
 Read maps from the [Tiled Map Editor](http://www.mapeditor.org/) into rust for use in video games. It is game engine agnostic and pretty barebones at the moment. Documentation is available [on docs.rs](https://docs.rs/tiled/).
 
@@ -9,7 +10,7 @@ Code contributions are welcome as are bug reports, documentation, suggestions an
 [There is a package on crates.io](https://crates.io/crates/tiled), to use simply add:
 
 ```
-tiled = "0.5.0"
+tiled = "0.6.0"
 ```
 
 to the dependencies section of your Cargo.toml.
@@ -20,13 +21,16 @@ to the dependencies section of your Cargo.toml.
 extern crate serialize;
 extern crate tiled;
 
-use std::old_io::{File, BufferedReader};
+use std::fs::File;
+use std::io::BufReader;
+use std::path::Path;
+
 use tiled::parse;
 
 fn main() {
     let file = File::open(&Path::new("assets/tiled_base64_zlib.tmx")).unwrap();
     println!("Opened file");
-    let reader = BufferedReader::new(file);
+    let reader = BufReader::new(file);
     let map = parse(reader).unwrap();
     println!("{:?}", map);
     println!("{:?}", map.get_tileset_by_gid(22));
