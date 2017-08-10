@@ -10,7 +10,7 @@ Code contributions are welcome as are bug reports, documentation, suggestions an
 [There is a package on crates.io](https://crates.io/crates/tiled), to use simply add:
 
 ```
-tiled = "0.6.0"
+tiled = "0.7.0"
 ```
 
 to the dependencies section of your Cargo.toml.
