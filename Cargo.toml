@@ -1,7 +1,7 @@
 [package]
 
 name = "tiled"
-version = "0.7.0"
+version = "0.7.1"
 description = "A rust crate for loading in maps created by the Tiled editor"
 repository = "https://github.com/mattyhall/rs-tiled.git"
 # documentation = "http://rust-ci.org/mattyhall/rs-tiled/doc/tiled/"
