@@ -14,7 +14,7 @@ use xml::attribute::OwnedAttribute;
 use base64::{u8de as decode_base64, Base64Error};
 use flate2::read::{ZlibDecoder, GzDecoder};
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum ParseTileError {
     ColourError,
     OrientationError,
@@ -76,7 +76,7 @@ macro_rules! parse_tag {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct Colour {
     pub red: u8,
     pub green: u8,
@@ -158,7 +158,7 @@ impl std::error::Error for TiledError {
 
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PropertyValue {
     BoolValue(bool),
     FloatValue(f32),
@@ -213,7 +213,7 @@ fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, 
 }
 
 /// All Tiled files will be parsed into this. Holds all the layers and tilesets
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Map {
     pub version: String,
     pub orientation: Orientation,
@@ -284,7 +284,7 @@ impl Map {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Orientation {
     Orthogonal,
     Isometric,
@@ -307,7 +307,7 @@ impl FromStr for Orientation {
 }
 
 /// A tileset, usually the tilesheet image.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Tileset {
     /// The GID of the first tile stored
     pub first_gid: u32,
@@ -420,7 +420,7 @@ impl Tileset {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
     pub id: u32,
     pub images: Vec<Image>,
@@ -456,7 +456,7 @@ impl Tile {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Image {
     /// The filepath of the image
     pub source: String,
@@ -480,7 +480,7 @@ impl Image {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Layer {
     pub name: String,
     pub opacity: f32,
@@ -515,7 +515,7 @@ impl Layer {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ObjectGroup {
     pub name: String,
     pub opacity: f32,
@@ -547,7 +547,7 @@ impl ObjectGroup {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ObjectShape {
     Rect {
         width: f32,
@@ -565,7 +565,7 @@ pub enum ObjectShape {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Object {
     pub id: u32,
     pub gid: u32,
