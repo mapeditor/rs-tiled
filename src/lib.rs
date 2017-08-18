@@ -423,7 +423,9 @@ impl Tileset {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Tile {
     pub id: u32,
-    pub images: Vec<Image>
+    pub images: Vec<Image>,
+    pub properties: Properties,
+    pub objectgroup: Option<ObjectGroup>,
 }
 
 impl Tile {
@@ -435,12 +437,22 @@ impl Tile {
             TiledError::MalformedAttributes("tile must have an id with the correct type".to_string()));
 
         let mut images = Vec::new();
+        let mut properties = HashMap::new();
+        let mut objectgroup = None;
         parse_tag!(parser, "tile",
                    "image" => |attrs| {
-                        images.push(try!(Image::new(parser, attrs)));
-                        Ok(())
-        });
-        Ok(Tile {id: i, images: images})
+                       images.push(Image::new(parser, attrs)?);
+                       Ok(())
+                   },
+                   "properties" => |_| {
+                       properties = parse_properties(parser)?;
+                       Ok(())
+                   },
+                   "objectgroup" => |attrs| {
+                       objectgroup = Some(ObjectGroup::new(parser, attrs)?);
+                       Ok(())
+                   });
+        Ok(Tile {id: i, images: images, properties: properties, objectgroup: objectgroup})
     }
 }
 
@@ -514,12 +526,13 @@ pub struct ObjectGroup {
 
 impl ObjectGroup {
     fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<ObjectGroup, TiledError> {
-        let ((o, v, c), n) = get_attrs!(
+        let ((o, v, c, n), ()) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| v.parse().ok()),
                         ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                        ("color", colour, |v:String| v.parse().ok())],
-            required: [("name", name, |v| Some(v))],
+                        ("color", colour, |v:String| v.parse().ok()),
+                        ("name", name, |v:String| v.into())],
+            required: [],
             TiledError::MalformedAttributes("object groups must have a name".to_string()));
         let mut objects = Vec::new();
         parse_tag!(parser, "objectgroup",
@@ -527,7 +540,7 @@ impl ObjectGroup {
                         objects.push(try!(Object::new(parser, attrs)));
                         Ok(())
                    });
-        Ok(ObjectGroup {name: n,
+        Ok(ObjectGroup {name: n.unwrap_or(String::new()),
                         opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true),
                         objects: objects,
                         colour: c})
