@@ -307,7 +307,7 @@ impl FromStr for Orientation {
 }
 
 /// A tileset, usually the tilesheet image.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Tileset {
     /// The GID of the first tile stored
     pub first_gid: u32,
@@ -420,7 +420,7 @@ impl Tileset {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
     pub id: u32,
     pub images: Vec<Image>,
