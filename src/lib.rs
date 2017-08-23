@@ -163,6 +163,7 @@ pub enum PropertyValue {
     BoolValue(bool),
     FloatValue(f32),
     IntValue(i32),
+    ColorValue(u32),
     StringValue(String),
 }
 
@@ -183,6 +184,10 @@ impl PropertyValue {
             "int" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::IntValue(val)),
                 Err(err) => Err(TiledError::Other(err.description().into())),
+            },
+            "color" if value.len() > 1 => match u32::from_str_radix(&value[1..], 16) {
+                Ok(color) => Ok(PropertyValue::ColorValue(color)),
+                Err(_) => Err(TiledError::Other(format!("Improperly formatted color property"))),
             },
             "string" => Ok(PropertyValue::StringValue(value)),
             _ => Err(TiledError::Other(format!("Unknown property type \"{}\"", property_type))),
