@@ -578,6 +578,7 @@ pub struct Object {
     pub obj_type: String,
     pub x: f32,
     pub y: f32,
+    pub rotation: f32,
     pub visible: bool,
     pub shape: ObjectShape,
     pub properties: Properties,
@@ -585,7 +586,7 @@ pub struct Object {
 
 impl Object {
     fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Object, TiledError> {
-        let ((id,gid,n,t,w, h, v), (x, y)) = get_attrs!(
+        let ((id,gid,n,t,w, h, v, r), (x, y)) = get_attrs!(
             attrs,
             optionals: [("id", id, |v:String| v.parse().ok()),
                         ("gid", gid, |v:String| v.parse().ok()),
@@ -593,13 +594,15 @@ impl Object {
                         ("type", obj_type, |v:String| v.parse().ok()),
                         ("width", width, |v:String| v.parse().ok()),
                         ("height", height, |v:String| v.parse().ok()),
-                        ("visible", visible, |v:String| v.parse().ok())],
+                        ("visible", visible, |v:String| v.parse().ok()),
+                        ("rotation", rotation, |v:String| v.parse().ok())],
             required: [("x", x, |v:String| v.parse().ok()),
                        ("y", y, |v:String| v.parse().ok())],
             TiledError::MalformedAttributes("objects must have an x and a y number".to_string()));
         let v = v.unwrap_or(true);
         let w = w.unwrap_or(0f32);
         let h = h.unwrap_or(0f32);
+        let r = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
         let gid = gid.unwrap_or(0u32);
         let n = n.unwrap_or(String::new());
@@ -642,6 +645,7 @@ impl Object {
             obj_type: t.clone(),
             x: x,
             y: y,
+            rotation: r,
             visible: v,
             shape: shape,
             properties: properties,
