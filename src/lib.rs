@@ -321,6 +321,8 @@ pub struct Tileset {
     pub tile_height: u32,
     pub spacing: u32,
     pub margin: u32,
+    pub tile_count: u32,
+    pub columns: u32,
     /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
     /// is used. Usually you will only use one.
     pub images: Vec<Image>,
@@ -334,10 +336,12 @@ impl Tileset {
     }
 
     fn new_internal<R: Read>(parser: &mut EventReader<R>, attrs: &Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
-        let ((spacing, margin), (first_gid, name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount, columns), (first_gid, name, width, height)) = get_attrs!(
            attrs,
            optionals: [("spacing", spacing, |v:String| v.parse().ok()),
-                       ("margin", margin, |v:String| v.parse().ok())],
+                       ("margin", margin, |v:String| v.parse().ok()),
+                       ("tilecount", tilecount, |v:String| v.parse().ok()),
+                       ("columns", columns, |v:String| v.parse().ok())],
            required: [("firstgid", first_gid, |v:String| v.parse().ok()),
                       ("name", name, |v| Some(v)),
                       ("tilewidth", width, |v:String| v.parse().ok()),
@@ -361,6 +365,8 @@ impl Tileset {
                     tile_width: width, tile_height: height,
                     spacing: spacing.unwrap_or(0),
                     margin: margin.unwrap_or(0),
+                    tile_count: tilecount.unwrap_or(0),
+                    columns: columns.unwrap_or(0),
                     images: images,
                     tiles: tiles})
     }
@@ -394,10 +400,12 @@ impl Tileset {
     }
 
     fn parse_external_tileset<R: Read>(first_gid: u32, parser: &mut EventReader<R>, attrs: &Vec<OwnedAttribute>) -> Result<Tileset, TiledError> {
-        let ((spacing, margin), (name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount, columns), (name, width, height)) = get_attrs!(
             attrs,
             optionals: [("spacing", spacing, |v:String| v.parse().ok()),
-                        ("margin", margin, |v:String| v.parse().ok())],
+                        ("margin", margin, |v:String| v.parse().ok()),
+                        ("tilecount", tilecount, |v:String| v.parse().ok()),
+                        ("columns", columns, |v:String| v.parse().ok())],
             required: [("name", name, |v| Some(v)),
                        ("tilewidth", width, |v:String| v.parse().ok()),
                        ("tileheight", height, |v:String| v.parse().ok())],
@@ -420,6 +428,8 @@ impl Tileset {
                     tile_width: width, tile_height: height,
                     spacing: spacing.unwrap_or(0),
                     margin: margin.unwrap_or(0),
+                    tile_count: tilecount.unwrap_or(0),
+                    columns: columns.unwrap_or(0),
                     images: images,
                     tiles: tiles})
     }
