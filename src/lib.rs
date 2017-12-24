@@ -228,6 +228,7 @@ pub struct Map {
     pub tile_height: u32,
     pub tilesets: Vec<Tileset>,
     pub layers: Vec<Layer>,
+    pub image_layers: Vec<ImageLayer>,
     pub object_groups: Vec<ObjectGroup>,
     pub properties: Properties,
     pub background_colour: Option<Colour>,
@@ -248,6 +249,7 @@ impl Map {
 
         let mut tilesets = Vec::new();
         let mut layers = Vec::new();
+        let mut image_layers = Vec::new();
         let mut properties = HashMap::new();
         let mut object_groups = Vec::new();
         parse_tag!(parser, "map",
@@ -257,6 +259,10 @@ impl Map {
                    },
                    "layer" => |attrs| {
                         layers.push(try!(Layer::new(parser, attrs, w)));
+                        Ok(())
+                   },
+                   "imagelayer" => |attrs| {
+                        image_layers.push(try!(ImageLayer::new(parser, attrs)));
                         Ok(())
                    },
                    "properties" => |_| {
@@ -270,8 +276,11 @@ impl Map {
         Ok(Map {version: v, orientation: o,
                 width: w, height: h,
                 tile_width: tw, tile_height: th,
-                tilesets: tilesets, layers: layers, object_groups: object_groups,
-                properties: properties,
+                tilesets,
+                layers,
+                image_layers,
+                object_groups,
+                properties,
                 background_colour: c,})
     }
 
@@ -519,6 +528,53 @@ impl Layer {
                   properties: properties})
     }
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ImageLayer {
+    pub name: String,
+    pub opacity: f32,
+    pub visible: bool,
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub image: Option<Image>,
+    pub properties: Properties
+}
+
+impl ImageLayer {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>)
+                    -> Result<ImageLayer, TiledError> {
+        let ((o, v, ox, oy), n) = get_attrs!(
+            attrs,
+            optionals: [("opacity", opacity, |v:String| v.parse().ok()),
+                        ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
+                        ("offset_x", offset_x, |v:String| v.parse().ok()),
+                        ("offset_y", offset_y, |v:String| v.parse().ok())],
+            required: [("name", name, |v| Some(v))],
+            TiledError::MalformedAttributes("layer must have a name".to_string()));
+        let mut properties = HashMap::new();
+        let mut image: Option<Image> = None;
+        parse_tag!(parser, "imagelayer",
+                   "image" => |attrs| {
+                       image = Some(Image::new(parser, attrs)?);
+                       Ok(())
+                   },
+                   "properties" => |_| {
+                       properties = parse_properties(parser)?;
+                       Ok(())
+                   });
+        Ok(ImageLayer {
+            name: n,
+            opacity: o.unwrap_or(1.0),
+            visible: v.unwrap_or(true),
+            offset_x: ox.unwrap_or(0.0),
+            offset_y: oy.unwrap_or(0.0),
+            image,
+            properties,
+        })
+    }
+}
+
+
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectGroup {

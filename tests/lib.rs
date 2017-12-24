@@ -39,6 +39,26 @@ fn test_just_tileset() {
 }
 
 #[test]
+fn test_image_layers() {
+    let r = read_from_file(&Path::new("assets/tiled_image_layers.tmx")).unwrap();
+    assert_eq!(r.image_layers.len(), 2);
+    {
+        let first = &r.image_layers[0];
+        assert_eq!(first.name, "Image Layer 1");
+        assert!(first.image.is_none(), "{}'s image should be None", first.name);
+    }
+    {
+        let second = &r.image_layers[1];
+        assert_eq!(second.name, "Image Layer 2");
+        let image = second.image.as_ref().expect(&format!("{}'s image shouldn't be None", second.name));
+        assert_eq!(image.source, "tilesheet.png");
+        assert_eq!(image.width, 448);
+        assert_eq!(image.height, 192);
+    }
+}
+
+
+#[test]
 fn test_tile_property() {
     let r = read_from_file(&Path::new("assets/tiled_base64.tmx")).unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets[0].tiles[0].properties.get("a tile property") {
