@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" tiledversion="1.0.3" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" nextobjectid="1">
+ <tileset firstgid="1" name="tilesheet" tilewidth="32" tileheight="32" tilecount="84" columns="14">
+  <image source="tilesheet.png" width="448" height="192"/>
+ </tileset>
+ <imagelayer name="Image Layer 1"/>
+ <imagelayer name="Image Layer 2">
+  <image source="tilesheet.png" width="448" height="192"/>
+ </imagelayer>
+</map>
