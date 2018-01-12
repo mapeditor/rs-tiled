@@ -802,15 +802,9 @@ fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 }
 
 fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    let mut gzd = match GzDecoder::new(BufReader::new(&data[..])) {
-        Ok(gzd) => gzd,
-        Err(e) => return Err(TiledError::DecompressingError(e))
-    };
+    let mut gzd = GzDecoder::new(BufReader::new(&data[..]));
     let mut data = Vec::new();
-    match gzd.read_to_end(&mut data) {
-        Ok(_v) => {},
-        Err(e) => return Err(TiledError::DecompressingError(e))
-    }
+    gzd.read_to_end(&mut data).map_err(|e| TiledError::DecompressingError(e))?;
     Ok(data)
 }
 
