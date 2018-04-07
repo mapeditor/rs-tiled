@@ -440,6 +440,7 @@ pub struct Tile {
     pub images: Vec<Image>,
     pub properties: Properties,
     pub objectgroup: Option<ObjectGroup>,
+    pub animation: Option<Vec<Frame>>,
 }
 
 impl Tile {
@@ -453,6 +454,7 @@ impl Tile {
         let mut images = Vec::new();
         let mut properties = HashMap::new();
         let mut objectgroup = None;
+        let mut animation = None;
         parse_tag!(parser, "tile",
                    "image" => |attrs| {
                        images.push(Image::new(parser, attrs)?);
@@ -465,8 +467,12 @@ impl Tile {
                    "objectgroup" => |attrs| {
                        objectgroup = Some(ObjectGroup::new(parser, attrs)?);
                        Ok(())
+                   },
+                   "animation" => |_| {
+                       animation = Some(parse_animation(parser)?);
+                       Ok(())
                    });
-        Ok(Tile {id: i, images: images, properties: properties, objectgroup: objectgroup})
+        Ok(Tile {id: i, images: images, properties: properties, objectgroup: objectgroup, animation: animation})
     }
 }
 
@@ -748,6 +754,37 @@ impl Object {
         }
         Ok(points)
     }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Frame {
+    tile_id: u32,
+    duration: u32,
+}
+
+impl Frame {
+    fn new(attrs: Vec<OwnedAttribute>) -> Result<Frame, TiledError> {
+        let ((), (tile_id, duration)) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [("tileid", tile_id, |v:String| v.parse().ok()),
+            ("duration", duration, |v:String| v.parse().ok())],
+            TiledError::MalformedAttributes("A frame must have tileid and duration".to_string()));
+        Ok(Frame {
+            tile_id: tile_id,
+            duration: duration,
+        })
+    }
+}
+
+fn parse_animation<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Frame>, TiledError> {
+    let mut animation = Vec::new();
+    parse_tag!(parser, "animation",
+                   "frame" => |attrs| {
+                        animation.push(try!(Frame::new(attrs)));
+                        Ok(())
+                   });
+    Ok(animation)
 }
 
 fn parse_data<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Vec<Vec<u32>>, TiledError> {
