@@ -235,7 +235,7 @@ pub struct Map {
 }
 
 impl Map {
-    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, map_path: Option<&Path>) -> Result<Map, TiledError>  {
+    fn new<R: Read, P: AsRef<Path>>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, map_path: Option<P>) -> Result<Map, TiledError>  {
         let (c, (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [("backgroundcolor", colour, |v:String| v.parse().ok())],
@@ -254,7 +254,7 @@ impl Map {
         let mut object_groups = Vec::new();
         parse_tag!(parser, "map",
                    "tileset" => | attrs| {
-                        tilesets.push(try!(Tileset::new(parser, attrs, map_path)));
+                        tilesets.push(try!(Tileset::new(parser, attrs, map_path.as_ref())));
                         Ok(())
                    },
                    "layer" => |attrs| {
@@ -337,7 +337,7 @@ pub struct Tileset {
 }
 
 impl Tileset {
-    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, map_path: Option<&Path>) -> Result<Tileset, TiledError> {
+    fn new<R: Read, P: AsRef<Path>>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, map_path: Option<P>) -> Result<Tileset, TiledError> {
         Tileset::new_internal(parser, &attrs)
             .or_else(|_| { Tileset::new_reference(&attrs, map_path) })
     }
@@ -374,7 +374,7 @@ impl Tileset {
                     tiles: tiles})
     }
 
-    fn new_reference(attrs: &Vec<OwnedAttribute>, map_path: Option<&Path>) -> Result<Tileset, TiledError> {
+    fn new_reference<P: AsRef<Path>>(attrs: &Vec<OwnedAttribute>, map_path: Option<P>) -> Result<Tileset, TiledError> {
         let ((), (first_gid, source)) = get_attrs!(
            attrs,
            optionals: [],
@@ -382,7 +382,7 @@ impl Tileset {
                       ("source", name, |v| Some(v))],
            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string()));
 
-        let tileset_path = map_path.ok_or(TiledError::Other("Maps with external tilesets must know their file location.  See parse_with_path(Path).".to_string()))?.with_file_name(source);
+        let tileset_path = map_path.ok_or(TiledError::Other("Maps with external tilesets must know their file location.  See parse_with_path(Path).".to_string()))?.as_ref().with_file_name(source);
         let file = File::open(&tileset_path).map_err(|_| TiledError::Other(format!("External tileset file not found: {:?}", tileset_path)))?;
         Tileset::new_external(file, first_gid)
     }
@@ -885,7 +885,7 @@ fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
     data
 }
 
-fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledError> {
+fn parse_impl<R: Read, P: AsRef<Path>>(reader: R, map_path: Option<P>) -> Result<Map, TiledError> {
     let mut parser = EventReader::new(reader);
     loop {
         match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
@@ -903,15 +903,15 @@ fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledE
 /// Parse a file hopefully containing a Tiled map and try to parse it.  If the
 /// file has an external tileset, the tileset file will be loaded using a path
 /// relative to the map file's path.
-pub fn parse_file(path: &Path) -> Result<Map, TiledError> {
-    let file = File::open(path).map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path)))?;
+pub fn parse_file<P: AsRef<Path>>(path: P) -> Result<Map, TiledError> {
+    let file = File::open(path.as_ref()).map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
     parse_impl(file, Some(path))
 }
 
 /// Parse a buffer hopefully containing the contents of a Tiled file and try to
 /// parse it.
 pub fn parse<R: Read>(reader: R) -> Result<Map, TiledError> {
-    parse_impl(reader, None)
+    parse_impl::<_, &Path>(reader, None)
 }
 
 /// Parse a buffer hopefully containing the contents of a Tiled tileset.
