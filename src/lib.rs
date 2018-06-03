@@ -452,7 +452,7 @@ const ALL_FLIP_FLAGS: u32 = 0xE0000000;
 
 impl Tile {
     fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Tile, TiledError> {
-        let (_, i) = get_attrs!(
+        let (_, i): (_, u32) = get_attrs!(
             attrs,
             optionals: [],
             required: [("id", id, |v:String| v.parse().ok())],
