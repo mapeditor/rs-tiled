@@ -437,19 +437,32 @@ impl Tileset {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
     pub id: u32,
+    pub flip_h: bool,
+    pub flip_v: bool,
     pub images: Vec<Image>,
     pub properties: Properties,
     pub objectgroup: Option<ObjectGroup>,
     pub animation: Option<Vec<Frame>>,
 }
 
+const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x8;
+const FLIPPED_VERTICALLY_FLAG: u32 = 0x4;
+const FLIPPED_DIAGONALLY_FLAG: u32 = 0x2;
+const ALL_FLIP_FLAGS: u32 = 0xE0000000;
+
 impl Tile {
     fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<Tile, TiledError> {
-        let (_, i) = get_attrs!(
+        let (_, i): (_, u32) = get_attrs!(
             attrs,
             optionals: [],
             required: [("id", id, |v:String| v.parse().ok())],
             TiledError::MalformedAttributes("tile must have an id with the correct type".to_string()));
+        
+        let flags = (i & ALL_FLIP_FLAGS) >> 28;
+        let i: u32 = i & 0x1FFFFFFF;
+        let diagon = flags & FLIPPED_DIAGONALLY_FLAG == FLIPPED_DIAGONALLY_FLAG;
+        let flip_h = (flags & FLIPPED_HORIZONTALLY_FLAG == FLIPPED_HORIZONTALLY_FLAG) ^ diagon;
+        let flip_v = (flags & FLIPPED_VERTICALLY_FLAG == FLIPPED_VERTICALLY_FLAG) ^ diagon;
 
         let mut images = Vec::new();
         let mut properties = HashMap::new();
@@ -472,7 +485,7 @@ impl Tile {
                        animation = Some(parse_animation(parser)?);
                        Ok(())
                    });
-        Ok(Tile {id: i, images: images, properties: properties, objectgroup: objectgroup, animation: animation})
+        Ok(Tile {id: i, flip_h, flip_v, images: images, properties: properties, objectgroup: objectgroup, animation: animation})
     }
 }
 
