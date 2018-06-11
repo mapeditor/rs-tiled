@@ -11,7 +11,6 @@ use std::fmt;
 use xml::reader::{EventReader, Error as XmlError};
 use xml::reader::XmlEvent;
 use xml::attribute::OwnedAttribute;
-use base64::{u8de as decode_base64, Base64Error};
 use flate2::read::{ZlibDecoder, GzDecoder};
 
 #[derive(Debug, Copy, Clone)]
@@ -114,7 +113,7 @@ pub enum TiledError {
     /// An error occured when decompressing using the
     /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
     DecompressingError(Error),
-    Base64DecodingError(Base64Error),
+    Base64DecodingError(base64::DecodeError),
     XmlDecodingError(XmlError),
     PrematureEnd(String),
     Other(String)
@@ -829,7 +828,7 @@ fn parse_data<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, 
 fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledError> {
     loop {
         match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
-            XmlEvent::Characters(s) => return decode_base64(s.trim().as_bytes())
+            XmlEvent::Characters(s) => return base64::decode(s.trim().as_bytes())
                                     .map_err(TiledError::Base64DecodingError),
             XmlEvent::EndElement {name, ..} => {
                 if name.local_name == "data" {
