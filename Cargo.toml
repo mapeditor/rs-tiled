@@ -20,6 +20,6 @@ name = "example"
 path = "examples/main.rs"
 
 [dependencies]
-base64 = "0.5.2"
-xml-rs = "0.3.0"
-flate2 = "1.0.1"
+base64  = "0.5.2"
+xml-rs  = "0.3.0"
+libflate = "0.1.18"

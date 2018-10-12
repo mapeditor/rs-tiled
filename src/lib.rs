@@ -1,4 +1,4 @@
-extern crate flate2;
+extern crate libflate;
 extern crate xml;
 extern crate base64;
 
@@ -11,7 +11,6 @@ use std::fmt;
 use xml::reader::{EventReader, Error as XmlError};
 use xml::reader::XmlEvent;
 use xml::attribute::OwnedAttribute;
-use flate2::read::{ZlibDecoder, GzDecoder};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ParseTileError {
@@ -841,7 +840,9 @@ fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledEr
 }
 
 fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    let mut zd = ZlibDecoder::new(BufReader::new(&data[..]));
+    use libflate::zlib::{Decoder};
+    let mut zd = Decoder::new(BufReader::new(&data[..]))
+        .map_err(|e|TiledError::DecompressingError(e))?;
     let mut data = Vec::new();
     match zd.read_to_end(&mut data) {
         Ok(_v) => {},
@@ -851,9 +852,12 @@ fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 }
 
 fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    let mut gzd = GzDecoder::new(BufReader::new(&data[..]));
+    use libflate::gzip::{Decoder};
+    let mut zd = Decoder::new(BufReader::new(&data[..]))
+        .map_err(|e|TiledError::DecompressingError(e))?;
+
     let mut data = Vec::new();
-    gzd.read_to_end(&mut data).map_err(|e| TiledError::DecompressingError(e))?;
+    zd.read_to_end(&mut data).map_err(|e| TiledError::DecompressingError(e))?;
     Ok(data)
 }
 
