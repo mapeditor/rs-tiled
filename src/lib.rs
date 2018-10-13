@@ -916,6 +916,14 @@ fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledE
     }
 }
 
+/// Parse a buffer hopefully containing the contents of a Tiled file and try to
+/// parse it. This augments `parse` with a file location: some engines
+/// (e.g. Amethyst) simply hand over a byte stream (and file location) for parsing,
+/// in which case this function may be required.
+pub fn parse_with_path<R: Read>(reader: R, path: &Path) -> Result<Map, TiledError> {
+    parse_impl(reader, Some(path))
+}
+
 /// Parse a file hopefully containing a Tiled map and try to parse it.  If the
 /// file has an external tileset, the tileset file will be loaded using a path
 /// relative to the map file's path.
