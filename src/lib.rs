@@ -250,17 +250,20 @@ impl Map {
         let mut image_layers = Vec::new();
         let mut properties = HashMap::new();
         let mut object_groups = Vec::new();
+        let mut layer_index = 0;
         parse_tag!(parser, "map",
                    "tileset" => | attrs| {
                         tilesets.push(try!(Tileset::new(parser, attrs, map_path)));
                         Ok(())
                    },
                    "layer" => |attrs| {
-                        layers.push(try!(Layer::new(parser, attrs, w)));
+                        layers.push(try!(Layer::new(parser, attrs, w, layer_index)));
+                        layer_index += 1;
                         Ok(())
                    },
                    "imagelayer" => |attrs| {
-                        image_layers.push(try!(ImageLayer::new(parser, attrs)));
+                        image_layers.push(try!(ImageLayer::new(parser, attrs, layer_index)));
+                        layer_index += 1;
                         Ok(())
                    },
                    "properties" => |_| {
@@ -268,7 +271,8 @@ impl Map {
                         Ok(())
                    },
                    "objectgroup" => |attrs| {
-                       object_groups.push(try!(ObjectGroup::new(parser, attrs)));
+                       object_groups.push(try!(ObjectGroup::new(parser, attrs, Some(layer_index))));
+                       layer_index += 1;
                        Ok(())
                    });
         Ok(Map {version: v, orientation: o,
@@ -481,7 +485,7 @@ impl Tile {
                        Ok(())
                    },
                    "objectgroup" => |attrs| {
-                       objectgroup = Some(ObjectGroup::new(parser, attrs)?);
+                       objectgroup = Some(ObjectGroup::new(parser, attrs, None)?);
                        Ok(())
                    },
                    "animation" => |_| {
@@ -524,11 +528,12 @@ pub struct Layer {
     /// The tiles are arranged in rows. Each tile is a number which can be used
     ///  to find which tileset it belongs to and can then be rendered.
     pub tiles: Vec<Vec<u32>>,
-    pub properties: Properties
+    pub properties: Properties,
+    pub layer_index: u32,
 }
 
 impl Layer {
-    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, width: u32) -> Result<Layer, TiledError> {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, width: u32, layer_index: u32) -> Result<Layer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| v.parse().ok()),
@@ -547,7 +552,7 @@ impl Layer {
                         Ok(())
                    });
         Ok(Layer {name: n, opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true), tiles: tiles,
-                  properties: properties})
+                  properties: properties, layer_index})
     }
 }
 
@@ -559,11 +564,12 @@ pub struct ImageLayer {
     pub offset_x: f32,
     pub offset_y: f32,
     pub image: Option<Image>,
-    pub properties: Properties
+    pub properties: Properties,
+    pub layer_index: u32,
 }
 
 impl ImageLayer {
-    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>)
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, layer_index: u32)
                     -> Result<ImageLayer, TiledError> {
         let ((o, v, ox, oy), n) = get_attrs!(
             attrs,
@@ -592,6 +598,7 @@ impl ImageLayer {
             offset_y: oy.unwrap_or(0.0),
             image,
             properties,
+            layer_index,
         })
     }
 }
@@ -605,10 +612,14 @@ pub struct ObjectGroup {
     pub visible: bool,
     pub objects: Vec<Object>,
     pub colour: Option<Colour>,
+    /**
+     * Layer index is not preset for tile collision boxes
+     */
+    pub layer_index: Option<u32>,
 }
 
 impl ObjectGroup {
-    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>) -> Result<ObjectGroup, TiledError> {
+    fn new<R: Read>(parser: &mut EventReader<R>, attrs: Vec<OwnedAttribute>, layer_index: Option<u32>) -> Result<ObjectGroup, TiledError> {
         let ((o, v, c, n), ()) = get_attrs!(
             attrs,
             optionals: [("opacity", opacity, |v:String| v.parse().ok()),
@@ -626,7 +637,8 @@ impl ObjectGroup {
         Ok(ObjectGroup {name: n.unwrap_or(String::new()),
                         opacity: o.unwrap_or(1.0), visible: v.unwrap_or(true),
                         objects: objects,
-                        colour: c})
+                        colour: c,
+                        layer_index})
     }
 }
 
