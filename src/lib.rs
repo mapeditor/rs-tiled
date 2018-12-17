@@ -575,8 +575,8 @@ impl ImageLayer {
             attrs,
             optionals: [("opacity", opacity, |v:String| v.parse().ok()),
                         ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                        ("offset_x", offset_x, |v:String| v.parse().ok()),
-                        ("offset_y", offset_y, |v:String| v.parse().ok())],
+                        ("offsetx", offset_x, |v:String| v.parse().ok()),
+                        ("offsety", offset_y, |v:String| v.parse().ok())],
             required: [("name", name, |v| Some(v))],
             TiledError::MalformedAttributes("layer must have a name".to_string()));
         let mut properties = HashMap::new();
