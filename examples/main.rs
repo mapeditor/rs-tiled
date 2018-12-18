@@ -1,7 +1,7 @@
 extern crate tiled;
 
-use std::path::Path;
 use std::fs::File;
+use std::path::Path;
 use tiled::parse;
 
 fn main() {
