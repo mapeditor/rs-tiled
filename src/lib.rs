@@ -238,6 +238,7 @@ pub struct Map {
     pub object_groups: Vec<ObjectGroup>,
     pub properties: Properties,
     pub background_colour: Option<Colour>,
+    pub groups: Vec<Group>,
 }
 
 impl Map {
@@ -267,6 +268,7 @@ impl Map {
         let mut image_layers = Vec::new();
         let mut properties = HashMap::new();
         let mut object_groups = Vec::new();
+        let mut groups = Vec::new();
         let mut layer_index = 0;
         parse_tag!(parser, "map", {
             "tileset" => | attrs| {
@@ -292,6 +294,11 @@ impl Map {
                 layer_index += 1;
                 Ok(())
             },
+            "group" => |attrs| {
+                groups.push(try!(Group::new(w, parser, attrs, layer_index)));
+                layer_index += 1;
+                Ok(())
+            }
         });
         Ok(Map {
             version: v,
@@ -306,6 +313,7 @@ impl Map {
             object_groups,
             properties,
             background_colour: c,
+            groups,
         })
     }
 
@@ -508,6 +516,8 @@ impl Tileset {
     }
 }
 
+pub trait Layer: fmt::Debug + Clone + PartialEq {}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
     pub id: u32,
@@ -677,6 +687,8 @@ impl TileLayer {
     }
 }
 
+impl Layer for TileLayer {}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct ImageLayer {
     pub name: String,
@@ -732,13 +744,75 @@ impl ImageLayer {
     }
 }
 
-#[derive(Debug, Clone)]
+impl Layer for ImageLayer {}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Group {
     pub name: String,
     pub opacity: f32,
     pub visible: bool,
-    pub children: Vec<Object>,
+    pub children: Vec<Box<Layer>>,
+    pub properties: Properties,
+    pub layer_index: u32,
 }
+
+impl Group {
+    pub fn new<R: Read>(
+        map_width: u32,
+        parser: &mut EventReader<R>,
+        attrs: Vec<OwnedAttribute>,
+        layer_index: u32,
+    ) -> Result<Group, TiledError> {
+        let ((opacity, visible, name), ()) = get_attrs!(
+            attrs,
+            optionals: [
+                ("opacity", opacity, |v:String| v.parse().ok()),
+                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
+                ("name", name, |v:String| v.into()),
+            ],
+            required: [],
+            TiledError::MalformedAttributes("groups must have a name".to_string())
+        );
+
+        let mut properties = HashMap::new();
+        let mut children: Vec<Box<Layer>> = Vec::new();
+
+        let mut child_index = 0;
+
+        parse_tag!(parser, "group", {
+            "layer" => |attrs| {
+                children.push(Box::new(try!(TileLayer::new(parser, attrs, map_width, layer_index))));
+                child_index += 1;
+                Ok(())
+            },
+            "imagelayer" => |attrs| {
+                children.push(Box::new(try!(ImageLayer::new(parser, attrs, layer_index))));
+                child_index += 1;
+                Ok(())
+            },
+            "objectgroup" => |attrs| {
+                children.push(Box::new(try!(ObjectGroup::new(parser, attrs, Some(layer_index)))));
+                child_index += 1;
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = try!(parse_properties(parser));
+                Ok(())
+            },
+        });
+
+        Ok(Group {
+            name: name.unwrap_or(String::new()),
+            opacity: opacity.unwrap_or(1.0),
+            visible: visible.unwrap_or(true),
+            children: Vec::new(),
+            properties,
+            layer_index,
+        })
+    }
+}
+
+impl Layer for Group {}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectGroup {
@@ -787,6 +861,8 @@ impl ObjectGroup {
         })
     }
 }
+
+impl Layer for ObjectGroup {}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectShape {
