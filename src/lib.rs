@@ -233,7 +233,7 @@ pub struct Map {
     pub tile_width: u32,
     pub tile_height: u32,
     pub tilesets: Vec<Tileset>,
-    pub layers: Vec<Layer>,
+    pub layers: Vec<TileLayer>,
     pub image_layers: Vec<ImageLayer>,
     pub object_groups: Vec<ObjectGroup>,
     pub properties: Properties,
@@ -274,7 +274,7 @@ impl Map {
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(try!(Layer::new(parser, attrs, w, layer_index)));
+                layers.push(try!(TileLayer::new(parser, attrs, w, layer_index)));
                 layer_index += 1;
                 Ok(())
             },
@@ -456,7 +456,7 @@ impl Tileset {
                 XmlEvent::EndDocument => {
                     return Err(TiledError::PrematureEnd(
                         "Tileset Document ended before map was parsed".to_string(),
-                    ))
+                    ));
                 }
                 _ => {}
             }
@@ -624,7 +624,7 @@ impl Image {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Layer {
+pub struct TileLayer {
     pub name: String,
     pub opacity: f32,
     pub visible: bool,
@@ -635,13 +635,13 @@ pub struct Layer {
     pub layer_index: u32,
 }
 
-impl Layer {
+impl TileLayer {
     fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         width: u32,
         layer_index: u32,
-    ) -> Result<Layer, TiledError> {
+    ) -> Result<TileLayer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [
@@ -666,7 +666,7 @@ impl Layer {
             },
         });
 
-        Ok(Layer {
+        Ok(TileLayer {
             name: n,
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
@@ -730,6 +730,14 @@ impl ImageLayer {
             layer_index,
         })
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Group {
+    pub name: String,
+    pub opacity: f32,
+    pub visible: bool,
+    pub children: Vec<Object>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -979,7 +987,7 @@ fn parse_data<R: Read>(
         (None, None) => {
             return Err(TiledError::Other(
                 "XML format is currently not supported".to_string(),
-            ))
+            ));
         }
         (Some(e), None) => match e.as_ref() {
             "base64" => return parse_base64(parser).map(|v| convert_to_u32(&v, width)),
@@ -990,18 +998,18 @@ fn parse_data<R: Read>(
             ("base64", "zlib") => {
                 return parse_base64(parser)
                     .and_then(decode_zlib)
-                    .map(|v| convert_to_u32(&v, width))
+                    .map(|v| convert_to_u32(&v, width));
             }
             ("base64", "gzip") => {
                 return parse_base64(parser)
                     .and_then(decode_gzip)
-                    .map(|v| convert_to_u32(&v, width))
+                    .map(|v| convert_to_u32(&v, width));
             }
             (e, c) => {
                 return Err(TiledError::Other(format!(
                     "Unknown combination of {} encoding and {} compression",
                     e, c
-                )))
+                )));
             }
         },
         _ => return Err(TiledError::Other("Missing encoding format".to_string())),
@@ -1012,7 +1020,7 @@ fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledEr
     loop {
         match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
             XmlEvent::Characters(s) => {
-                return base64::decode(s.trim().as_bytes()).map_err(TiledError::Base64DecodingError)
+                return base64::decode(s.trim().as_bytes()).map_err(TiledError::Base64DecodingError);
             }
             XmlEvent::EndElement { name, .. } => {
                 if name.local_name == "data" {
@@ -1106,7 +1114,7 @@ fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledE
             XmlEvent::EndDocument => {
                 return Err(TiledError::PrematureEnd(
                     "Document ended before map was parsed".to_string(),
-                ))
+                ));
             }
             _ => {}
         }
