@@ -1,7 +1,10 @@
 extern crate base64;
+#[macro_use]
+extern crate downcast_rs;
 extern crate libflate;
 extern crate xml;
 
+use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
@@ -516,7 +519,57 @@ impl Tileset {
     }
 }
 
-pub trait Layer: fmt::Debug + Clone + PartialEq {}
+pub trait Layer: std::fmt::Debug + LayerClone + downcast_rs::Downcast {}
+
+impl_downcast!(Layer);
+
+impl PartialEq for Box<Layer> {
+    fn eq(&self, other: &Box<Layer>) -> bool {
+        if let Some(other_tile_layer) = other.downcast_ref::<TileLayer>() {
+            if let Some(tile_layer) = self.downcast_ref::<TileLayer>() {
+                tile_layer == other_tile_layer
+            } else {
+                false
+            }
+        } else if let Some(other_image_layer) = other.downcast_ref::<ImageLayer>() {
+            if let Some(image_layer) = self.downcast_ref::<ImageLayer>() {
+                image_layer == other_image_layer
+            } else {
+                false
+            }
+        } else if let Some(other_object_group) = other.downcast_ref::<ObjectGroup>() {
+            if let Some(object_group) = self.downcast_ref::<ObjectGroup>() {
+                object_group == other_object_group
+            } else {
+                false
+            }
+        } else if let Some(other_group) = other.downcast_ref::<Group>() {
+            if let Some(group) = self.downcast_ref::<Group>() {
+                group == other_group
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+}
+
+pub trait LayerClone {
+    fn clone_box(&self) -> Box<Layer>;
+}
+
+impl<T: 'static + Layer + Clone> LayerClone for T {
+    fn clone_box(&self) -> Box<Layer> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<Layer> {
+    fn clone(&self) -> Box<Layer> {
+        self.clone_box()
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
@@ -754,6 +807,8 @@ pub struct Group {
     pub children: Vec<Box<Layer>>,
     pub properties: Properties,
     pub layer_index: u32,
+    pub offset_x: f32,
+    pub offset_y: f32,
 }
 
 impl Group {
@@ -763,12 +818,14 @@ impl Group {
         attrs: Vec<OwnedAttribute>,
         layer_index: u32,
     ) -> Result<Group, TiledError> {
-        let ((opacity, visible, name), ()) = get_attrs!(
+        let ((opacity, visible, name, offset_x, offset_y), ()) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("name", name, |v:String| v.into()),
+                ("offsetx", offset_x, |v:String| v.parse().ok()),
+                ("offsety", offset_y, |v:String| v.parse().ok()),
             ],
             required: [],
             TiledError::MalformedAttributes("groups must have a name".to_string())
@@ -781,17 +838,22 @@ impl Group {
 
         parse_tag!(parser, "group", {
             "layer" => |attrs| {
-                children.push(Box::new(try!(TileLayer::new(parser, attrs, map_width, layer_index))));
+                children.push(Box::new(try!(TileLayer::new(parser, attrs, map_width, child_index))));
                 child_index += 1;
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                children.push(Box::new(try!(ImageLayer::new(parser, attrs, layer_index))));
+                children.push(Box::new(try!(ImageLayer::new(parser, attrs, child_index))));
                 child_index += 1;
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                children.push(Box::new(try!(ObjectGroup::new(parser, attrs, Some(layer_index)))));
+                children.push(Box::new(try!(ObjectGroup::new(parser, attrs, Some(child_index)))));
+                child_index += 1;
+                Ok(())
+            },
+            "group" => |attrs| {
+                children.push(Box::new(try!(Group::new(map_width, parser, attrs, child_index))));
                 child_index += 1;
                 Ok(())
             },
@@ -805,9 +867,11 @@ impl Group {
             name: name.unwrap_or(String::new()),
             opacity: opacity.unwrap_or(1.0),
             visible: visible.unwrap_or(true),
-            children: Vec::new(),
+            children,
             properties,
             layer_index,
+            offset_x: offset_x.unwrap_or(1.0),
+            offset_y: offset_y.unwrap_or(1.0),
         })
     }
 }
