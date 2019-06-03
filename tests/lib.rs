@@ -43,9 +43,12 @@ fn test_tile_id() {
     let r = read_from_file(&Path::new("assets/tiled_tileset_from_images.tmx")).unwrap();
 
     let ball_tile = r.layers[0].tiles[1][2];
-    assert_eq!(ball_tile - r.tilesets[0].first_gid, r.tilesets[0].tiles[0].id);
     let stick_tile = r.layers[0].tiles[1][3];
+    let flipped_ball_tile = r.layers[0].tiles[1][4];
+
+    assert_eq!(ball_tile - r.tilesets[0].first_gid, r.tilesets[0].tiles[0].id);
     assert_eq!(stick_tile - r.tilesets[0].first_gid, r.tilesets[0].tiles[1].id);
+    assert_eq!(flipped_ball_tile - r.tilesets[0].first_gid, r.tilesets[0].tiles[0].id);
 }
 
 #[test]

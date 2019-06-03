@@ -12,6 +12,12 @@ use xml::attribute::OwnedAttribute;
 use xml::reader::XmlEvent;
 use xml::reader::{Error as XmlError, EventReader};
 
+const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
+const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
+const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
+const ALL_FLIP_FLAGS: u32 =
+    FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG;
+
 #[derive(Debug, Copy, Clone)]
 pub enum ParseTileError {
     ColourError,
@@ -951,6 +957,10 @@ fn parse_animation<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Frame>, T
     Ok(animation)
 }
 
+fn parse_tile_gid(raw_gid: u32) -> u32 {
+    raw_gid & !ALL_FLIP_FLAGS
+}
+
 fn parse_data<R: Read>(
     parser: &mut EventReader<R>,
     attrs: Vec<OwnedAttribute>,
@@ -966,37 +976,47 @@ fn parse_data<R: Read>(
         TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
     );
 
-    match (e, c) {
-        (None, None) => {
-            return Err(TiledError::Other(
-                "XML format is currently not supported".to_string(),
-            ))
-        }
-        (Some(e), None) => match e.as_ref() {
-            "base64" => return parse_base64(parser).map(|v| convert_to_u32(&v, width)),
-            "csv" => return decode_csv(parser),
-            e => return Err(TiledError::Other(format!("Unknown encoding format {}", e))),
-        },
-        (Some(e), Some(c)) => match (e.as_ref(), c.as_ref()) {
-            ("base64", "zlib") => {
-                return parse_base64(parser)
-                    .and_then(decode_zlib)
-                    .map(|v| convert_to_u32(&v, width))
+    let tiles = match (e, c) {
+            (None, None) => {
+                Err(TiledError::Other(
+                    "XML format is currently not supported".to_string(),
+                ))
             }
-            ("base64", "gzip") => {
-                return parse_base64(parser)
-                    .and_then(decode_gzip)
-                    .map(|v| convert_to_u32(&v, width))
-            }
-            (e, c) => {
-                return Err(TiledError::Other(format!(
-                    "Unknown combination of {} encoding and {} compression",
-                    e, c
-                )))
-            }
-        },
-        _ => return Err(TiledError::Other("Missing encoding format".to_string())),
-    };
+            (Some(e), None) => match e.as_ref() {
+                "base64" => parse_base64(parser).map(|v| convert_to_u32(&v, width)),
+                "csv" => decode_csv(parser),
+                e => Err(TiledError::Other(format!("Unknown encoding format {}", e))),
+            },
+            (Some(e), Some(c)) => match (e.as_ref(), c.as_ref()) {
+                ("base64", "zlib") => {
+                    parse_base64(parser)
+                        .and_then(decode_zlib)
+                        .map(|v| convert_to_u32(&v, width))
+
+                }
+                ("base64", "gzip") => {
+                    parse_base64(parser)
+                        .and_then(decode_gzip)
+                        .map(|v| convert_to_u32(&v, width))
+                }
+                (e, c) => {
+                    Err(TiledError::Other(format!(
+                        "Unknown combination of {} encoding and {} compression",
+                        e, c
+                    )))
+                }
+            },
+            _ => Err(TiledError::Other("Missing encoding format".to_string())),
+        };
+
+    tiles
+        .map(|v|
+            v
+            .iter()
+            .map(|r| r.iter().map(|v| parse_tile_gid(*v)).collect())
+            .collect()
+        )
+
 }
 
 fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledError> {
