@@ -743,6 +743,7 @@ pub struct ObjectGroup {
      * Layer index is not preset for tile collision boxes
      */
     pub layer_index: Option<u32>,
+    pub properties: Properties,
 }
 
 impl ObjectGroup {
@@ -763,9 +764,14 @@ impl ObjectGroup {
             TiledError::MalformedAttributes("object groups must have a name".to_string())
         );
         let mut objects = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "objectgroup", {
             "object" => |attrs| {
                 objects.push(try!(Object::new(parser, attrs)));
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = try!(parse_properties(parser));
                 Ok(())
             },
         });
@@ -776,6 +782,7 @@ impl ObjectGroup {
             objects: objects,
             colour: c,
             layer_index,
+            properties,
         })
     }
 }

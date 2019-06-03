@@ -68,3 +68,14 @@ fn test_tile_property() {
     };
     assert_eq!("123", prop_value);
 }
+
+#[test]
+fn test_object_group_property() {
+    let r = read_from_file(&Path::new("assets/tiled_object_groups.tmx")).unwrap();
+    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) = r.object_groups[0].properties.get("an object group property") {
+        *v
+    } else {
+        false
+    };
+    assert!(prop_value);
+}
