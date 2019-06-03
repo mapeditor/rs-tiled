@@ -39,6 +39,16 @@ fn test_just_tileset() {
 }
 
 #[test]
+fn test_tile_id() {
+    let r = read_from_file(&Path::new("assets/tiled_tileset_from_images.tmx")).unwrap();
+
+    let ball_tile = r.layers[0].tiles[1][2];
+    assert_eq!(ball_tile - r.tilesets[0].first_gid, r.tilesets[0].tiles[0].id);
+    let stick_tile = r.layers[0].tiles[1][3];
+    assert_eq!(stick_tile - r.tilesets[0].first_gid, r.tilesets[0].tiles[1].id);
+}
+
+#[test]
 fn test_image_layers() {
     let r = read_from_file(&Path::new("assets/tiled_image_layers.tmx")).unwrap();
     assert_eq!(r.image_layers.len(), 2);

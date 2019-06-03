@@ -511,8 +511,6 @@ impl Tileset {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
     pub id: u32,
-    pub flip_h: bool,
-    pub flip_v: bool,
     pub images: Vec<Image>,
     pub properties: Properties,
     pub objectgroup: Option<ObjectGroup>,
@@ -520,12 +518,6 @@ pub struct Tile {
     pub tile_type: Option<String>,
     pub probability: f32,
 }
-
-const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x8;
-const FLIPPED_VERTICALLY_FLAG: u32 = 0x4;
-const FLIPPED_DIAGONALLY_FLAG: u32 = 0x2;
-const ALL_FLIP_FLAGS: u32 =
-    FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG;
 
 impl Tile {
     fn new<R: Read>(
@@ -543,12 +535,6 @@ impl Tile {
             ],
             TiledError::MalformedAttributes("tile must have an id with the correct type".to_string())
         );
-
-        let flags = (id & ALL_FLIP_FLAGS) >> 28;
-        let id: u32 = id & !ALL_FLIP_FLAGS;
-        let diagon = flags & FLIPPED_DIAGONALLY_FLAG == FLIPPED_DIAGONALLY_FLAG;
-        let flip_h = (flags & FLIPPED_HORIZONTALLY_FLAG == FLIPPED_HORIZONTALLY_FLAG) ^ diagon;
-        let flip_v = (flags & FLIPPED_VERTICALLY_FLAG == FLIPPED_VERTICALLY_FLAG) ^ diagon;
 
         let mut images = Vec::new();
         let mut properties = HashMap::new();
@@ -574,8 +560,6 @@ impl Tile {
         });
         Ok(Tile {
             id,
-            flip_h,
-            flip_v,
             images,
             properties,
             objectgroup,
