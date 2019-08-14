@@ -648,7 +648,10 @@ impl From<&TilesContainer> for Vec<Vec<u32>> {
         for x in 0..number_of_vectors {
             let start_index = x * tiles_per_row;
             let end_index = start_index + tiles_per_row;
-            let row: Vec<u32> = (&item.data[start_index..end_index]).iter().cloned().collect();
+            let row: Vec<u32> = (&item.data[start_index..end_index])
+                .iter()
+                .cloned()
+                .collect();
             data.push(row);
         }
         data
@@ -1089,11 +1092,19 @@ fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
-fn decode_csv<R: Read>(parser: &mut EventReader<R>, width: u32) -> Result<TilesContainer, TiledError> {
+fn decode_csv<R: Read>(
+    parser: &mut EventReader<R>,
+    width: u32,
+) -> Result<TilesContainer, TiledError> {
     loop {
         match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
             XmlEvent::Characters(s) => {
-                let data: Vec<u32> = s.replace('\r', "").replace('\n',"").split(",").map(|v| v.parse().unwrap()).collect();
+                let data: Vec<u32> = s
+                    .replace('\r', "")
+                    .replace('\n', "")
+                    .split(",")
+                    .map(|v| v.parse().unwrap())
+                    .collect();
                 let tiles = TilesContainer {
                     data,
                     tiles_per_row: width,
