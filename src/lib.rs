@@ -627,25 +627,15 @@ impl Image {
 pub struct TilesContainer {
     pub data: Vec<u32>,
     pub tiles_per_row: u32,
-}
-
-impl std::ops::Index<usize> for TilesContainer {
-    type Output = [u32];
-
-    fn index(&self, index: usize) -> &Self::Output {
-        let tiles_per_row = self.tiles_per_row as usize;
-        let start_index = index * tiles_per_row;
-        let end_index = start_index + tiles_per_row;
-        &self.data[start_index..end_index]
-    }
+    pub number_of_rows: u32,
 }
 
 impl From<&TilesContainer> for Vec<Vec<u32>> {
     fn from(item: &TilesContainer) -> Self {
         let mut data: Vec<Vec<u32>> = Vec::new();
         let tiles_per_row = item.tiles_per_row as usize;
-        let number_of_vectors = item.data.len() / tiles_per_row;
-        for x in 0..number_of_vectors {
+        let number_of_rows = item.number_of_rows as usize;
+        for x in 0..number_of_rows {
             let start_index = x * tiles_per_row;
             let end_index = start_index + tiles_per_row;
             let row: Vec<u32> = (&item.data[start_index..end_index])
@@ -691,6 +681,7 @@ impl Layer {
         let mut tiles = TilesContainer {
             data: Vec::new(),
             tiles_per_row: 0,
+            number_of_rows: 0,
         };
         let mut properties = HashMap::new();
         parse_tag!(parser, "layer", {
@@ -1105,9 +1096,11 @@ fn decode_csv<R: Read>(
                     .split(",")
                     .map(|v| v.parse().unwrap())
                     .collect();
+                let number_of_rows = data.len() as u32 / width;
                 let tiles = TilesContainer {
                     data,
                     tiles_per_row: width,
+                    number_of_rows,
                 };
                 return Ok(tiles);
             }
@@ -1116,6 +1109,7 @@ fn decode_csv<R: Read>(
                     return Ok(TilesContainer {
                         data: Vec::new(),
                         tiles_per_row: 0,
+                        number_of_rows: 0,
                     });
                 }
             }
@@ -1136,9 +1130,11 @@ fn convert_to_u32(all: &Vec<u8>, width: u32) -> TilesContainer {
             data.push(n);
         }
     }
+    let number_of_rows = data.len() as u32 / width;
     TilesContainer {
         data,
         tiles_per_row: width,
+        number_of_rows,
     }
 }
 
