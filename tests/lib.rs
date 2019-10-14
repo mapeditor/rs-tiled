@@ -79,3 +79,27 @@ fn test_object_group_property() {
     };
     assert!(prop_value);
 }
+
+#[test]
+fn test_flipped_gid() {
+    let r = read_from_file_with_path(&Path::new("assets/tiled_flipped.tmx")).unwrap();
+    let t1 = r.layers[0].tiles[0][0];
+    let t2 = r.layers[0].tiles[0][1];
+    let t3 = r.layers[0].tiles[1][0];
+    let t4 = r.layers[0].tiles[1][1];
+    assert_eq!(t1.gid, t2.gid);
+    assert_eq!(t2.gid, t3.gid);
+    assert_eq!(t3.gid, t4.gid);
+    assert!(t1.flip_d);
+    assert!(t1.flip_h);
+    assert!(t1.flip_v);
+    assert!(!t2.flip_d);
+    assert!(!t2.flip_h);
+    assert!(t2.flip_v);
+    assert!(!t3.flip_d);
+    assert!(t3.flip_h);
+    assert!(!t3.flip_v);
+    assert!(t4.flip_d);
+    assert!(!t4.flip_h);
+    assert!(!t4.flip_v);
+}
