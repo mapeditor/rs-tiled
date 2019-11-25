@@ -8,6 +8,7 @@ repository = "https://github.com/mattyhall/rs-tiled.git"
 readme = "README.md"
 license = "MIT"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
+edition = "2018"
 
 keywords = ["tiled", "tmx", "map"]
 
