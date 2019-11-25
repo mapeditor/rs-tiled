@@ -1,7 +1,5 @@
 use base64;
 
-
-
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
@@ -52,7 +50,7 @@ macro_rules! get_attrs {
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
         loop {
-            match r#try!($parser.next().map_err(TiledError::XmlDecodingError)) {
+            match $parser.next().map_err(TiledError::XmlDecodingError)? {
                 XmlEvent::StartElement {name, attributes, ..} => {
                     if false {}
                     $(else if name.local_name == $open_tag {
@@ -216,7 +214,7 @@ fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, 
             );
             let t = t.unwrap_or("string".into());
 
-            p.insert(k, r#try!(PropertyValue::new(t, v)));
+            p.insert(k, PropertyValue::new(t, v)?);
             Ok(())
         },
     });
@@ -270,25 +268,25 @@ impl Map {
         let mut layer_index = 0;
         parse_tag!(parser, "map", {
             "tileset" => | attrs| {
-                tilesets.push(r#try!(Tileset::new(parser, attrs, map_path)));
+                tilesets.push(Tileset::new(parser, attrs, map_path)?);
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(r#try!(Layer::new(parser, attrs, w, layer_index)));
+                layers.push(Layer::new(parser, attrs, w, layer_index)?);
                 layer_index += 1;
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                image_layers.push(r#try!(ImageLayer::new(parser, attrs, layer_index)));
+                image_layers.push(ImageLayer::new(parser, attrs, layer_index)?);
                 layer_index += 1;
                 Ok(())
             },
             "properties" => |_| {
-                properties = r#try!(parse_properties(parser));
+                properties = parse_properties(parser)?;
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                object_groups.push(r#try!(ObjectGroup::new(parser, attrs, Some(layer_index))));
+                object_groups.push(ObjectGroup::new(parser, attrs, Some(layer_index))?);
                 layer_index += 1;
                 Ok(())
             },
@@ -393,11 +391,11 @@ impl Tileset {
         let mut tiles = Vec::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                images.push(r#try!(Image::new(parser, attrs)));
+                images.push(Image::new(parser, attrs)?);
                 Ok(())
             },
             "tile" => |attrs| {
-                tiles.push(r#try!(Tile::new(parser, attrs)));
+                tiles.push(Tile::new(parser, attrs)?);
                 Ok(())
             },
         });
@@ -441,7 +439,7 @@ impl Tileset {
     fn new_external<R: Read>(file: R, first_gid: u32) -> Result<Tileset, TiledError> {
         let mut tileset_parser = EventReader::new(file);
         loop {
-            match r#try!(tileset_parser.next().map_err(TiledError::XmlDecodingError)) {
+            match tileset_parser.next().map_err(TiledError::XmlDecodingError)? {
                 XmlEvent::StartElement {
                     name, attributes, ..
                 } => {
@@ -486,11 +484,11 @@ impl Tileset {
         let mut tiles = Vec::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                images.push(r#try!(Image::new(parser, attrs)));
+                images.push(Image::new(parser, attrs)?);
                 Ok(())
             },
             "tile" => |attrs| {
-                tiles.push(r#try!(Tile::new(parser, attrs)));
+                tiles.push(Tile::new(parser, attrs)?);
                 Ok(())
             },
         });
@@ -674,11 +672,11 @@ impl Layer {
         let mut properties = HashMap::new();
         parse_tag!(parser, "layer", {
             "data" => |attrs| {
-                tiles = r#try!(parse_data(parser, attrs, width));
+                tiles = parse_data(parser, attrs, width)?;
                 Ok(())
             },
             "properties" => |_| {
-                properties = r#try!(parse_properties(parser));
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
@@ -784,11 +782,11 @@ impl ObjectGroup {
         let mut properties = HashMap::new();
         parse_tag!(parser, "objectgroup", {
             "object" => |attrs| {
-                objects.push(r#try!(Object::new(parser, attrs)));
+                objects.push(Object::new(parser, attrs)?);
                 Ok(())
             },
             "properties" => |_| {
-                properties = r#try!(parse_properties(parser));
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
@@ -869,15 +867,15 @@ impl Object {
                 Ok(())
             },
             "polyline" => |attrs| {
-                shape = Some(r#try!(Object::new_polyline(attrs)));
+                shape = Some(Object::new_polyline(attrs)?);
                 Ok(())
             },
             "polygon" => |attrs| {
-                shape = Some(r#try!(Object::new_polygon(attrs)));
+                shape = Some(Object::new_polygon(attrs)?);
                 Ok(())
             },
             "properties" => |_| {
-                properties = r#try!(parse_properties(parser));
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
@@ -910,7 +908,7 @@ impl Object {
             ],
             TiledError::MalformedAttributes("A polyline must have points".to_string())
         );
-        let points = r#try!(Object::parse_points(s));
+        let points = Object::parse_points(s)?;
         Ok(ObjectShape::Polyline { points: points })
     }
 
@@ -923,7 +921,7 @@ impl Object {
             ],
             TiledError::MalformedAttributes("A polygon must have points".to_string())
         );
-        let points = r#try!(Object::parse_points(s));
+        let points = Object::parse_points(s)?;
         Ok(ObjectShape::Polygon { points: points })
     }
 
@@ -977,7 +975,7 @@ fn parse_animation<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Frame>, T
     let mut animation = Vec::new();
     parse_tag!(parser, "animation", {
         "frame" => |attrs| {
-            animation.push(r#try!(Frame::new(attrs)));
+            animation.push(Frame::new(attrs)?);
             Ok(())
         },
     });
@@ -1034,7 +1032,7 @@ fn parse_data<R: Read>(
 
 fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledError> {
     loop {
-        match r#try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+        match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 return base64::decode(s.trim().as_bytes()).map_err(TiledError::Base64DecodingError)
             }
@@ -1073,7 +1071,7 @@ fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 
 fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<LayerTile>>, TiledError> {
     loop {
-        match r#try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+        match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 let mut rows: Vec<Vec<LayerTile>> = Vec::new();
                 for row in s.split('\n') {
@@ -1121,7 +1119,7 @@ fn convert_to_tile(all: &Vec<u8>, width: u32) -> Vec<Vec<LayerTile>> {
 fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledError> {
     let mut parser = EventReader::new(reader);
     loop {
-        match r#try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+        match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::StartElement {
                 name, attributes, ..
             } => {
