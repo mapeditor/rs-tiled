@@ -1,4 +1,4 @@
-extern crate tiled;
+
 
 use std::path::Path;
 use std::fs::File;
