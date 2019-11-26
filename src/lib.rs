@@ -398,7 +398,7 @@ impl Default for Map {
                 visible: true,
                 tiles: vec![vec![LayerTile::default(); WIDTH]; HEIGHT],
                 properties: HashMap::new(),
-                layer_index: 1,
+                layer_index: 0,
             }],
             image_layers: vec![],
             object_groups: vec![],
