@@ -1,13 +1,14 @@
 [package]
 
 name = "tiled"
-version = "0.8.0"
+version = "0.9.0"
 description = "A rust crate for loading in maps created by the Tiled editor"
 repository = "https://github.com/mattyhall/rs-tiled.git"
 # documentation = "http://rust-ci.org/mattyhall/rs-tiled/doc/tiled/"
 readme = "README.md"
 license = "MIT"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
+edition = "2018"
 
 keywords = ["tiled", "tmx", "map"]
 
