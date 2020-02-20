@@ -444,17 +444,12 @@ impl Tileset {
             ))
         })?;
 
-        if tileset_path.is_file() {
-            let re = Regex::new(r"/?(?:[a-zA-Z]*/|\.{1,2}/)+").unwrap();
-            Tileset::new_external(file, first_gid, re
-                .find(&tileset_path.to_string_lossy().to_string())
-                .unwrap()
-                .as_str()
-                .to_string())
-        } else {
-            Tileset::new_external(file, first_gid, 
-                tileset_path.to_string_lossy().to_string())
-        }
+        let re = Regex::new(r"/?(?:[a-zA-Z]*/|\.{1,2}/)+").unwrap();
+        Tileset::new_external(file, first_gid, re
+            .find(&tileset_path.to_string_lossy().to_string())
+            .unwrap()
+            .as_str()
+            .to_string())
     }
 
     fn new_external<R: Read>(file: R, first_gid: u32, tileset_path: String) -> Result<Tileset, TiledError> {
