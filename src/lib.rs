@@ -1,3 +1,6 @@
+
+extern crate regex;
+
 use base64;
 
 use std::collections::HashMap;
@@ -9,6 +12,8 @@ use std::str::FromStr;
 use xml::attribute::OwnedAttribute;
 use xml::reader::XmlEvent;
 use xml::reader::{Error as XmlError, EventReader};
+
+use regex::Regex;
 
 #[derive(Debug, Copy, Clone)]
 pub enum ParseTileError {
@@ -438,7 +443,18 @@ impl Tileset {
                 tileset_path
             ))
         })?;
-        Tileset::new_external(file, first_gid, tileset_path.to_string_lossy().to_string())
+
+        if tileset_path.is_file() {
+            let re = Regex::new(r"/?(?:[a-zA-Z]*/)+").unwrap();
+            Tileset::new_external(file, first_gid, re
+                .find(&tileset_path.to_string_lossy().to_string())
+                .unwrap()
+                .as_str()
+                .to_string())
+        } else {
+            Tileset::new_external(file, first_gid, 
+                tileset_path.to_string_lossy().to_string())
+        }
     }
 
     fn new_external<R: Read>(file: R, first_gid: u32, tileset_path: String) -> Result<Tileset, TiledError> {
