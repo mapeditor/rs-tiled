@@ -445,7 +445,7 @@ impl Tileset {
         })?;
 
         if tileset_path.is_file() {
-            let re = Regex::new(r"/?(?:[a-zA-Z]*/)+").unwrap();
+            let re = Regex::new(r"/?(?:[a-zA-Z]*/|\.{1,2}/)+").unwrap();
             Tileset::new_external(file, first_gid, re
                 .find(&tileset_path.to_string_lossy().to_string())
                 .unwrap()
