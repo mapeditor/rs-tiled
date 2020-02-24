@@ -439,7 +439,10 @@ impl Tileset {
     fn new_external<R: Read>(file: R, first_gid: u32) -> Result<Tileset, TiledError> {
         let mut tileset_parser = EventReader::new(file);
         loop {
-            match tileset_parser.next().map_err(TiledError::XmlDecodingError)? {
+            match tileset_parser
+                .next()
+                .map_err(TiledError::XmlDecodingError)?
+            {
                 XmlEvent::StartElement {
                     name, attributes, ..
                 } => {
@@ -949,8 +952,8 @@ impl Object {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Frame {
-    tile_id: u32,
-    duration: u32,
+    pub tile_id: u32,
+    pub duration: u32,
 }
 
 impl Frame {
