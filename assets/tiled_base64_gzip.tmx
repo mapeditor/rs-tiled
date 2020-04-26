@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" backgroundcolor="#ff00ff" nextobjectid="5">
  <tileset firstgid="1" name="tilesheet" tilewidth="32" tileheight="32">
+  <properties>
+   <property name="tileset property" value="tsp"/>
+  </properties>
   <image source="tilesheet.png" width="448" height="192"/>
   <tile id="1">
    <properties>

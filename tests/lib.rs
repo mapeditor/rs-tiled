@@ -88,6 +88,18 @@ fn test_object_group_property() {
     };
     assert!(prop_value);
 }
+#[test]
+fn test_tileset_property() {
+    let r = read_from_file(&Path::new("assets/tiled_base64.tmx")).unwrap();
+    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
+        r.tilesets[0].properties.get("tileset property")
+    {
+        v.clone()
+    } else {
+        String::new()
+    };
+    assert_eq!("tsp", prop_value);
+}
 
 #[test]
 fn test_flipped_gid() {

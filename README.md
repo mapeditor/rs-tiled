@@ -10,7 +10,7 @@ Code contributions are welcome as are bug reports, documentation, suggestions an
 [There is a package on crates.io](https://crates.io/crates/tiled), to use simply add:
 
 ```
-tiled = "0.9.1"
+tiled = "0.9.2"
 ```
 
 to the dependencies section of your Cargo.toml.
@@ -38,14 +38,16 @@ fn main() {
 ```
 
 ### Things missing
+
 There are a few things missing at the moment:
 
-  * Terrain
-  * Tile flipping
-  * Image layers
-  * A nice API. At the moment you can access attributes and properties, find tilesets by GID and loop through the tiles. This leaves a user of the library with a bit to do.
+- Terrain
+- Tile flipping
+- Image layers
+- A nice API. At the moment you can access attributes and properties, find tilesets by GID and loop through the tiles. This leaves a user of the library with a bit to do.
 
 ### Licences
+
 assets/tilesheet.png by Buch (http://blog-buch.rhcloud.com/)
 
 Licenced under MIT
