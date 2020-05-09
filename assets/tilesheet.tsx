@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset name="tilesheet" tilewidth="32" tileheight="32" tilecount="84">
+<tileset name="tilesheet" tilewidth="32" tileheight="32">
  <properties>
   <property name="tileset property" value="tsp"/>
  </properties>
