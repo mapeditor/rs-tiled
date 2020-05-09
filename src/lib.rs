@@ -353,6 +353,7 @@ pub struct Tileset {
     pub tile_height: u32,
     pub spacing: u32,
     pub margin: u32,
+    pub tilecount: Option<u32>,
     /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
     /// is used. Usually you will only use one.
     pub images: Vec<Image>,
@@ -372,11 +373,12 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin), (first_gid, name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount), (first_gid, name, width, height)) = get_attrs!(
            attrs,
            optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
             ],
            required: [
                 ("firstgid", first_gid, |v:String| v.parse().ok()),
@@ -407,6 +409,7 @@ impl Tileset {
             tile_height: height,
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
+            tilecount: tilecount,
             images: images,
             tiles: tiles,
         })
@@ -469,11 +472,12 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin), (name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount), (name, width, height)) = get_attrs!(
             attrs,
             optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
             ],
             required: [
                 ("name", name, |v| Some(v)),
@@ -503,6 +507,7 @@ impl Tileset {
             tile_height: height,
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
+            tilecount: tilecount,
             images: images,
             tiles: tiles,
         })
