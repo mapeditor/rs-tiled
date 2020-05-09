@@ -358,6 +358,7 @@ pub struct Tileset {
     /// is used. Usually you will only use one.
     pub images: Vec<Image>,
     pub tiles: Vec<Tile>,
+    pub properties: Properties,
 }
 
 impl Tileset {
@@ -391,9 +392,14 @@ impl Tileset {
 
         let mut images = Vec::new();
         let mut tiles = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
                 images.push(Image::new(parser, attrs)?);
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = parse_properties(parser)?;
                 Ok(())
             },
             "tile" => |attrs| {
@@ -403,15 +409,16 @@ impl Tileset {
         });
 
         Ok(Tileset {
-            first_gid: first_gid,
-            name: name,
             tile_width: width,
             tile_height: height,
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
-            tilecount: tilecount,
-            images: images,
-            tiles: tiles,
+            first_gid,
+            name,
+            tilecount,
+            images,
+            tiles,
+            properties,
         })
     }
 
@@ -489,6 +496,7 @@ impl Tileset {
 
         let mut images = Vec::new();
         let mut tiles = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
                 images.push(Image::new(parser, attrs)?);
@@ -496,6 +504,10 @@ impl Tileset {
             },
             "tile" => |attrs| {
                 tiles.push(Tile::new(parser, attrs)?);
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
@@ -510,6 +522,7 @@ impl Tileset {
             tilecount: tilecount,
             images: images,
             tiles: tiles,
+            properties,
         })
     }
 }
