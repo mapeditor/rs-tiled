@@ -353,6 +353,7 @@ pub struct Tileset {
     pub tile_height: u32,
     pub spacing: u32,
     pub margin: u32,
+    pub tilecount: Option<u32>,
     /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
     /// is used. Usually you will only use one.
     pub images: Vec<Image>,
@@ -373,11 +374,12 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin), (first_gid, name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount), (first_gid, name, width, height)) = get_attrs!(
            attrs,
            optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
             ],
            required: [
                 ("firstgid", first_gid, |v:String| v.parse().ok()),
@@ -407,12 +409,13 @@ impl Tileset {
         });
 
         Ok(Tileset {
-            first_gid: first_gid,
-            name,
             tile_width: width,
             tile_height: height,
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
+            first_gid,
+            name,
+            tilecount,
             images,
             tiles,
             properties,
@@ -433,7 +436,7 @@ impl Tileset {
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
-        let tileset_path = map_path.ok_or(TiledError::Other("Maps with external tilesets must know their file location.  See parse_with_path(Path).".to_string()))?.with_file_name(source);
+        let tileset_path = map_path.ok_or(TiledError::Other("Maps with external tilesets must know their file location.  See parse_with_path(Path).".to_string()))?.join(source);
         let file = File::open(&tileset_path).map_err(|_| {
             TiledError::Other(format!(
                 "External tileset file not found: {:?}",
@@ -476,11 +479,12 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin), (name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount), (name, width, height)) = get_attrs!(
             attrs,
             optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
             ],
             required: [
                 ("name", name, |v| Some(v)),
@@ -515,6 +519,7 @@ impl Tileset {
             tile_height: height,
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
+            tilecount: tilecount,
             images: images,
             tiles: tiles,
             properties,
@@ -832,6 +837,8 @@ pub struct Object {
     pub gid: u32,
     pub name: String,
     pub obj_type: String,
+    pub width: f32,
+    pub height: f32,
     pub x: f32,
     pub y: f32,
     pub rotation: f32,
@@ -906,6 +913,8 @@ impl Object {
             gid: gid,
             name: n.clone(),
             obj_type: t.clone(),
+            width: w,
+            height: h,
             x: x,
             y: y,
             rotation: r,
