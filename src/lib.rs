@@ -1044,6 +1044,11 @@ fn parse_data<R: Read>(
                     .and_then(decode_gzip)
                     .map(|v| convert_to_tile(&v, width))
             }
+            ("base64", "zstd") => {
+                return parse_base64(parser)
+                    .and_then(decode_zstd)
+                    .map(|v| convert_to_tile(&v, width))
+            }
             (e, c) => {
                 return Err(TiledError::Other(format!(
                     "Unknown combination of {} encoding and {} compression",
@@ -1087,6 +1092,19 @@ fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     use libflate::gzip::Decoder;
     let mut zd =
         Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::DecompressingError(e))?;
+
+    let mut data = Vec::new();
+    zd.read_to_end(&mut data)
+        .map_err(|e| TiledError::DecompressingError(e))?;
+    Ok(data)
+}
+
+fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
+    use std::io::Cursor;
+    use zstd::stream::read::Decoder;
+
+    let buff = Cursor::new(&data);
+    let mut zd = Decoder::with_buffer(buff).map_err(|e| TiledError::DecompressingError(e))?;
 
     let mut data = Vec::new();
     zd.read_to_end(&mut data)
