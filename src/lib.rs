@@ -829,6 +829,7 @@ pub enum ObjectShape {
     Ellipse { width: f32, height: f32 },
     Polyline { points: Vec<(f32, f32)> },
     Polygon { points: Vec<(f32, f32)> },
+    Point(f32, f32),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -897,6 +898,10 @@ impl Object {
                 shape = Some(Object::new_polygon(attrs)?);
                 Ok(())
             },
+            "point" => |_| {
+                shape = Some(Object::new_point(x, y)?);
+                Ok(())
+            },
             "properties" => |_| {
                 properties = parse_properties(parser)?;
                 Ok(())
@@ -948,6 +953,10 @@ impl Object {
         );
         let points = Object::parse_points(s)?;
         Ok(ObjectShape::Polygon { points: points })
+    }
+
+    fn new_point(x: f32, y: f32) -> Result<ObjectShape, TiledError> {
+        Ok(ObjectShape::Point(x, y))
     }
 
     fn parse_points(s: String) -> Result<Vec<(f32, f32)>, TiledError> {
