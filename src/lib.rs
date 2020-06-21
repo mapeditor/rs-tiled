@@ -131,17 +131,7 @@ impl fmt::Display for TiledError {
 
 // This is a skeleton implementation, which should probably be extended in the future.
 impl std::error::Error for TiledError {
-    fn description(&self) -> &str {
-        match *self {
-            TiledError::MalformedAttributes(ref s) => s.as_ref(),
-            TiledError::DecompressingError(ref e) => e.description(),
-            TiledError::Base64DecodingError(ref e) => e.description(),
-            TiledError::XmlDecodingError(ref e) => e.description(),
-            TiledError::PrematureEnd(ref s) => s.as_ref(),
-            TiledError::Other(ref s) => s.as_ref(),
-        }
-    }
-    fn cause(&self) -> Option<&dyn std::error::Error> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
             TiledError::MalformedAttributes(_) => None,
             TiledError::DecompressingError(ref e) => Some(e as &dyn std::error::Error),
@@ -164,21 +154,19 @@ pub enum PropertyValue {
 
 impl PropertyValue {
     fn new(property_type: String, value: String) -> Result<PropertyValue, TiledError> {
-        use std::error::Error;
-
         // Check the property type against the value.
         match property_type.as_str() {
             "bool" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::BoolValue(val)),
-                Err(err) => Err(TiledError::Other(err.description().into())),
+                Err(err) => Err(TiledError::Other(err.to_string())),
             },
             "float" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::FloatValue(val)),
-                Err(err) => Err(TiledError::Other(err.description().into())),
+                Err(err) => Err(TiledError::Other(err.to_string())),
             },
             "int" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::IntValue(val)),
-                Err(err) => Err(TiledError::Other(err.description().into())),
+                Err(err) => Err(TiledError::Other(err.to_string())),
             },
             "color" if value.len() > 1 => match u32::from_str_radix(&value[1..], 16) {
                 Ok(color) => Ok(PropertyValue::ColorValue(color)),
