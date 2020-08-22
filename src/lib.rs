@@ -294,7 +294,7 @@ impl Map {
             object_groups,
             properties,
             background_colour: c,
-            infinite: infinite.unwrap_or(false)
+            infinite: infinite.unwrap_or(false),
         })
     }
 
@@ -655,6 +655,8 @@ pub struct Layer {
     pub name: String,
     pub opacity: f32,
     pub visible: bool,
+    pub offset_x: f32,
+    pub offset_y: f32,
     /// The tiles are arranged in rows. Each tile is a number which can be used
     ///  to find which tileset it belongs to and can then be rendered.
     pub tiles: LayerData,
@@ -670,11 +672,13 @@ impl Layer {
         layer_index: u32,
         infinite: bool,
     ) -> Result<Layer, TiledError> {
-        let ((o, v), n) = get_attrs!(
+        let ((o, v, ox, oy), n) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
+                ("offsetx", offset_x, |v:String| v.parse().ok()),
+                ("offsety", offset_y, |v:String| v.parse().ok()),
             ],
             required: [
                 ("name", name, |v| Some(v)),
@@ -702,6 +706,8 @@ impl Layer {
             name: n,
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
+            offset_x: ox.unwrap_or(0.0),
+            offset_y: oy.unwrap_or(0.0),
             tiles: tiles,
             properties: properties,
             layer_index,
@@ -711,7 +717,7 @@ impl Layer {
 #[derive(Debug, PartialEq, Clone)]
 pub enum LayerData {
     Finite(Vec<Vec<LayerTile>>),
-    Infinite(HashMap<(i32, i32), Chunk>)
+    Infinite(HashMap<(i32, i32), Chunk>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -723,11 +729,10 @@ pub struct Chunk {
     pub tiles: Vec<Vec<LayerTile>>,
 }
 
-
 impl Chunk {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
-        attrs: Vec<OwnedAttribute>,    
+        attrs: Vec<OwnedAttribute>,
         encoding: Option<String>,
         compression: Option<String>,
     ) -> Result<Chunk, TiledError> {
@@ -743,20 +748,17 @@ impl Chunk {
             TiledError::MalformedAttributes("layer must have a name".to_string())
         );
 
-       
-
         let tiles = parse_data_line(encoding, compression, parser, width)?;
-        
+
         Ok(Chunk {
-                x,
-                y,
-                width,
-                height,
-                tiles,
-            })
+            x,
+            y,
+            width,
+            height,
+            tiles,
+        })
     }
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ImageLayer {
@@ -1075,12 +1077,12 @@ fn parse_infinite_data<R: Read>(
         required: [],
         TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
     );
-    
+
     let mut chunks = HashMap::<(i32, i32), Chunk>::new();
     parse_tag!(parser, "data", {
         "chunk" => |attrs| {
-            let chunk = Chunk::new(parser, attrs, e.clone(), c.clone())?;            
-            chunks.insert((chunk.x, chunk.y), chunk);            
+            let chunk = Chunk::new(parser, attrs, e.clone(), c.clone())?;
+            chunks.insert((chunk.x, chunk.y), chunk);
             Ok(())
         }
     });
@@ -1108,7 +1110,12 @@ fn parse_data<R: Read>(
     Ok(LayerData::Finite(tiles))
 }
 
-fn parse_data_line<R: Read>(encoding: Option<String>, compression: Option<String>, parser: &mut EventReader<R>, width: u32) -> Result<Vec<Vec<LayerTile>>, TiledError> {
+fn parse_data_line<R: Read>(
+    encoding: Option<String>,
+    compression: Option<String>,
+    parser: &mut EventReader<R>,
+    width: u32,
+) -> Result<Vec<Vec<LayerTile>>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
             return Err(TiledError::Other(
