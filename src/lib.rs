@@ -607,7 +607,7 @@ impl Terrain {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TerrainTypes {
-    terrains: Vec<Terrain>,
+    pub terrains: Vec<Terrain>,
 }
 
 impl TerrainTypes {
