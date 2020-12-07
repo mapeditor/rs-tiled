@@ -637,7 +637,7 @@ pub struct Tile {
     pub animation: Option<Vec<Frame>>,
     pub tile_type: Option<String>,
     pub probability: f32,
-    pub terrain: Vec<u32>,
+    pub terrain: Vec<usize>,
 }
 
 impl Tile {
@@ -651,7 +651,7 @@ impl Tile {
                 ("type", tile_type, |v:String| v.parse().ok()),
                 ("probability", probability, |v:String| v.parse().ok()),
                 ("terrain", terrain, |v:String| v.split(',').map(|s| {
-                    s.parse::<u32>().ok()}).collect()),
+                    s.parse::<usize>().ok()}).collect()),
             ],
             required: [
                 ("id", id, |v:String| v.parse::<u32>().ok()),
