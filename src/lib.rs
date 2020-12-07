@@ -637,6 +637,7 @@ pub struct Tile {
     pub animation: Option<Vec<Frame>>,
     pub tile_type: Option<String>,
     pub probability: f32,
+    pub terrain: Vec<u32>,
 }
 
 impl Tile {
@@ -644,11 +645,13 @@ impl Tile {
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
     ) -> Result<Tile, TiledError> {
-        let ((tile_type, probability), id) = get_attrs!(
+        let ((tile_type, probability, terrain), id) = get_attrs!(
             attrs,
             optionals: [
                 ("type", tile_type, |v:String| v.parse().ok()),
                 ("probability", probability, |v:String| v.parse().ok()),
+                ("terrain", terrain, |v:String| v.split(',').map(|s| {
+                    s.parse::<u32>().ok()}).collect()),
             ],
             required: [
                 ("id", id, |v:String| v.parse::<u32>().ok()),
@@ -686,6 +689,7 @@ impl Tile {
             animation,
             tile_type,
             probability: probability.unwrap_or(1.0),
+            terrain: terrain.unwrap_or(Vec::new()),
         })
     }
 }
