@@ -12,6 +12,9 @@ edition = "2018"
 
 keywords = ["tiled", "tmx", "map"]
 
+[features]
+default = ["zstd"]
+
 [lib]
 name = "tiled"
 path = "src/lib.rs"
@@ -24,4 +27,4 @@ path = "examples/main.rs"
 base64  = "0.10"
 xml-rs  = "0.8"
 libflate = "0.1.18"
-zstd = "0.5"
+zstd = { version = "0.5", optional = true }

@@ -1131,6 +1131,7 @@ fn parse_data_line<R: Read>(encoding: Option<String>, compression: Option<String
                     .and_then(decode_gzip)
                     .map(|v| convert_to_tile(&v, width))
             }
+            #[cfg(feature = "zstd")]
             ("base64", "zstd") => {
                 return parse_base64(parser)
                     .and_then(decode_zstd)
@@ -1186,6 +1187,7 @@ fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
+#[cfg(feature = "zstd")]
 fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     use std::io::Cursor;
     use zstd::stream::read::Decoder;
