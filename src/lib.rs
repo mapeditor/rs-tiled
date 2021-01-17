@@ -699,7 +699,6 @@ impl Tile {
     }
 }
 
-
 /// Stores the proper tile gid, along with how it is flipped.
 // Maybe PartialEq and Eq should be custom, so that it ignores tile-flipping?
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -791,6 +790,7 @@ impl Layer {
         })
     }
 }
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum LayerData {
     Finite(Vec<Vec<LayerTile>>),
