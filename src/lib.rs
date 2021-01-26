@@ -1,8 +1,5 @@
-extern crate base64;
-#[macro_use]
-extern crate downcast_rs;
-extern crate libflate;
-extern crate xml;
+use base64;
+use downcast_rs::impl_downcast;
 
 use std::any::Any;
 use std::collections::HashMap;
@@ -55,7 +52,7 @@ macro_rules! get_attrs {
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
         loop {
-            match try!($parser.next().map_err(TiledError::XmlDecodingError)) {
+            match $parser.next().map_err(TiledError::XmlDecodingError)? {
                 XmlEvent::StartElement {name, attributes, ..} => {
                     if false {}
                     $(else if name.local_name == $open_tag {
@@ -122,7 +119,7 @@ pub enum TiledError {
 }
 
 impl fmt::Display for TiledError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         match *self {
             TiledError::MalformedAttributes(ref s) => write!(fmt, "{}", s),
             TiledError::DecompressingError(ref e) => write!(fmt, "{}", e),
@@ -136,22 +133,12 @@ impl fmt::Display for TiledError {
 
 // This is a skeleton implementation, which should probably be extended in the future.
 impl std::error::Error for TiledError {
-    fn description(&self) -> &str {
-        match *self {
-            TiledError::MalformedAttributes(ref s) => s.as_ref(),
-            TiledError::DecompressingError(ref e) => e.description(),
-            TiledError::Base64DecodingError(ref e) => e.description(),
-            TiledError::XmlDecodingError(ref e) => e.description(),
-            TiledError::PrematureEnd(ref s) => s.as_ref(),
-            TiledError::Other(ref s) => s.as_ref(),
-        }
-    }
-    fn cause(&self) -> Option<&std::error::Error> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
             TiledError::MalformedAttributes(_) => None,
-            TiledError::DecompressingError(ref e) => Some(e as &std::error::Error),
-            TiledError::Base64DecodingError(ref e) => Some(e as &std::error::Error),
-            TiledError::XmlDecodingError(ref e) => Some(e as &std::error::Error),
+            TiledError::DecompressingError(ref e) => Some(e as &dyn std::error::Error),
+            TiledError::Base64DecodingError(ref e) => Some(e as &dyn std::error::Error),
+            TiledError::XmlDecodingError(ref e) => Some(e as &dyn std::error::Error),
             TiledError::PrematureEnd(_) => None,
             TiledError::Other(_) => None,
         }
@@ -169,21 +156,19 @@ pub enum PropertyValue {
 
 impl PropertyValue {
     fn new(property_type: String, value: String) -> Result<PropertyValue, TiledError> {
-        use std::error::Error;
-
         // Check the property type against the value.
         match property_type.as_str() {
             "bool" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::BoolValue(val)),
-                Err(err) => Err(TiledError::Other(err.description().into())),
+                Err(err) => Err(TiledError::Other(err.to_string())),
             },
             "float" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::FloatValue(val)),
-                Err(err) => Err(TiledError::Other(err.description().into())),
+                Err(err) => Err(TiledError::Other(err.to_string())),
             },
             "int" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::IntValue(val)),
-                Err(err) => Err(TiledError::Other(err.description().into())),
+                Err(err) => Err(TiledError::Other(err.to_string())),
             },
             "color" if value.len() > 1 => match u32::from_str_radix(&value[1..], 16) {
                 Ok(color) => Ok(PropertyValue::ColorValue(color)),
@@ -219,7 +204,7 @@ fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, 
             );
             let t = t.unwrap_or("string".into());
 
-            p.insert(k, try!(PropertyValue::new(t, v)));
+            p.insert(k, PropertyValue::new(t, v)?);
             Ok(())
         },
     });
@@ -236,12 +221,13 @@ pub struct Map {
     pub tile_width: u32,
     pub tile_height: u32,
     pub tilesets: Vec<Tileset>,
-    pub layers: Vec<TileLayer>,
+    pub layers: Vec<Layer>,
     pub image_layers: Vec<ImageLayer>,
     pub object_groups: Vec<ObjectGroup>,
     pub properties: Properties,
     pub background_colour: Option<Colour>,
     pub groups: Vec<Group>,
+    pub infinite: bool,
 }
 
 impl Map {
@@ -250,10 +236,11 @@ impl Map {
         attrs: Vec<OwnedAttribute>,
         map_path: Option<&Path>,
     ) -> Result<Map, TiledError> {
-        let (c, (v, o, w, h, tw, th)) = get_attrs!(
+        let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [
                 ("backgroundcolor", colour, |v:String| v.parse().ok()),
+                ("infinite", infinite, |v:String| Some(v == "1")),
             ],
             required: [
                 ("version", version, |v| Some(v)),
@@ -275,30 +262,30 @@ impl Map {
         let mut layer_index = 0;
         parse_tag!(parser, "map", {
             "tileset" => | attrs| {
-                tilesets.push(try!(Tileset::new(parser, attrs, map_path)));
+                tilesets.push(Tileset::new(parser, attrs, map_path)?);
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(try!(TileLayer::new(parser, attrs, w, layer_index)));
+                layers.push(Layer::new(parser, attrs, w, layer_index, infinite.unwrap_or(false))?);
                 layer_index += 1;
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                image_layers.push(try!(ImageLayer::new(parser, attrs, layer_index)));
+                image_layers.push(ImageLayer::new(parser, attrs, layer_index)?);
                 layer_index += 1;
                 Ok(())
             },
             "properties" => |_| {
-                properties = try!(parse_properties(parser));
+                properties = parse_properties(parser)?;
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                object_groups.push(try!(ObjectGroup::new(parser, attrs, Some(layer_index))));
+                object_groups.push(ObjectGroup::new(parser, attrs, Some(layer_index))?);
                 layer_index += 1;
                 Ok(())
             },
             "group" => |attrs| {
-                groups.push(try!(Group::new(w, parser, attrs, layer_index)));
+                groups.push(Group::new(w, parser, attrs, layer_index)?);
                 layer_index += 1;
                 Ok(())
             }
@@ -317,6 +304,7 @@ impl Map {
             properties,
             background_colour: c,
             groups,
+            infinite: infinite.unwrap_or(false),
         })
     }
 
@@ -366,10 +354,12 @@ pub struct Tileset {
     pub tile_height: u32,
     pub spacing: u32,
     pub margin: u32,
+    pub tilecount: Option<u32>,
     /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
     /// is used. Usually you will only use one.
     pub images: Vec<Image>,
     pub tiles: Vec<Tile>,
+    pub properties: Properties,
 }
 
 impl Tileset {
@@ -385,11 +375,12 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin), (first_gid, name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount), (first_gid, name, width, height)) = get_attrs!(
            attrs,
            optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
             ],
            required: [
                 ("firstgid", first_gid, |v:String| v.parse().ok()),
@@ -402,26 +393,33 @@ impl Tileset {
 
         let mut images = Vec::new();
         let mut tiles = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                images.push(try!(Image::new(parser, attrs)));
+                images.push(Image::new(parser, attrs)?);
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = parse_properties(parser)?;
                 Ok(())
             },
             "tile" => |attrs| {
-                tiles.push(try!(Tile::new(parser, attrs)));
+                tiles.push(Tile::new(parser, attrs)?);
                 Ok(())
             },
         });
 
         Ok(Tileset {
-            first_gid: first_gid,
-            name: name,
             tile_width: width,
             tile_height: height,
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
-            images: images,
-            tiles: tiles,
+            first_gid,
+            name,
+            tilecount,
+            images,
+            tiles,
+            properties,
         })
     }
 
@@ -452,7 +450,10 @@ impl Tileset {
     fn new_external<R: Read>(file: R, first_gid: u32) -> Result<Tileset, TiledError> {
         let mut tileset_parser = EventReader::new(file);
         loop {
-            match try!(tileset_parser.next().map_err(TiledError::XmlDecodingError)) {
+            match tileset_parser
+                .next()
+                .map_err(TiledError::XmlDecodingError)?
+            {
                 XmlEvent::StartElement {
                     name, attributes, ..
                 } => {
@@ -479,11 +480,12 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin), (name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount), (name, width, height)) = get_attrs!(
             attrs,
             optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
             ],
             required: [
                 ("name", name, |v| Some(v)),
@@ -495,13 +497,18 @@ impl Tileset {
 
         let mut images = Vec::new();
         let mut tiles = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                images.push(try!(Image::new(parser, attrs)));
+                images.push(Image::new(parser, attrs)?);
                 Ok(())
             },
             "tile" => |attrs| {
-                tiles.push(try!(Tile::new(parser, attrs)));
+                tiles.push(Tile::new(parser, attrs)?);
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
@@ -513,20 +520,24 @@ impl Tileset {
             tile_height: height,
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
+            tilecount: tilecount,
             images: images,
             tiles: tiles,
+            properties,
         })
     }
 }
 
-pub trait Layer: std::fmt::Debug + LayerClone + downcast_rs::Downcast {}
+pub trait AnyLayer: std::fmt::Debug + AnyLayerClone + downcast_rs::Downcast {
+    fn get_layer_index(&self) -> Option<u32>;
+}
 
-impl_downcast!(Layer);
+impl_downcast!(AnyLayer);
 
-impl PartialEq for Box<Layer> {
-    fn eq(&self, other: &Box<Layer>) -> bool {
-        if let Some(other_tile_layer) = other.downcast_ref::<TileLayer>() {
-            if let Some(tile_layer) = self.downcast_ref::<TileLayer>() {
+impl PartialEq for Box<dyn AnyLayer> {
+    fn eq(&self, other: &Box<dyn AnyLayer>) -> bool {
+        if let Some(other_tile_layer) = other.downcast_ref::<Layer>() {
+            if let Some(tile_layer) = self.downcast_ref::<Layer>() {
                 tile_layer == other_tile_layer
             } else {
                 false
@@ -555,18 +566,18 @@ impl PartialEq for Box<Layer> {
     }
 }
 
-pub trait LayerClone {
-    fn clone_box(&self) -> Box<Layer>;
+pub trait AnyLayerClone {
+    fn clone_box(&self) -> Box<dyn AnyLayer>;
 }
 
-impl<T: 'static + Layer + Clone> LayerClone for T {
-    fn clone_box(&self) -> Box<Layer> {
+impl<T: 'static + AnyLayer + Clone> AnyLayerClone for T {
+    fn clone_box(&self) -> Box<dyn AnyLayer> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<Layer> {
-    fn clone(&self) -> Box<Layer> {
+impl Clone for Box<dyn AnyLayer> {
+    fn clone(&self) -> Box<dyn AnyLayer> {
         self.clone_box()
     }
 }
@@ -574,8 +585,6 @@ impl Clone for Box<Layer> {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
     pub id: u32,
-    pub flip_h: bool,
-    pub flip_v: bool,
     pub images: Vec<Image>,
     pub properties: Properties,
     pub objectgroup: Option<ObjectGroup>,
@@ -583,12 +592,6 @@ pub struct Tile {
     pub tile_type: Option<String>,
     pub probability: f32,
 }
-
-const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x8;
-const FLIPPED_VERTICALLY_FLAG: u32 = 0x4;
-const FLIPPED_DIAGONALLY_FLAG: u32 = 0x2;
-const ALL_FLIP_FLAGS: u32 =
-    FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG;
 
 impl Tile {
     fn new<R: Read>(
@@ -606,12 +609,6 @@ impl Tile {
             ],
             TiledError::MalformedAttributes("tile must have an id with the correct type".to_string())
         );
-
-        let flags = (id & ALL_FLIP_FLAGS) >> 28;
-        let id: u32 = id & !ALL_FLIP_FLAGS;
-        let diagon = flags & FLIPPED_DIAGONALLY_FLAG == FLIPPED_DIAGONALLY_FLAG;
-        let flip_h = (flags & FLIPPED_HORIZONTALLY_FLAG == FLIPPED_HORIZONTALLY_FLAG) ^ diagon;
-        let flip_v = (flags & FLIPPED_VERTICALLY_FLAG == FLIPPED_VERTICALLY_FLAG) ^ diagon;
 
         let mut images = Vec::new();
         let mut properties = HashMap::new();
@@ -637,8 +634,6 @@ impl Tile {
         });
         Ok(Tile {
             id,
-            flip_h,
-            flip_v,
             images,
             properties,
             objectgroup,
@@ -686,25 +681,59 @@ impl Image {
     }
 }
 
+/// Stores the proper tile gid, along with how it is flipped.
+// Maybe PartialEq and Eq should be custom, so that it ignores tile-flipping?
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LayerTile {
+    pub gid: u32,
+    pub flip_h: bool,
+    pub flip_v: bool,
+    pub flip_d: bool,
+}
+
+const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
+const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
+const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
+const ALL_FLIP_FLAGS: u32 =
+    FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG;
+
+impl LayerTile {
+    pub fn new(id: u32) -> LayerTile {
+        let flags = id & ALL_FLIP_FLAGS;
+        let gid = id & !ALL_FLIP_FLAGS;
+        let flip_d = flags & FLIPPED_DIAGONALLY_FLAG == FLIPPED_DIAGONALLY_FLAG; // Swap x and y axis (anti-diagonally) [flips over y = -x line]
+        let flip_h = flags & FLIPPED_HORIZONTALLY_FLAG == FLIPPED_HORIZONTALLY_FLAG; // Flip tile over y axis
+        let flip_v = flags & FLIPPED_VERTICALLY_FLAG == FLIPPED_VERTICALLY_FLAG; // Flip tile over x axis
+
+        LayerTile {
+            gid,
+            flip_h,
+            flip_v,
+            flip_d,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
-pub struct TileLayer {
+pub struct Layer {
     pub name: String,
     pub opacity: f32,
     pub visible: bool,
     /// The tiles are arranged in rows. Each tile is a number which can be used
     ///  to find which tileset it belongs to and can then be rendered.
-    pub tiles: Vec<Vec<u32>>,
+    pub tiles: LayerData,
     pub properties: Properties,
     pub layer_index: u32,
 }
 
-impl TileLayer {
+impl Layer {
     fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         width: u32,
         layer_index: u32,
-    ) -> Result<TileLayer, TiledError> {
+        infinite: bool,
+    ) -> Result<Layer, TiledError> {
         let ((o, v), n) = get_attrs!(
             attrs,
             optionals: [
@@ -716,20 +745,24 @@ impl TileLayer {
             ],
             TiledError::MalformedAttributes("layer must have a name".to_string())
         );
-        let mut tiles = Vec::new();
+        let mut tiles: LayerData = LayerData::Finite(Default::default());
         let mut properties = HashMap::new();
         parse_tag!(parser, "layer", {
             "data" => |attrs| {
-                tiles = try!(parse_data(parser, attrs, width));
+                if infinite {
+                    tiles = parse_infinite_data(parser, attrs, width)?;
+                } else {
+                    tiles = parse_data(parser, attrs, width)?;
+                }
                 Ok(())
             },
             "properties" => |_| {
-                properties = try!(parse_properties(parser));
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
 
-        Ok(TileLayer {
+        Ok(Layer {
             name: n,
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
@@ -739,8 +772,57 @@ impl TileLayer {
         })
     }
 }
+#[derive(Debug, PartialEq, Clone)]
+pub enum LayerData {
+    Finite(Vec<Vec<LayerTile>>),
+    Infinite(HashMap<(i32, i32), Chunk>),
+}
 
-impl Layer for TileLayer {}
+#[derive(Debug, PartialEq, Clone)]
+pub struct Chunk {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+    pub tiles: Vec<Vec<LayerTile>>,
+}
+
+impl Chunk {
+    pub(crate) fn new<R: Read>(
+        parser: &mut EventReader<R>,
+        attrs: Vec<OwnedAttribute>,
+        encoding: Option<String>,
+        compression: Option<String>,
+    ) -> Result<Chunk, TiledError> {
+        let ((), (x, y, width, height)) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [
+                ("x", x, |v: String| v.parse().ok()),
+                ("y", y, |v: String| v.parse().ok()),
+                ("width", width, |v: String| v.parse().ok()),
+                ("height", height, |v: String| v.parse().ok()),
+            ],
+            TiledError::MalformedAttributes("layer must have a name".to_string())
+        );
+
+        let tiles = parse_data_line(encoding, compression, parser, width)?;
+
+        Ok(Chunk {
+            x,
+            y,
+            width,
+            height,
+            tiles,
+        })
+    }
+}
+
+impl AnyLayer for Layer {
+    fn get_layer_index(&self) -> Option<u32> {
+        Some(self.layer_index)
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ImageLayer {
@@ -797,14 +879,18 @@ impl ImageLayer {
     }
 }
 
-impl Layer for ImageLayer {}
+impl AnyLayer for ImageLayer {
+    fn get_layer_index(&self) -> Option<u32> {
+        Some(self.layer_index)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Group {
     pub name: String,
     pub opacity: f32,
     pub visible: bool,
-    pub children: Vec<Box<Layer>>,
+    pub children: Vec<Box<dyn AnyLayer>>,
     pub properties: Properties,
     pub layer_index: u32,
     pub offset_x: f32,
@@ -818,9 +904,10 @@ impl Group {
         attrs: Vec<OwnedAttribute>,
         layer_index: u32,
     ) -> Result<Group, TiledError> {
-        let ((opacity, visible, name, offset_x, offset_y), ()) = get_attrs!(
+        let ((infinite, opacity, visible, name, offset_x, offset_y), ()) = get_attrs!(
             attrs,
             optionals: [
+                ("infinite", infinite, |v:String| Some(v == "1")),
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("name", name, |v:String| v.into()),
@@ -832,33 +919,33 @@ impl Group {
         );
 
         let mut properties = HashMap::new();
-        let mut children: Vec<Box<Layer>> = Vec::new();
+        let mut children: Vec<Box<dyn AnyLayer>> = Vec::new();
 
         let mut child_index = 0;
 
         parse_tag!(parser, "group", {
             "layer" => |attrs| {
-                children.push(Box::new(try!(TileLayer::new(parser, attrs, map_width, child_index))));
+                children.push(Box::new(Layer::new(parser, attrs, map_width, child_index, infinite.unwrap_or(false))?));
                 child_index += 1;
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                children.push(Box::new(try!(ImageLayer::new(parser, attrs, child_index))));
+                children.push(Box::new(ImageLayer::new(parser, attrs, child_index)?));
                 child_index += 1;
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                children.push(Box::new(try!(ObjectGroup::new(parser, attrs, Some(child_index)))));
+                children.push(Box::new(ObjectGroup::new(parser, attrs, Some(child_index))?));
                 child_index += 1;
                 Ok(())
             },
             "group" => |attrs| {
-                children.push(Box::new(try!(Group::new(map_width, parser, attrs, child_index))));
+                children.push(Box::new(Group::new(map_width, parser, attrs, child_index)?));
                 child_index += 1;
                 Ok(())
             },
             "properties" => |_| {
-                properties = try!(parse_properties(parser));
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
@@ -876,7 +963,11 @@ impl Group {
     }
 }
 
-impl Layer for Group {}
+impl AnyLayer for Group {
+    fn get_layer_index(&self) -> Option<u32> {
+        Some(self.layer_index)
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectGroup {
@@ -889,6 +980,7 @@ pub struct ObjectGroup {
      * Layer index is not preset for tile collision boxes
      */
     pub layer_index: Option<u32>,
+    pub properties: Properties,
 }
 
 impl ObjectGroup {
@@ -909,9 +1001,14 @@ impl ObjectGroup {
             TiledError::MalformedAttributes("object groups must have a name".to_string())
         );
         let mut objects = Vec::new();
+        let mut properties = HashMap::new();
         parse_tag!(parser, "objectgroup", {
             "object" => |attrs| {
-                objects.push(try!(Object::new(parser, attrs)));
+                objects.push(Object::new(parser, attrs)?);
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
@@ -922,11 +1019,16 @@ impl ObjectGroup {
             objects: objects,
             colour: c,
             layer_index,
+            properties,
         })
     }
 }
 
-impl Layer for ObjectGroup {}
+impl AnyLayer for ObjectGroup {
+    fn get_layer_index(&self) -> Option<u32> {
+        self.layer_index
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectShape {
@@ -934,6 +1036,7 @@ pub enum ObjectShape {
     Ellipse { width: f32, height: f32 },
     Polyline { points: Vec<(f32, f32)> },
     Polygon { points: Vec<(f32, f32)> },
+    Point(f32, f32),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -942,6 +1045,8 @@ pub struct Object {
     pub gid: u32,
     pub name: String,
     pub obj_type: String,
+    pub width: f32,
+    pub height: f32,
     pub x: f32,
     pub y: f32,
     pub rotation: f32,
@@ -993,15 +1098,19 @@ impl Object {
                 Ok(())
             },
             "polyline" => |attrs| {
-                shape = Some(try!(Object::new_polyline(attrs)));
+                shape = Some(Object::new_polyline(attrs)?);
                 Ok(())
             },
             "polygon" => |attrs| {
-                shape = Some(try!(Object::new_polygon(attrs)));
+                shape = Some(Object::new_polygon(attrs)?);
+                Ok(())
+            },
+            "point" => |_| {
+                shape = Some(Object::new_point(x, y)?);
                 Ok(())
             },
             "properties" => |_| {
-                properties = try!(parse_properties(parser));
+                properties = parse_properties(parser)?;
                 Ok(())
             },
         });
@@ -1016,6 +1125,8 @@ impl Object {
             gid: gid,
             name: n.clone(),
             obj_type: t.clone(),
+            width: w,
+            height: h,
             x: x,
             y: y,
             rotation: r,
@@ -1034,7 +1145,7 @@ impl Object {
             ],
             TiledError::MalformedAttributes("A polyline must have points".to_string())
         );
-        let points = try!(Object::parse_points(s));
+        let points = Object::parse_points(s)?;
         Ok(ObjectShape::Polyline { points: points })
     }
 
@@ -1047,8 +1158,12 @@ impl Object {
             ],
             TiledError::MalformedAttributes("A polygon must have points".to_string())
         );
-        let points = try!(Object::parse_points(s));
+        let points = Object::parse_points(s)?;
         Ok(ObjectShape::Polygon { points: points })
+    }
+
+    fn new_point(x: f32, y: f32) -> Result<ObjectShape, TiledError> {
+        Ok(ObjectShape::Point(x, y))
     }
 
     fn parse_points(s: String) -> Result<Vec<(f32, f32)>, TiledError> {
@@ -1075,8 +1190,8 @@ impl Object {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Frame {
-    tile_id: u32,
-    duration: u32,
+    pub tile_id: u32,
+    pub duration: u32,
 }
 
 impl Frame {
@@ -1101,18 +1216,18 @@ fn parse_animation<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Frame>, T
     let mut animation = Vec::new();
     parse_tag!(parser, "animation", {
         "frame" => |attrs| {
-            animation.push(try!(Frame::new(attrs)));
+            animation.push(Frame::new(attrs)?);
             Ok(())
         },
     });
     Ok(animation)
 }
 
-fn parse_data<R: Read>(
+fn parse_infinite_data<R: Read>(
     parser: &mut EventReader<R>,
     attrs: Vec<OwnedAttribute>,
     width: u32,
-) -> Result<Vec<Vec<u32>>, TiledError> {
+) -> Result<LayerData, TiledError> {
     let ((e, c), ()) = get_attrs!(
         attrs,
         optionals: [
@@ -1123,14 +1238,52 @@ fn parse_data<R: Read>(
         TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
     );
 
-    match (e, c) {
+    let mut chunks = HashMap::<(i32, i32), Chunk>::new();
+    parse_tag!(parser, "data", {
+        "chunk" => |attrs| {
+            let chunk = Chunk::new(parser, attrs, e.clone(), c.clone())?;
+            chunks.insert((chunk.x, chunk.y), chunk);
+            Ok(())
+        }
+    });
+
+    Ok(LayerData::Infinite(chunks))
+}
+
+fn parse_data<R: Read>(
+    parser: &mut EventReader<R>,
+    attrs: Vec<OwnedAttribute>,
+    width: u32,
+) -> Result<LayerData, TiledError> {
+    let ((e, c), ()) = get_attrs!(
+        attrs,
+        optionals: [
+            ("encoding", encoding, |v| Some(v)),
+            ("compression", compression, |v| Some(v)),
+        ],
+        required: [],
+        TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
+    );
+
+    let tiles = parse_data_line(e, c, parser, width)?;
+
+    Ok(LayerData::Finite(tiles))
+}
+
+fn parse_data_line<R: Read>(
+    encoding: Option<String>,
+    compression: Option<String>,
+    parser: &mut EventReader<R>,
+    width: u32,
+) -> Result<Vec<Vec<LayerTile>>, TiledError> {
+    match (encoding, compression) {
         (None, None) => {
             return Err(TiledError::Other(
                 "XML format is currently not supported".to_string(),
             ));
         }
         (Some(e), None) => match e.as_ref() {
-            "base64" => return parse_base64(parser).map(|v| convert_to_u32(&v, width)),
+            "base64" => return parse_base64(parser).map(|v| convert_to_tile(&v, width)),
             "csv" => return decode_csv(parser),
             e => return Err(TiledError::Other(format!("Unknown encoding format {}", e))),
         },
@@ -1138,12 +1291,17 @@ fn parse_data<R: Read>(
             ("base64", "zlib") => {
                 return parse_base64(parser)
                     .and_then(decode_zlib)
-                    .map(|v| convert_to_u32(&v, width));
+                    .map(|v| convert_to_tile(&v, width))
             }
             ("base64", "gzip") => {
                 return parse_base64(parser)
                     .and_then(decode_gzip)
-                    .map(|v| convert_to_u32(&v, width));
+                    .map(|v| convert_to_tile(&v, width))
+            }
+            ("base64", "zstd") => {
+                return parse_base64(parser)
+                    .and_then(decode_zstd)
+                    .map(|v| convert_to_tile(&v, width))
             }
             (e, c) => {
                 return Err(TiledError::Other(format!(
@@ -1158,9 +1316,10 @@ fn parse_data<R: Read>(
 
 fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledError> {
     loop {
-        match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+        match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
-                return base64::decode(s.trim().as_bytes()).map_err(TiledError::Base64DecodingError);
+                return base64::decode(s.trim().as_bytes())
+                    .map_err(TiledError::Base64DecodingError);
             }
             XmlEvent::EndElement { name, .. } => {
                 if name.local_name == "data" {
@@ -1195,11 +1354,24 @@ fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
-fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<u32>>, TiledError> {
+fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
+    use std::io::Cursor;
+    use zstd::stream::read::Decoder;
+
+    let buff = Cursor::new(&data);
+    let mut zd = Decoder::with_buffer(buff).map_err(|e| TiledError::DecompressingError(e))?;
+
+    let mut data = Vec::new();
+    zd.read_to_end(&mut data)
+        .map_err(|e| TiledError::DecompressingError(e))?;
+    Ok(data)
+}
+
+fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<LayerTile>>, TiledError> {
     loop {
-        match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+        match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
-                let mut rows: Vec<Vec<u32>> = Vec::new();
+                let mut rows: Vec<Vec<LayerTile>> = Vec::new();
                 for row in s.split('\n') {
                     if row.trim() == "" {
                         continue;
@@ -1208,6 +1380,7 @@ fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<u32>>, Til
                         row.split(',')
                             .filter(|v| v.trim() != "")
                             .map(|v| v.replace('\r', "").parse().unwrap())
+                            .map(|id| LayerTile::new(id))
                             .collect(),
                     );
                 }
@@ -1223,7 +1396,7 @@ fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<u32>>, Til
     }
 }
 
-fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
+fn convert_to_tile(all: &Vec<u8>, width: u32) -> Vec<Vec<LayerTile>> {
     let mut data = Vec::new();
     for chunk in all.chunks((width * 4) as usize) {
         let mut row = Vec::new();
@@ -1233,6 +1406,7 @@ fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
                 + ((chunk[start + 2] as u32) << 16)
                 + ((chunk[start + 1] as u32) << 8)
                 + chunk[start] as u32;
+            let n = LayerTile::new(n);
             row.push(n);
         }
         data.push(row);
@@ -1243,7 +1417,7 @@ fn convert_to_u32(all: &Vec<u8>, width: u32) -> Vec<Vec<u32>> {
 fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledError> {
     let mut parser = EventReader::new(reader);
     loop {
-        match try!(parser.next().map_err(TiledError::XmlDecodingError)) {
+        match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::StartElement {
                 name, attributes, ..
             } => {

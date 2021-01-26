@@ -1,13 +1,14 @@
 [package]
 
 name = "tiled"
-version = "0.8.0"
+version = "0.9.3"
 description = "A rust crate for loading in maps created by the Tiled editor"
 repository = "https://github.com/mattyhall/rs-tiled.git"
 # documentation = "http://rust-ci.org/mattyhall/rs-tiled/doc/tiled/"
 readme = "README.md"
 license = "MIT"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
+edition = "2018"
 
 keywords = ["tiled", "tmx", "map"]
 
@@ -20,7 +21,8 @@ name = "example"
 path = "examples/main.rs"
 
 [dependencies]
-base64  = "0.5.2"
+base64  = "0.10"
 downcast-rs = "1.0.3"
-xml-rs  = "0.3.0"
+xml-rs  = "0.8"
 libflate = "0.1.18"
+zstd = "0.5"

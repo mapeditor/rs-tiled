@@ -16,8 +16,8 @@
    <property name="prop1" value="12"/>
    <property name="prop2" value="some text"/>
   </properties>
-  <data encoding="base64" compression="zlib">
-   eJzt1zEKwzAMBVBdIScIJXPS+9+uDY1BuHbpULvLeyDIkEkfIXmLiK2qW6cYb7lqv+p41r1TcpmjZFLPyamVEXOcGSzpu66SixkZb41Xz9dO7fE+O4yR+703KmdyhExGK32v+1zv+rxLZDJO7vO5G3KvSyY1eYxT31Dlrm3t9AhZzNC6a+v3RsmhNzP83qdc8ttdHuO07thWLlt4E87w7S6wM+bo7e3ef8z1KRt5/N+388N88gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIHsArPIXTA==
+  <data encoding="base64" compression="zstd">
+   KLUv/WBAm6UFAPgjAAAAIREtLgAAAC8RACMfHy0tLi0tLSMjIyMjIyMjSaBguwAAg0JmtQEFA2qvb+Al6lHUO91VvxpMveegXVabfkkjaEj1wZVZeNWPbSrdISdZk1b145uYEEFAvQmwiF5zTMi2QsOb9Vhv7ZxsK27ZJBXC9lYf2mVdhuqWjb8/hITgZAMw1ctxfXIOXBaofKbranfWDTtJ/Xyz7E2ZNWzVKauthC4r26Ry1TnnDqtmvUfyDw==
   </data>
  </layer>
  <objectgroup id="2" name="Object group">
