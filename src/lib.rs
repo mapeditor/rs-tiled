@@ -907,7 +907,7 @@ impl Object {
                 ("type", obj_type, |v:String| v.parse().ok()),
                 ("width", width, |v:String| v.parse().ok()),
                 ("height", height, |v:String| v.parse().ok()),
-                ("visible", visible, |v:String| v.parse().ok()),
+                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("rotation", rotation, |v:String| v.parse().ok()),
             ],
             required: [
