@@ -150,6 +150,8 @@ pub enum PropertyValue {
     IntValue(i32),
     ColorValue(u32),
     StringValue(String),
+    /// Holds the path relative to the map or tileset
+    FileValue(String),
 }
 
 impl PropertyValue {
@@ -175,6 +177,7 @@ impl PropertyValue {
                 ))),
             },
             "string" => Ok(PropertyValue::StringValue(value)),
+            "file" => Ok(PropertyValue::FileValue(value)),
             _ => Err(TiledError::Other(format!(
                 "Unknown property type \"{}\"",
                 property_type
