@@ -217,7 +217,9 @@ fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, 
 pub struct Map {
     pub version: String,
     pub orientation: Orientation,
+    /// Width of the map, in tiles
     pub width: u32,
+    /// Height of the map, in tiles
     pub height: u32,
     pub tile_width: u32,
     pub tile_height: u32,
