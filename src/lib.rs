@@ -339,7 +339,7 @@ impl FromStr for Orientation {
     }
 }
 
-impl Display for Orientation {
+impl fmt::Display for Orientation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Orientation::Orthogonal => write!(f, "orthogonal"),
