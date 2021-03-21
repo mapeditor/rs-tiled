@@ -339,6 +339,17 @@ impl FromStr for Orientation {
     }
 }
 
+impl Display for Orientation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Orientation::Orthogonal => write!(f, "orthogonal"),
+            Orientation::Isometric => write!(f, "isometric"),
+            Orientation::Staggered => write!(f, "staggered"),
+            Orientation::Hexagonal => write!(f, "hexagonal"),
+        }
+    }
+}
+
 /// A tileset, usually the tilesheet image.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tileset {
