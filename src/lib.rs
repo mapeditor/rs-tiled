@@ -150,6 +150,8 @@ pub enum PropertyValue {
     IntValue(i32),
     ColorValue(u32),
     StringValue(String),
+    /// Holds the path relative to the map or tileset
+    FileValue(String),
 }
 
 impl PropertyValue {
@@ -175,6 +177,7 @@ impl PropertyValue {
                 ))),
             },
             "string" => Ok(PropertyValue::StringValue(value)),
+            "file" => Ok(PropertyValue::FileValue(value)),
             _ => Err(TiledError::Other(format!(
                 "Unknown property type \"{}\"",
                 property_type
@@ -214,7 +217,9 @@ fn parse_properties<R: Read>(parser: &mut EventReader<R>) -> Result<Properties, 
 pub struct Map {
     pub version: String,
     pub orientation: Orientation,
+    /// Width of the map, in tiles
     pub width: u32,
+    /// Height of the map, in tiles
     pub height: u32,
     pub tile_width: u32,
     pub tile_height: u32,
@@ -330,6 +335,17 @@ impl FromStr for Orientation {
             "staggered" => Ok(Orientation::Staggered),
             "hexagonal" => Ok(Orientation::Hexagonal),
             _ => Err(ParseTileError::OrientationError),
+        }
+    }
+}
+
+impl fmt::Display for Orientation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Orientation::Orthogonal => write!(f, "orthogonal"),
+            Orientation::Isometric => write!(f, "isometric"),
+            Orientation::Staggered => write!(f, "staggered"),
+            Orientation::Hexagonal => write!(f, "hexagonal"),
         }
     }
 }
