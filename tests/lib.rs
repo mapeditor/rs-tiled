@@ -20,6 +20,19 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     assert_eq!(z, g);
     assert_eq!(z, r);
     assert_eq!(z, c);
+    
+    if let LayerData::Finite(tiles) = &c.layers[0].tiles {
+        assert_eq!(tiles.len(), 100);
+        assert_eq!(tiles[0].len(), 100);
+        assert_eq!(tiles[99].len(), 100);
+        assert_eq!(tiles[0][0].gid, 35);
+        assert_eq!(tiles[1][0].gid, 17);
+        assert_eq!(tiles[2][0].gid, 0);
+        assert_eq!(tiles[2][1].gid, 17);
+        assert!(tiles[99].iter().map(|t| t.gid).all(|g| g == 0));
+    } else {
+        assert!(false, "It is wrongly recognised as an infinite map");
+    }
 }
 
 #[test]
@@ -49,7 +62,7 @@ fn test_infinite_tileset() {
         assert_eq!(chunks[&(0, 32)].height, 32);
         assert_eq!(chunks[&(-32, 32)].height, 32);
     } else {
-        assert!(false, "It is wrongly recognized as a finite map");
+        assert!(false, "It is wrongly recognised as a finite map");
 
     }
 }
@@ -144,7 +157,20 @@ fn test_flipped_gid() {
         assert!(!t4.flip_h);
         assert!(!t4.flip_v);
     } else {
-        assert!(false, "It is wrongly recognized as an infinite map");
+        assert!(false, "It is wrongly recognised as an infinite map");
     }
     
+}
+
+#[test]
+fn test_ldk_export() {
+    let r = read_from_file_with_path(&Path::new("assets/ldk_tiled_export.tmx")).unwrap();
+    if let LayerData::Finite(tiles) = &r.layers[0].tiles {
+        assert_eq!(tiles.len(), 8);
+        assert_eq!(tiles[0].len(), 8);
+        assert_eq!(tiles[0][0].gid, 0);
+        assert_eq!(tiles[1][0].gid, 1);
+    } else {
+        assert!(false, "It is wrongly recognised as an infinite map");
+    }
 }

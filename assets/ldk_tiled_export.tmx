@@ -1,0 +1,8 @@
+<map version="1.4" tiledversion="1.4.2" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="8" height="8" tilewidth="32" tileheight="32" infinite="0" backgroundcolor="#696A79" nextlayerid="2" nextobjectid="1">
+    <tileset firstgid="1" name="Tilesheet" tilewidth="32" tileheight="32" tilecount="84" columns="14" objectalignment="topleft" margin="0" spacing="0">
+        <image source="tilesheet.png" width="448" height="192"/>
+    </tileset>
+    <layer id="1" name="Tiles" width="8" height="8" opacity="1">
+        <data encoding="csv">0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,47,1,1,0,0,0,0,47,47,0,0,0,0,0,0,47,47,0,0,0,0,0,0,0,0,47,0,0,0,0,0,0,0,0,0,0,0,0</data>
+    </layer>
+</map>

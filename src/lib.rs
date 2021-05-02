@@ -1140,7 +1140,7 @@ fn parse_data_line<R: Read>(
         }
         (Some(e), None) => match e.as_ref() {
             "base64" => return parse_base64(parser).map(|v| convert_to_tile(&v, width)),
-            "csv" => return decode_csv(parser),
+            "csv" => return decode_csv(width, parser),
             e => return Err(TiledError::Other(format!("Unknown encoding format {}", e))),
         },
         (Some(e), Some(c)) => match (e.as_ref(), c.as_ref()) {
@@ -1224,22 +1224,20 @@ fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
-fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Vec<LayerTile>>, TiledError> {
+fn decode_csv<R: Read>(width: u32, parser: &mut EventReader<R>) -> Result<Vec<Vec<LayerTile>>, TiledError> {
     loop {
         match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
-                let mut rows: Vec<Vec<LayerTile>> = Vec::new();
-                for row in s.split('\n') {
-                    if row.trim() == "" {
-                        continue;
-                    }
-                    rows.push(
-                        row.split(',')
-                            .filter(|v| v.trim() != "")
-                            .map(|v| v.replace('\r', "").parse().unwrap())
-                            .map(|id| LayerTile::new(id))
-                            .collect(),
-                    );
+                let mut tiles_it = s
+                    .split(&['\n', '\r', ','][0..])
+                    .filter(|v| v.trim() != "")
+                    .map(|v| v.parse().unwrap())
+                    .map(LayerTile::new)
+                    .peekable();
+                let mut rows = Vec::new();
+                while tiles_it.peek().is_some() {
+                    let row = tiles_it.by_ref().take(width as usize).collect();
+                    rows.push(row);
                 }
                 return Ok(rows);
             }
