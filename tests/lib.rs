@@ -19,10 +19,12 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     let z = read_from_file(&Path::new("assets/tiled_base64_zlib.tmx")).unwrap();
     let g = read_from_file(&Path::new("assets/tiled_base64_gzip.tmx")).unwrap();
     let r = read_from_file(&Path::new("assets/tiled_base64.tmx")).unwrap();
+    let zstd = read_from_file(&Path::new("assets/tiled_base64_zstandard.tmx")).unwrap();
     let c = read_from_file(&Path::new("assets/tiled_csv.tmx")).unwrap();
     assert_eq!(z, g);
     assert_eq!(z, r);
     assert_eq!(z, c);
+    assert_eq!(z, zstd);
 
     if let LayerData::Finite(tiles) = &c.layers[0].tiles {
         assert_eq!(tiles.len(), 100);
