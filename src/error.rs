@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug, Copy, Clone)]
 pub enum ParseTileError {
-    ColourError,
+    ColorError,
     OrientationError,
 }
 

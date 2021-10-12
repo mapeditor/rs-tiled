@@ -1,6 +1,17 @@
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
+
+use xml::attribute::OwnedAttribute;
+use xml::reader::XmlEvent;
+use xml::EventReader;
+
+use crate::error::TiledError;
+use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
+use crate::tile::Tile;
 use crate::util::*;
-use crate::*; // FIXME
 
 /// A tileset, usually the tilesheet image.
 #[derive(Debug, PartialEq, Clone)]
@@ -21,15 +32,25 @@ pub struct Tileset {
 }
 
 impl Tileset {
-    pub(crate) fn new<R: Read>(
+    /// Parse a buffer hopefully containing the contents of a Tiled tileset.
+    ///
+    /// External tilesets do not have a firstgid attribute.  That lives in the
+    /// map. You must pass in `first_gid`.  If you do not need to use gids for anything,
+    /// passing in 1 will work fine.
+    pub fn parse<R: Read>(reader: R, first_gid: u32) -> Result<Self, TiledError> {
+        Tileset::new_external(reader, first_gid)
+    }
+
+    pub(crate) fn parse_xml<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         map_path: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
-        Tileset::new_internal(parser, &attrs).or_else(|_| Tileset::new_reference(&attrs, map_path))
+        Tileset::parse_xml_embedded(parser, &attrs)
+            .or_else(|_| Tileset::parse_xml_reference(&attrs, map_path))
     }
 
-    fn new_internal<R: Read>(
+    fn parse_xml_embedded<R: Read>(
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
@@ -81,7 +102,7 @@ impl Tileset {
         })
     }
 
-    fn new_reference(
+    fn parse_xml_reference(
         attrs: &Vec<OwnedAttribute>,
         map_path: Option<&Path>,
     ) -> Result<Tileset, TiledError> {

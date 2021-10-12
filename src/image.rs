@@ -2,7 +2,7 @@ use std::io::Read;
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
-use crate::{error::TiledError, properties::Colour, util::*};
+use crate::{error::TiledError, properties::Color, util::*};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Image {
@@ -10,7 +10,7 @@ pub struct Image {
     pub source: String,
     pub width: i32,
     pub height: i32,
-    pub transparent_colour: Option<Colour>,
+    pub transparent_colour: Option<Color>,
 }
 
 impl Image {

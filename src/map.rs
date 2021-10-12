@@ -1,38 +1,94 @@
-use std::{collections::HashMap, fmt, io::Read, path::Path, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt,
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
     error::{ParseTileError, TiledError},
     layers::{ImageLayer, Layer},
     objects::ObjectGroup,
-    properties::{parse_properties, Colour, Properties},
+    properties::{parse_properties, Color, Properties},
     tileset::Tileset,
-    util::*,
+    util::{get_attrs, parse_tag},
 };
 
 /// All Tiled files will be parsed into this. Holds all the layers and tilesets
 #[derive(Debug, PartialEq, Clone)]
 pub struct Map {
+    /// The TMX format version this map was saved to.
     pub version: String,
+    /// The orientation of this map.
     pub orientation: Orientation,
-    /// Width of the map, in tiles
+    /// Width of the map, in tiles.
     pub width: u32,
-    /// Height of the map, in tiles
+    /// Height of the map, in tiles.
     pub height: u32,
+    /// Tile width, in pixels.
     pub tile_width: u32,
+    /// Tile height, in pixels.
     pub tile_height: u32,
+    /// The tilesets present in this map.
     pub tilesets: Vec<Tileset>,
+    /// The tile layers present in this map.
     pub layers: Vec<Layer>,
+    /// The image layers present in this map.
     pub image_layers: Vec<ImageLayer>,
+    /// The object groups present in this map.
     pub object_groups: Vec<ObjectGroup>,
+    /// The custom properties of this map.
     pub properties: Properties,
-    pub background_colour: Option<Colour>,
+    /// The background color of this map, if any.
+    pub background_color: Option<Color>,
+    /// Whether this map is infinite or not.
     pub infinite: bool,
+    /// Where this map was loaded from.
+    /// If fully embedded (loaded with path = `None`), this will return `None`.
+    pub source: Option<PathBuf>,
 }
 
 impl Map {
-    pub(crate) fn new<R: Read>(
+    /// Parse a buffer hopefully containing the contents of a Tiled file and try to
+    /// parse it. This augments `parse` with a file location: some engines
+    /// (e.g. Amethyst) simply hand over a byte stream (and file location) for parsing,
+    /// in which case this function may be required.
+    /// The path may be skipped if the map is fully embedded (Doesn't refer to external files).
+    pub fn parse_reader<R: Read>(reader: R, path: Option<&Path>) -> Result<Self, TiledError> {
+        let mut parser = EventReader::new(reader);
+        loop {
+            match parser.next().map_err(TiledError::XmlDecodingError)? {
+                XmlEvent::StartElement {
+                    name, attributes, ..
+                } => {
+                    if name.local_name == "map" {
+                        return Self::parse_xml(&mut parser, attributes, path);
+                    }
+                }
+                XmlEvent::EndDocument => {
+                    return Err(TiledError::PrematureEnd(
+                        "Document ended before map was parsed".to_string(),
+                    ))
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Parse a file hopefully containing a Tiled map and try to parse it.  If the
+    /// file has an external tileset, the tileset file will be loaded using a path
+    /// relative to the map file's path.
+    pub fn parse_file(path: &Path) -> Result<Self, TiledError> {
+        let file = File::open(path)
+            .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path)))?;
+        Self::parse_reader(file, Some(path))
+    }
+
+    fn parse_xml<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         map_path: Option<&Path>,
@@ -62,7 +118,7 @@ impl Map {
         let mut layer_index = 0;
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
-                tilesets.push(Tileset::new(parser, attrs, map_path)?);
+                tilesets.push(Tileset::parse_xml(parser, attrs, map_path)?);
                 Ok(())
             },
             "layer" => |attrs| {
@@ -97,13 +153,14 @@ impl Map {
             image_layers,
             object_groups,
             properties,
-            background_colour: c,
+            background_color: c,
             infinite: infinite.unwrap_or(false),
+            source: map_path.and_then(|p| Some(p.to_owned())),
         })
     }
 
     /// This function will return the correct Tileset given a GID.
-    pub fn get_tileset_by_gid(&self, gid: u32) -> Option<&Tileset> {
+    pub fn tileset_by_gid(&self, gid: u32) -> Option<&Tileset> {
         let mut maximum_gid: i32 = -1;
         let mut maximum_ts = None;
         for tileset in self.tilesets.iter() {

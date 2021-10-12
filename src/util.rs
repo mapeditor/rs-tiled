@@ -26,9 +26,7 @@ macro_rules! get_attrs {
 }
 
 /// Goes through the children of the tag and will call the correct function for
-/// that child. Closes the tag
-///
-/// Not quite as bad.
+/// that child. Closes the tag.
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
         loop {
@@ -277,25 +275,4 @@ pub(crate) fn convert_to_tile(all: &Vec<u8>, width: u32) -> Vec<Vec<LayerTile>> 
         data.push(row);
     }
     data
-}
-
-pub(crate) fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledError> {
-    let mut parser = EventReader::new(reader);
-    loop {
-        match parser.next().map_err(TiledError::XmlDecodingError)? {
-            XmlEvent::StartElement {
-                name, attributes, ..
-            } => {
-                if name.local_name == "map" {
-                    return Map::new(&mut parser, attributes, map_path);
-                }
-            }
-            XmlEvent::EndDocument => {
-                return Err(TiledError::PrematureEnd(
-                    "Document ended before map was parsed".to_string(),
-                ))
-            }
-            _ => {}
-        }
-    }
 }
