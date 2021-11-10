@@ -1,6 +1,6 @@
 use std::{collections::HashMap, io::Read, str::FromStr};
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::{EventReader, attribute::OwnedAttribute, reader::XmlEvent};
 
 use crate::{
     error::{ParseTileError, TiledError},
@@ -87,20 +87,31 @@ pub(crate) fn parse_properties<R: Read>(
     let mut p = HashMap::new();
     parse_tag!(parser, "properties", {
         "property" => |attrs:Vec<OwnedAttribute>| {
-            let (t, (k, v)) = get_attrs!(
+            let ((t, mut v), k) = get_attrs!(
                 attrs,
                 optionals: [
                     ("type", property_type, |v| Some(v)),
+                    ("value", value, |v| Some(v)),
                 ],
                 required: [
                     ("name", key, |v| Some(v)),
-                    ("value", value, |v| Some(v)),
                 ],
                 TiledError::MalformedAttributes("property must have a name and a value".to_string())
             );
             let t = t.unwrap_or("string".into());
+            if v.is_none() {
+                v = Some(match parser.next().map_err(TiledError::XmlDecodingError)? {
+                    XmlEvent::Characters(s) => {
+                        Ok(s)
+                    }
+                    XmlEvent::EndElement { name, .. } => {
+                        Err(TiledError::MalformedAttributes("property must have a name and a value".to_string()))
+                    }
+                    _ => Err(TiledError::MalformedAttributes("?".to_string()))
+                }?);
+            }
 
-            p.insert(k, PropertyValue::new(t, v)?);
+            p.insert(k, PropertyValue::new(t, v.expect("Missing value"))?);
             Ok(())
         },
     });
