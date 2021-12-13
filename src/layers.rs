@@ -54,6 +54,7 @@ pub struct Layer {
     pub tiles: LayerData,
     pub properties: Properties,
     pub layer_index: u32,
+    pub id: u32,
 }
 
 impl Layer {
@@ -64,7 +65,7 @@ impl Layer {
         layer_index: u32,
         infinite: bool,
     ) -> Result<Layer, TiledError> {
-        let ((o, v, ox, oy), n) = get_attrs!(
+        let ((o, v, ox, oy), (n, id)) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
@@ -74,6 +75,7 @@ impl Layer {
             ],
             required: [
                 ("name", name, |v| Some(v)),
+                ("id", id, |v:String| v.parse::<u32>().ok()),
             ],
             TiledError::MalformedAttributes("layer must have a name".to_string())
         );
@@ -103,6 +105,7 @@ impl Layer {
             tiles: tiles,
             properties: properties,
             layer_index,
+            id,
         })
     }
 }
