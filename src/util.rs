@@ -54,9 +54,7 @@ macro_rules! parse_tag {
 
 use std::{
     collections::HashMap,
-    fs::File,
     io::{BufReader, Read},
-    path::Path,
 };
 
 pub(crate) use get_attrs;
@@ -67,8 +65,6 @@ use crate::{
     animation::Frame,
     error::TiledError,
     layers::{Chunk, LayerData, LayerTile},
-    map::Map,
-    tileset::Tileset,
 };
 
 pub(crate) fn parse_animation<R: Read>(
