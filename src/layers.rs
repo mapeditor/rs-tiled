@@ -75,7 +75,7 @@ impl Layer {
             ],
             required: [
                 ("name", name, |v| Some(v)),
-                ("id", id, |v:String| v.parse::<u32>().ok()),
+                ("id", id, |v:String| v.parse().ok()),
             ],
             TiledError::MalformedAttributes("layer must have a name".to_string())
         );

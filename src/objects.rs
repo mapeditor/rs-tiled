@@ -38,7 +38,7 @@ impl ObjectGroup {
                 ("name", name, |v:String| v.into()),
             ],
             required: [
-                ("id", id, |v:String| v.parse::<u32>().ok()),
+                ("id", id, |v:String| v.parse().ok()),
             ],
             TiledError::MalformedAttributes("object groups must have a name".to_string())
         );
