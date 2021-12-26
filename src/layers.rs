@@ -54,6 +54,8 @@ pub struct Layer {
     pub tiles: LayerData,
     pub properties: Properties,
     pub layer_index: u32,
+    /// The ID of the layer, as shown in the editor.
+    /// Layer ID stays the same even if layers are reordered or modified in the editor.
     pub id: u32,
 }
 

@@ -20,6 +20,8 @@ pub struct ObjectGroup {
      */
     pub layer_index: Option<u32>,
     pub properties: Properties,
+    /// The ID of the layer, as shown in the editor.
+    /// Layer ID stays the same even if layers are reordered or modified in the editor.
     pub id: u32,
 }
 
