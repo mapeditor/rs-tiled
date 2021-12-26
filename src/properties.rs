@@ -87,7 +87,7 @@ pub(crate) fn parse_properties<R: Read>(
     let mut p = HashMap::new();
     parse_tag!(parser, "properties", {
         "property" => |attrs:Vec<OwnedAttribute>| {
-            let ((t, mut v), k) = get_attrs!(
+            let ((t, v_attr), k) = get_attrs!(
                 attrs,
                 optionals: [
                     ("type", property_type, |v| Some(v)),
@@ -99,19 +99,19 @@ pub(crate) fn parse_properties<R: Read>(
                 TiledError::MalformedAttributes("property must have a name and a value".to_string())
             );
             let t = t.unwrap_or("string".into());
-            if v.is_none() {
-                v = Some(match parser.next().map_err(TiledError::XmlDecodingError)? {
-                    XmlEvent::Characters(s) => {
-                        Ok(s)
-                    }
-                    XmlEvent::EndElement { name, .. } => {
-                        Err(TiledError::MalformedAttributes("property must have a name and a value".to_string()))
-                    }
-                    _ => Err(TiledError::MalformedAttributes("?".to_string()))
-                }?);
-            }
+            
+            let v = match v_attr {
+                Some(val) => val,
+                None => {
+                    // if the "value" attribute was missing, might be a multiline string
+                    match parser.next().map_err(TiledError::XmlDecodingError)? {
+                        XmlEvent::Characters(s) => Ok(s),
+                        _ => Err(TiledError::MalformedAttributes(format!("property '{}' is missing a value", k))),
+                    }?
+                }
+            };
 
-            p.insert(k, PropertyValue::new(t, v.expect("Missing value"))?);
+            p.insert(k, PropertyValue::new(t, v)?);
             Ok(())
         },
     });
