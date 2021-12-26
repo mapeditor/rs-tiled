@@ -111,6 +111,19 @@ fn test_tile_property() {
 }
 
 #[test]
+fn test_layer_property() {
+    let r = read_from_file(&Path::new("assets/tiled_base64.tmx")).unwrap();
+    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
+        r.layers[0].properties.get("prop3")
+    {
+        v.clone()
+    } else {
+        String::new()
+    };
+    assert_eq!("Line 1\r\nLine 2\r\nLine 3,\r\n  etc\r\n   ", prop_value);
+}
+
+#[test]
 fn test_object_group_property() {
     let r = read_from_file(&Path::new("assets/tiled_object_groups.tmx")).unwrap();
     let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) = r.object_groups[0]

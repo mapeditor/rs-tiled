@@ -15,6 +15,11 @@
   <properties>
    <property name="prop1" value="12"/>
    <property name="prop2" value="some text"/>
+   <property name="prop3">Line 1
+Line 2
+Line 3,
+  etc
+   </property>
   </properties>
   <data encoding="base64" compression="zstd">
    KLUv/WBAm6UFAPgjAAAAIREtLgAAAC8RACMfHy0tLi0tLSMjIyMjIyMjSaBguwAAg0JmtQEFA2qvb+Al6lHUO91VvxpMveegXVabfkkjaEj1wZVZeNWPbSrdISdZk1b145uYEEFAvQmwiF5zTMi2QsOb9Vhv7ZxsK27ZJBXC9lYf2mVdhuqWjb8/hITgZAMw1ctxfXIOXBaofKbranfWDTtJ/Xyz7E2ZNWzVKauthC4r26Ry1TnnDqtmvUfyDw==
