@@ -14,7 +14,7 @@ use crate::{
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
     pub id: u32,
-    pub images: Vec<Image>,
+    pub image: Option<Image>,
     pub properties: Properties,
     pub objectgroup: Option<ObjectGroup>,
     pub animation: Option<Vec<Frame>>,
@@ -39,13 +39,13 @@ impl Tile {
             TiledError::MalformedAttributes("tile must have an id with the correct type".to_string())
         );
 
-        let mut images = Vec::new();
+        let mut image = Option::None;
         let mut properties = HashMap::new();
         let mut objectgroup = None;
         let mut animation = None;
         parse_tag!(parser, "tile", {
             "image" => |attrs| {
-                images.push(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -63,7 +63,7 @@ impl Tile {
         });
         Ok(Tile {
             id,
-            images,
+            image: image,
             properties,
             objectgroup,
             animation,

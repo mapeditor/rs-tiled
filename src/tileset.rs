@@ -24,9 +24,14 @@ pub struct Tileset {
     pub spacing: u32,
     pub margin: u32,
     pub tilecount: Option<u32>,
-    /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
-    /// is used. Usually you will only use one.
-    pub images: Vec<Image>,
+    pub columns: u32,
+    /// A tileset can either:
+    /// * have a single spritesheet `image` in `tileset` ("regular" tileset);
+    /// * have zero images in `tileset` and one `image` per `tile` ("image collection" tileset).
+    ///
+    /// - Source: [tiled issue #2117](https://github.com/mapeditor/tiled/issues/2117)
+    /// - Source: [`columns` documentation](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset)
+    pub image: Option<Image>,
     pub tiles: Vec<Tile>,
     pub properties: Properties,
 }
@@ -54,12 +59,13 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, tilecount), (first_gid, name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount, columns), (first_gid, name, width, height)) = get_attrs!(
            attrs,
            optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
                 ("tilecount", tilecount, |v:String| v.parse().ok()),
+                ("columns", columns, |v:String| v.parse().ok()),
             ],
            required: [
                 ("firstgid", first_gid, |v:String| v.parse().ok()),
@@ -70,12 +76,12 @@ impl Tileset {
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
-        let mut images = Vec::new();
+        let mut image = Option::None;
         let mut tiles = Vec::new();
         let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                images.push(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -88,6 +94,15 @@ impl Tileset {
             },
         });
 
+        let columns = match columns {
+            Some(col) => col,
+            None => match &image {
+                None => return Err(TiledError::MalformedAttributes(
+                    "No <image> and no <columns> in <tileset>".to_string())),
+                Some(image) => image.width as u32 / width,
+            },
+        };
+
         Ok(Tileset {
             tile_width: width,
             tile_height: height,
@@ -96,7 +111,8 @@ impl Tileset {
             first_gid,
             name,
             tilecount,
-            images,
+            columns,
+            image,
             tiles,
             properties,
         })
@@ -159,12 +175,13 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, tilecount), (name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount, columns), (name, width, height)) = get_attrs!(
             attrs,
             optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
                 ("tilecount", tilecount, |v:String| v.parse().ok()),
+                ("columns", columns, |v:String| v.parse().ok()),
             ],
             required: [
                 ("name", name, |v| Some(v)),
@@ -174,23 +191,32 @@ impl Tileset {
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
-        let mut images = Vec::new();
+        let mut image = Option::None;
         let mut tiles = Vec::new();
         let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                images.push(Image::new(parser, attrs)?);
-                Ok(())
-            },
-            "tile" => |attrs| {
-                tiles.push(Tile::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs)?);
                 Ok(())
             },
             "properties" => |_| {
                 properties = parse_properties(parser)?;
                 Ok(())
             },
+            "tile" => |attrs| {
+                tiles.push(Tile::new(parser, attrs)?);
+                Ok(())
+            },
         });
+
+        let columns = match columns {
+            Some(col) => col,
+            None => match &image {
+                None => return Err(TiledError::MalformedAttributes(
+                    "No <image> and no <columns> in <tileset>".to_string())),
+                Some(image) => image.width as u32 / width,
+            },
+        };
 
         Ok(Tileset {
             first_gid: first_gid,
@@ -199,8 +225,9 @@ impl Tileset {
             tile_height: height,
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
-            tilecount: tilecount,
-            images: images,
+            columns,
+            tilecount,
+            image,
             tiles: tiles,
             properties,
         })
