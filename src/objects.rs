@@ -20,6 +20,9 @@ pub struct ObjectGroup {
      */
     pub layer_index: Option<u32>,
     pub properties: Properties,
+    /// The ID of the layer, as shown in the editor.
+    /// Layer ID stays the same even if layers are reordered or modified in the editor.
+    pub id: u32,
 }
 
 impl ObjectGroup {
@@ -28,7 +31,7 @@ impl ObjectGroup {
         attrs: Vec<OwnedAttribute>,
         layer_index: Option<u32>,
     ) -> Result<ObjectGroup, TiledError> {
-        let ((o, v, c, n), ()) = get_attrs!(
+        let ((o, v, c, n), id) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
@@ -36,7 +39,9 @@ impl ObjectGroup {
                 ("color", colour, |v:String| v.parse().ok()),
                 ("name", name, |v:String| v.into()),
             ],
-            required: [],
+            required: [
+                ("id", id, |v:String| v.parse().ok()),
+            ],
             TiledError::MalformedAttributes("object groups must have a name".to_string())
         );
         let mut objects = Vec::new();
@@ -59,6 +64,7 @@ impl ObjectGroup {
             colour: c,
             layer_index,
             properties,
+            id,
         })
     }
 }
