@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="2" height="2" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="4">
+ <layer id="1" name="Tile Layer 1" width="2" height="2">
+  <data encoding="csv">
+0,0,
+0,0
+</data>
+ </layer>
+ <objectgroup id="2" name="Object Layer 1">
+  <object id="2" x="0" y="0" width="32" height="32">
+   <properties>
+    <property name="object property" type="object" value="3"/>
+   </properties>
+  </object>
+  <object id="3" x="32" y="32" width="32" height="32">
+   <properties>
+    <property name="object property" type="object" value="0"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>

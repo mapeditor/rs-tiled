@@ -45,6 +45,8 @@ pub enum PropertyValue {
     StringValue(String),
     /// Holds the path relative to the map or tileset
     FileValue(String),
+    /// Holds the id of a referenced object, or 0 if unset
+    ObjectValue(u32),
 }
 
 impl PropertyValue {
@@ -70,6 +72,10 @@ impl PropertyValue {
                 ))),
             },
             "string" => Ok(PropertyValue::StringValue(value)),
+            "object" => match value.parse() {
+                Ok(val) => Ok(PropertyValue::ObjectValue(val)),
+                Err(err) => Err(TiledError::Other(err.to_string())),
+            },
             "file" => Ok(PropertyValue::FileValue(value)),
             _ => Err(TiledError::Other(format!(
                 "Unknown property type \"{}\"",

@@ -190,3 +190,16 @@ fn test_ldk_export() {
         assert!(false, "It is wrongly recognised as an infinite map");
     }
 }
+
+#[test]
+fn test_object_property() {
+    let r = read_from_file(&Path::new("assets/tiled_object_property.tmx")).unwrap();
+    let prop_value = if let Some(PropertyValue::ObjectValue(v)) =
+        r.object_groups[0].objects[0].properties.get("object property")
+    {
+        *v
+    } else {
+        0
+    };
+    assert_eq!(3, prop_value);
+}
