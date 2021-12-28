@@ -190,3 +190,28 @@ fn test_ldk_export() {
         assert!(false, "It is wrongly recognised as an infinite map");
     }
 }
+
+#[test]
+fn test_parallax_layers() {
+    let r = read_from_file_with_path(&Path::new("assets/tiled_parallax.tmx")).unwrap();
+    for (i, layer) in r.layers.iter().enumerate() {
+        match i {
+            0 => {
+                assert_eq!(layer.name, "Background");
+                assert_eq!(layer.parallax_x, 0.5);
+                assert_eq!(layer.parallax_y, 0.75);
+            }
+            1 => {
+                assert_eq!(layer.name, "Middle");
+                assert_eq!(layer.parallax_x, 1.0);
+                assert_eq!(layer.parallax_y, 1.0);
+            }
+            2 => {
+                assert_eq!(layer.name, "Foreground");
+                assert_eq!(layer.parallax_x, 2.0);
+                assert_eq!(layer.parallax_y, 2.0);
+            }
+            _ => panic!("unexpected layer"),
+        }
+    }
+}
