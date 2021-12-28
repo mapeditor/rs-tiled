@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Map::source` for obtaining where the map actually came from.
 - `Tileset::columns`.
 - `layers::Layer::id`.
+- Support for 'object'-type properties.
 - Documentation for map members.
 - Tests for `tiled_base64_zstandard.tmx`.
 - `.gitattributes` for line ending consistency.

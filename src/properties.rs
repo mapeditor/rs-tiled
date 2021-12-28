@@ -1,6 +1,6 @@
 use std::{collections::HashMap, io::Read, str::FromStr};
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::{EventReader, attribute::OwnedAttribute, reader::XmlEvent};
 
 use crate::{
     error::{ParseTileError, TiledError},
@@ -45,6 +45,8 @@ pub enum PropertyValue {
     StringValue(String),
     /// Holds the path relative to the map or tileset
     FileValue(String),
+    /// Holds the id of a referenced object, or 0 if unset
+    ObjectValue(u32),
 }
 
 impl PropertyValue {
@@ -70,6 +72,10 @@ impl PropertyValue {
                 ))),
             },
             "string" => Ok(PropertyValue::StringValue(value)),
+            "object" => match value.parse() {
+                Ok(val) => Ok(PropertyValue::ObjectValue(val)),
+                Err(err) => Err(TiledError::Other(err.to_string())),
+            },
             "file" => Ok(PropertyValue::FileValue(value)),
             _ => Err(TiledError::Other(format!(
                 "Unknown property type \"{}\"",
@@ -87,18 +93,29 @@ pub(crate) fn parse_properties<R: Read>(
     let mut p = HashMap::new();
     parse_tag!(parser, "properties", {
         "property" => |attrs:Vec<OwnedAttribute>| {
-            let (t, (k, v)) = get_attrs!(
+            let ((t, v_attr), k) = get_attrs!(
                 attrs,
                 optionals: [
                     ("type", property_type, |v| Some(v)),
+                    ("value", value, |v| Some(v)),
                 ],
                 required: [
                     ("name", key, |v| Some(v)),
-                    ("value", value, |v| Some(v)),
                 ],
                 TiledError::MalformedAttributes("property must have a name and a value".to_string())
             );
             let t = t.unwrap_or("string".into());
+            
+            let v = match v_attr {
+                Some(val) => val,
+                None => {
+                    // if the "value" attribute was missing, might be a multiline string
+                    match parser.next().map_err(TiledError::XmlDecodingError)? {
+                        XmlEvent::Characters(s) => Ok(s),
+                        _ => Err(TiledError::MalformedAttributes(format!("property '{}' is missing a value", k))),
+                    }?
+                }
+            };
 
             p.insert(k, PropertyValue::new(t, v)?);
             Ok(())
