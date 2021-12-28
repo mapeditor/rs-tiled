@@ -57,6 +57,15 @@ pub struct Layer {
     /// The ID of the layer, as shown in the editor.
     /// Layer ID stays the same even if layers are reordered or modified in the editor.
     pub id: u32,
+
+    /// Derived from the first chunk. There's no good way to generally find out
+    /// the chunk size, even though
+    /// [editorsettings doc](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#chunksize)
+    /// suggests it's the same for the entire map.
+    /// Maybe in future Tiled will support different chunk sizes in one map, but
+    /// I doubt it.
+    pub chunk_width: u32,
+    pub chunk_height: u32,
 }
 
 impl Layer {
@@ -98,6 +107,16 @@ impl Layer {
             },
         });
 
+        let mut chunk_width = 0;
+        let mut chunk_height = 0;
+
+        if let LayerData::Infinite(chunks) = &tiles {
+            if let Some((_i, chunk)) = chunks.iter().next() {
+                chunk_width = chunk.width;
+                chunk_height = chunk.height;
+            }
+        }
+
         Ok(Layer {
             name: n.unwrap_or(String::new()),
             opacity: o.unwrap_or(1.0),
@@ -108,9 +127,35 @@ impl Layer {
             properties: properties,
             layer_index,
             id: id.unwrap_or(0),
+            chunk_width,
+            chunk_height,
         })
     }
+
+    /// Returns a LayerTile, if present in the layer.
+    pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
+        let tile: LayerTile = match &self.tiles {
+            LayerData::Finite(tiles) => {
+                if x < 0 || y < 0 || y as usize >= tiles.len() || x as usize >= tiles[y as usize].len() {
+                    return None;
+                }
+                tiles[y as usize][x as usize]
+            }
+            LayerData::Infinite(chunks) => {
+                let chunk_x = x - x % self.chunk_width as i32;
+                let chunk_y = y - y % self.chunk_height as i32;
+
+                match chunks.get(&(chunk_x, chunk_y)) {
+                    Some(chunk) => chunk.tiles[y as usize][x as usize],
+                    None => return None,
+                }
+            }
+        };
+
+        if tile.gid == 0 { None } else { Some(tile) }
+    }
 }
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum LayerData {
     Finite(Vec<Vec<LayerTile>>),
