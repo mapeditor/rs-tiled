@@ -36,6 +36,10 @@ pub struct Map {
     /// The background color of this map, if any.
     pub background_color: Option<Color>,
     pub infinite: bool,
+    /// "various editor-specific settings, which are generally not relevant
+    /// when reading a map" the doc says, but the only other way to read
+    /// an infinite map's chunk size is directly from chunks.
+    pub editor_settings: EditorSettings
 }
 
 impl Map {
@@ -106,6 +110,7 @@ impl Map {
         let mut properties = HashMap::new();
         let mut object_groups = Vec::new();
         let mut layer_index = 0;
+        let mut editor_settings = EditorSettings::default();
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
                 tilesets.push(Tileset::parse_xml(parser, attrs, source_path)?);
@@ -130,6 +135,10 @@ impl Map {
                 layer_index += 1;
                 Ok(())
             },
+            "editorsettings" => |_| {
+                editor_settings = EditorSettings::new(parser)?;
+                Ok(())
+            },
         });
         Ok(Map {
             version: v,
@@ -145,6 +154,7 @@ impl Map {
             properties,
             background_color: c,
             infinite: infinite.unwrap_or(false),
+            editor_settings,
         })
     }
 
@@ -192,6 +202,55 @@ impl fmt::Display for Orientation {
             Orientation::Isometric => write!(f, "isometric"),
             Orientation::Staggered => write!(f, "staggered"),
             Orientation::Hexagonal => write!(f, "hexagonal"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub struct EditorSettings {
+    // The width of chunks used for infinite maps (default to 16).
+    pub chunk_width: u32,
+    // The width of chunks used for infinite maps (default to 16).
+    pub chunk_height: u32,
+}
+
+impl EditorSettings {
+    pub(crate) fn new<R: Read>(
+        parser: &mut EventReader<R>,
+    ) -> Result<Self, TiledError> {
+        let mut chunk_width = 16;
+        let mut chunk_height = 16;
+
+        parse_tag!(parser, "editorsettings", {
+            "chunksize" => |attrs: Vec<OwnedAttribute>| {
+                let ((w, h), ()) = get_attrs!(
+                    attrs,
+                    optionals: [
+                        ("width", w, |v:String| v.parse().ok()),
+                        ("height", h, |v:String| v.parse().ok()),
+                    ],
+                    required: [],
+                    TiledError::MalformedAttributes("something wrong with editorsettings".to_string()));
+
+                chunk_width = w.unwrap_or(16);
+                chunk_height = h.unwrap_or(16);
+
+                Ok(())
+            },
+        });
+
+        Ok( EditorSettings {
+            chunk_width,
+            chunk_height,
+        })
+    }
+}
+
+impl Default for EditorSettings {
+    fn default() -> Self {
+        Self {
+            chunk_width: 16,
+            chunk_height: 16,
         }
     }
 }
