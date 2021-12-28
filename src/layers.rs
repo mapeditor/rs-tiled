@@ -54,6 +54,8 @@ pub struct Layer {
     pub tiles: LayerData,
     pub properties: Properties,
     pub layer_index: u32,
+    pub parallax_x: f32,
+    pub parallax_y: f32,
     /// The ID of the layer, as shown in the editor.
     /// Layer ID stays the same even if layers are reordered or modified in the editor.
     pub id: u32,
@@ -67,14 +69,16 @@ impl Layer {
         layer_index: u32,
         infinite: bool,
     ) -> Result<Layer, TiledError> {
-        let ((o, v, ox, oy), (n, id)) = get_attrs!(
+        let ((o, v, ox, oy, px, py), (n, id)) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("offsetx", offset_x, |v:String| v.parse().ok()),
                 ("offsety", offset_y, |v:String| v.parse().ok()),
-            ],
+                ("parallaxx", parallax_x, |v:String| v.parse().ok()),
+                ("parallaxy", parallax_y, |v:String| v.parse().ok()),
+                ],
             required: [
                 ("name", name, |v| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
@@ -104,6 +108,8 @@ impl Layer {
             visible: v.unwrap_or(true),
             offset_x: ox.unwrap_or(0.0),
             offset_y: oy.unwrap_or(0.0),
+            parallax_x:px.unwrap_or(1.0),
+            parallax_y: py.unwrap_or(1.0),
             tiles: tiles,
             properties: properties,
             layer_index,
