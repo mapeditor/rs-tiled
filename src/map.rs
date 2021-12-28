@@ -18,12 +18,11 @@ use crate::{
     util::{get_attrs, parse_tag},
 };
 
-/// All Tiled files will be parsed into this. Holds all the layers and tilesets
+/// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Map {
     /// The TMX format version this map was saved to.
     pub version: String,
-    /// The orientation of this map.
     pub orientation: Orientation,
     /// Width of the map, in tiles.
     pub width: u32,
@@ -37,15 +36,12 @@ pub struct Map {
     pub tilesets: Vec<Tileset>,
     /// The tile layers present in this map.
     pub layers: Vec<Layer>,
-    /// The image layers present in this map.
     pub image_layers: Vec<ImageLayer>,
-    /// The object groups present in this map.
     pub object_groups: Vec<ObjectGroup>,
     /// The custom properties of this map.
     pub properties: Properties,
     /// The background color of this map, if any.
     pub background_color: Option<Color>,
-    /// Whether this map is infinite or not.
     pub infinite: bool,
     /// Where this map was loaded from.
     /// If fully embedded (loaded with path = `None`), this will return `None`.
@@ -82,10 +78,10 @@ impl Map {
     /// Parse a file hopefully containing a Tiled map and try to parse it.  If the
     /// file has an external tileset, the tileset file will be loaded using a path
     /// relative to the map file's path.
-    pub fn parse_file(path: &Path) -> Result<Self, TiledError> {
-        let file = File::open(path)
-            .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path)))?;
-        Self::parse_reader(file, Some(path))
+    pub fn parse_file(path: impl AsRef<Path>) -> Result<Self, TiledError> {
+        let file = File::open(path.as_ref())
+            .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
+        Self::parse_reader(file, Some(path.as_ref()))
     }
 
     fn parse_xml<R: Read>(
@@ -173,6 +169,7 @@ impl Map {
     }
 }
 
+/// Represents the way tiles are laid out in a map.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Orientation {
     Orthogonal,

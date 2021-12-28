@@ -97,8 +97,11 @@ impl Tileset {
         let columns = match columns {
             Some(col) => col,
             None => match &image {
-                None => return Err(TiledError::MalformedAttributes(
-                    "No <image> and no <columns> in <tileset>".to_string())),
+                None => {
+                    return Err(TiledError::MalformedAttributes(
+                        "No <image> and no <columns> in <tileset>".to_string(),
+                    ))
+                }
                 Some(image) => image.width as u32 / width,
             },
         };
@@ -212,8 +215,11 @@ impl Tileset {
         let columns = match columns {
             Some(col) => col,
             None => match &image {
-                None => return Err(TiledError::MalformedAttributes(
-                    "No <image> and no <columns> in <tileset>".to_string())),
+                None => {
+                    return Err(TiledError::MalformedAttributes(
+                        "No <image> and no <columns> in <tileset>".to_string(),
+                    ))
+                }
                 Some(image) => image.width as u32 / width,
             },
         };

@@ -4,18 +4,18 @@ use tiled::{
     error::TiledError, layers::LayerData, map::Map, properties::PropertyValue, tileset::Tileset,
 };
 
-fn parse_map_without_source(p: &Path) -> Result<Map, TiledError> {
+fn parse_map_without_source(p: impl AsRef<Path>) -> Result<Map, TiledError> {
     let file = File::open(p).unwrap();
     return Map::parse_reader(file, None);
 }
 
 #[test]
 fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
-    let z = parse_map_without_source(&Path::new("assets/tiled_base64_zlib.tmx")).unwrap();
-    let g = parse_map_without_source(&Path::new("assets/tiled_base64_gzip.tmx")).unwrap();
-    let r = parse_map_without_source(&Path::new("assets/tiled_base64.tmx")).unwrap();
-    let zstd = parse_map_without_source(&Path::new("assets/tiled_base64_zstandard.tmx")).unwrap();
-    let c = parse_map_without_source(&Path::new("assets/tiled_csv.tmx")).unwrap();
+    let z = parse_map_without_source("assets/tiled_base64_zlib.tmx").unwrap();
+    let g = parse_map_without_source("assets/tiled_base64_gzip.tmx").unwrap();
+    let r = parse_map_without_source("assets/tiled_base64.tmx").unwrap();
+    let zstd = parse_map_without_source("assets/tiled_base64_zstandard.tmx").unwrap();
+    let c = parse_map_without_source("assets/tiled_csv.tmx").unwrap();
     assert_eq!(z, g);
     assert_eq!(z, r);
     assert_eq!(z, c);
@@ -37,8 +37,8 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
 
 #[test]
 fn test_external_tileset() {
-    let r = parse_map_without_source(&Path::new("assets/tiled_base64.tmx")).unwrap();
-    let e = Map::parse_file(&Path::new("assets/tiled_base64_external.tmx")).unwrap();
+    let r = parse_map_without_source("assets/tiled_base64.tmx").unwrap();
+    let e = Map::parse_file("assets/tiled_base64_external.tmx").unwrap();
     // Compare everything BUT source
     assert_eq!(r.version, e.version);
     assert_eq!(r.orientation, e.orientation);
@@ -57,14 +57,14 @@ fn test_external_tileset() {
 
 #[test]
 fn test_just_tileset() {
-    let r = parse_map_without_source(&Path::new("assets/tiled_base64.tmx")).unwrap();
+    let r = parse_map_without_source("assets/tiled_base64.tmx").unwrap();
     let t = Tileset::parse(File::open(Path::new("assets/tilesheet.tsx")).unwrap(), 1).unwrap();
     assert_eq!(r.tilesets[0], t);
 }
 
 #[test]
 fn test_infinite_tileset() {
-    let r = Map::parse_file(&Path::new("assets/tiled_base64_zlib_infinite.tmx")).unwrap();
+    let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx").unwrap();
 
     if let LayerData::Infinite(chunks) = &r.layers[0].tiles {
         assert_eq!(chunks.len(), 4);
@@ -81,7 +81,7 @@ fn test_infinite_tileset() {
 
 #[test]
 fn test_image_layers() {
-    let r = parse_map_without_source(&Path::new("assets/tiled_image_layers.tmx")).unwrap();
+    let r = parse_map_without_source("assets/tiled_image_layers.tmx").unwrap();
     assert_eq!(r.image_layers.len(), 2);
     {
         let first = &r.image_layers[0];
@@ -107,7 +107,7 @@ fn test_image_layers() {
 
 #[test]
 fn test_tile_property() {
-    let r = parse_map_without_source(&Path::new("assets/tiled_base64.tmx")).unwrap();
+    let r = parse_map_without_source("assets/tiled_base64.tmx").unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
         r.tilesets[0].tiles[0].properties.get("a tile property")
     {
@@ -120,7 +120,7 @@ fn test_tile_property() {
 
 #[test]
 fn test_object_group_property() {
-    let r = parse_map_without_source(&Path::new("assets/tiled_object_groups.tmx")).unwrap();
+    let r = parse_map_without_source("assets/tiled_object_groups.tmx").unwrap();
     let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) = r.object_groups[0]
         .properties
         .get("an object group property")
@@ -133,7 +133,7 @@ fn test_object_group_property() {
 }
 #[test]
 fn test_tileset_property() {
-    let r = parse_map_without_source(&Path::new("assets/tiled_base64.tmx")).unwrap();
+    let r = parse_map_without_source("assets/tiled_base64.tmx").unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
         r.tilesets[0].properties.get("tileset property")
     {
@@ -146,7 +146,7 @@ fn test_tileset_property() {
 
 #[test]
 fn test_flipped_gid() {
-    let r = Map::parse_file(&Path::new("assets/tiled_flipped.tmx")).unwrap();
+    let r = Map::parse_file("assets/tiled_flipped.tmx").unwrap();
 
     if let LayerData::Finite(tiles) = &r.layers[0].tiles {
         let t1 = tiles[0][0];
@@ -175,7 +175,7 @@ fn test_flipped_gid() {
 
 #[test]
 fn test_ldk_export() {
-    let r = Map::parse_file(&Path::new("assets/ldk_tiled_export.tmx")).unwrap();
+    let r = Map::parse_file("assets/ldk_tiled_export.tmx").unwrap();
     if let LayerData::Finite(tiles) = &r.layers[0].tiles {
         assert_eq!(tiles.len(), 8);
         assert_eq!(tiles[0].len(), 8);

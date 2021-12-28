@@ -28,7 +28,7 @@ use std::path::Path;
 use tiled::parse;
 
 fn main() {
-    let file = File::open(&Path::new("assets/tiled_base64_zlib.tmx")).unwrap();
+    let file = File::open("assets/tiled_base64_zlib.tmx").unwrap();
     println!("Opened file");
     let reader = BufReader::new(file);
     let map = parse(reader).unwrap();
