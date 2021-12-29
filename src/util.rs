@@ -83,7 +83,6 @@ pub(crate) fn parse_animation<R: Read>(
 pub(crate) fn parse_infinite_data<R: Read>(
     parser: &mut EventReader<R>,
     attrs: Vec<OwnedAttribute>,
-    width: u32,
 ) -> Result<LayerData, TiledError> {
     let ((e, c), ()) = get_attrs!(
         attrs,

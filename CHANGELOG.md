@@ -26,8 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tileset now has `image` instead of `images`.
 - `Image::source` is now a `PathBuf` instead of a `String`.
 - Functions that took in `&Path` now take `impl AsRef<Path>`.
+- Refactored internals.
+- Fixed library warnings.
 - Bumped `zstd` to `0.9`.
-- Fix markdown formatting in the `CONTRIBUTORS` file.
+- Fixed markdown formatting in the `CONTRIBUTORS` file.
 
 ### Added
 - `Tileset::source` for obtaining where the tileset actually came from.

@@ -86,7 +86,7 @@ impl Layer {
         parse_tag!(parser, "layer", {
             "data" => |attrs| {
                 if infinite {
-                    tiles = parse_infinite_data(parser, attrs, width)?;
+                    tiles = parse_infinite_data(parser, attrs)?;
                 } else {
                     tiles = parse_data(parser, attrs, width)?;
                 }
