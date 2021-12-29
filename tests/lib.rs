@@ -38,21 +38,10 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
 #[test]
 fn test_external_tileset() {
     let r = parse_map_without_source("assets/tiled_base64.tmx").unwrap();
-    let e = Map::parse_file("assets/tiled_base64_external.tmx").unwrap();
+    let mut e = Map::parse_file("assets/tiled_base64_external.tmx").unwrap();
+    e.source = None;
     // Compare everything BUT source
-    assert_eq!(r.version, e.version);
-    assert_eq!(r.orientation, e.orientation);
-    assert_eq!(r.width, e.width);
-    assert_eq!(r.height, e.height);
-    assert_eq!(r.tile_width, e.tile_width);
-    assert_eq!(r.tile_height, e.tile_height);
-    assert_eq!(r.tilesets, e.tilesets);
-    assert_eq!(r.layers, e.layers);
-    assert_eq!(r.image_layers, e.image_layers);
-    assert_eq!(r.object_groups, e.object_groups);
-    assert_eq!(r.properties, e.properties);
-    assert_eq!(r.background_color, e.background_color);
-    assert_eq!(r.infinite, e.infinite);
+    assert_eq!(r, e);
 }
 
 #[test]
@@ -120,14 +109,13 @@ fn test_tile_property() {
 
 #[test]
 fn test_layer_property() {
-    let r = read_from_file(&Path::new("assets/tiled_base64.tmx")).unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
-        r.layers[0].properties.get("prop3")
-    {
-        v.clone()
-    } else {
-        String::new()
-    };
+    let r = parse_map_without_source(&Path::new("assets/tiled_base64.tmx")).unwrap();
+    let prop_value: String =
+        if let Some(&PropertyValue::StringValue(ref v)) = r.layers[0].properties.get("prop3") {
+            v.clone()
+        } else {
+            String::new()
+        };
     assert_eq!("Line 1\r\nLine 2\r\nLine 3,\r\n  etc\r\n   ", prop_value);
 }
 
@@ -201,9 +189,10 @@ fn test_ldk_export() {
 
 #[test]
 fn test_object_property() {
-    let r = read_from_file(&Path::new("assets/tiled_object_property.tmx")).unwrap();
-    let prop_value = if let Some(PropertyValue::ObjectValue(v)) =
-        r.object_groups[0].objects[0].properties.get("object property")
+    let r = parse_map_without_source(&Path::new("assets/tiled_object_property.tmx")).unwrap();
+    let prop_value = if let Some(PropertyValue::ObjectValue(v)) = r.object_groups[0].objects[0]
+        .properties
+        .get("object property")
     {
         *v
     } else {
