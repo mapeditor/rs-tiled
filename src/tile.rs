@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashMap, io::Read, path::Path};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
@@ -26,6 +26,7 @@ impl Tile {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
+        path_relative_to: Option<&Path>,
     ) -> Result<Tile, TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
@@ -45,7 +46,7 @@ impl Tile {
         let mut animation = None;
         parse_tag!(parser, "tile", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_owned()})?)?);
                 Ok(())
             },
             "properties" => |_| {

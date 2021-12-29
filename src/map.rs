@@ -43,17 +43,17 @@ pub struct Map {
     /// The background color of this map, if any.
     pub background_color: Option<Color>,
     pub infinite: bool,
-    /// Where this map was loaded from.
-    /// If fully embedded (loaded with path = `None`), this will return `None`.
-    pub source: Option<PathBuf>,
 }
 
 impl Map {
     /// Parse a buffer hopefully containing the contents of a Tiled file and try to
-    /// parse it. This augments `parse` with a file location: some engines
+    /// parse it. This augments `parse_file` with a custom reader: some engines
     /// (e.g. Amethyst) simply hand over a byte stream (and file location) for parsing,
     /// in which case this function may be required.
-    /// The path may be skipped if the map is fully embedded (Doesn't refer to external files).
+    ///
+    /// The path is used for external dependencies such as tilesets or images, and may be skipped
+    /// if the map is fully embedded (Doesn't refer to external files). If a map *does* refer to
+    /// external files and a path is not given, the function will return [TiledError::SourceRequired].
     pub fn parse_reader<R: Read>(reader: R, path: Option<&Path>) -> Result<Self, TiledError> {
         let mut parser = EventReader::new(reader);
         loop {
@@ -75,9 +75,8 @@ impl Map {
         }
     }
 
-    /// Parse a file hopefully containing a Tiled map and try to parse it.  If the
-    /// file has an external tileset, the tileset file will be loaded using a path
-    /// relative to the map file's path.
+    /// Parse a file hopefully containing a Tiled map and try to parse it.  All external
+    /// files will be loaded relative to the path given.
     pub fn parse_file(path: impl AsRef<Path>) -> Result<Self, TiledError> {
         let file = File::open(path.as_ref())
             .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
@@ -106,6 +105,8 @@ impl Map {
             TiledError::MalformedAttributes("map must have a version, width and height with correct types".to_string())
         );
 
+        let source_path = map_path.and_then(|p| p.parent());
+
         let mut tilesets = Vec::new();
         let mut layers = Vec::new();
         let mut image_layers = Vec::new();
@@ -114,7 +115,7 @@ impl Map {
         let mut layer_index = 0;
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
-                tilesets.push(Tileset::parse_xml(parser, attrs, map_path)?);
+                tilesets.push(Tileset::parse_xml(parser, attrs, source_path)?);
                 Ok(())
             },
             "layer" => |attrs| {
@@ -123,7 +124,7 @@ impl Map {
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                image_layers.push(ImageLayer::new(parser, attrs, layer_index)?);
+                image_layers.push(ImageLayer::new(parser, attrs, layer_index, source_path)?);
                 layer_index += 1;
                 Ok(())
             },
@@ -151,7 +152,6 @@ impl Map {
             properties,
             background_color: c,
             infinite: infinite.unwrap_or(false),
-            source: map_path.and_then(|p| Some(p.to_owned())),
         })
     }
 

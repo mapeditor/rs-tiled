@@ -24,12 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `Map::get_tileset_by_gid` -> `Map::tileset_by_gid`
 - Tile now has `image` instead of `images`. ([Issue comment](https://github.com/mapeditor/rs-tiled/issues/103#issuecomment-940773123))
 - Tileset now has `image` instead of `images`.
+- `Image::source` is now a `PathBuf` instead of a `String`.
 - Functions that took in `&Path` now take `impl AsRef<Path>`.
 - Bumped `zstd` to `0.9`.
 - Fix markdown formatting in the `CONTRIBUTORS` file.
 
 ### Added
-- `Map::source` for obtaining where the map actually came from.
+- `Tileset::source` for obtaining where the tileset actually came from.
 - `Tileset::columns`.
 - `layers::Layer::id`.
 - Support for 'object'-type properties.

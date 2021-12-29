@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use xml::attribute::OwnedAttribute;
 use xml::reader::XmlEvent;
@@ -16,7 +16,7 @@ use crate::util::*;
 /// A tileset, usually the tilesheet image.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tileset {
-    /// The GID of the first tile stored
+    /// The GID of the first tile stored.
     pub first_gid: u32,
     pub name: String,
     pub tile_width: u32,
@@ -25,15 +25,21 @@ pub struct Tileset {
     pub margin: u32,
     pub tilecount: Option<u32>,
     pub columns: u32,
+
     /// A tileset can either:
     /// * have a single spritesheet `image` in `tileset` ("regular" tileset);
     /// * have zero images in `tileset` and one `image` per `tile` ("image collection" tileset).
     ///
+    /// --------
     /// - Source: [tiled issue #2117](https://github.com/mapeditor/tiled/issues/2117)
     /// - Source: [`columns` documentation](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset)
     pub image: Option<Image>,
     pub tiles: Vec<Tile>,
     pub properties: Properties,
+
+    /// Where this tileset was loaded from.
+    /// If fully embedded (loaded with path = `None`), this will return `None`.
+    pub source: Option<PathBuf>,
 }
 
 impl Tileset {
@@ -43,21 +49,40 @@ impl Tileset {
     /// map. You must pass in `first_gid`.  If you do not need to use gids for anything,
     /// passing in 1 will work fine.
     pub fn parse<R: Read>(reader: R, first_gid: u32) -> Result<Self, TiledError> {
-        Tileset::new_external(reader, first_gid)
+        Tileset::new_external(reader, first_gid, None)
+    }
+
+    /// Parse a buffer hopefully containing the contents of a Tiled tileset.
+    ///
+    /// External tilesets do not have a firstgid attribute.  That lives in the
+    /// map. You must pass in `first_gid`.  If you do not need to use gids for anything,
+    /// passing in 1 will work fine.
+    pub fn parse_with_path<R: Read>(
+        reader: R,
+        first_gid: u32,
+        path: impl AsRef<Path>,
+    ) -> Result<Self, TiledError> {
+        Tileset::new_external(reader, first_gid, Some(path.as_ref()))
     }
 
     pub(crate) fn parse_xml<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
-        map_path: Option<&Path>,
+        path_relative_to: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
-        Tileset::parse_xml_embedded(parser, &attrs)
-            .or_else(|_| Tileset::parse_xml_reference(&attrs, map_path))
+        Tileset::parse_xml_embedded(parser, &attrs, path_relative_to).or_else(|err| {
+            if matches!(err, TiledError::MalformedAttributes(_)) {
+                Tileset::parse_xml_reference(&attrs, path_relative_to)
+            } else {
+                Err(err)
+            }
+        })
     }
 
     fn parse_xml_embedded<R: Read>(
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
+        path_relative_to: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
         let ((spacing, margin, tilecount, columns), (first_gid, name, width, height)) = get_attrs!(
            attrs,
@@ -81,7 +106,7 @@ impl Tileset {
         let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -89,7 +114,7 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                tiles.push(Tile::new(parser, attrs)?);
+                tiles.push(Tile::new(parser, attrs, path_relative_to)?);
                 Ok(())
             },
         });
@@ -118,12 +143,13 @@ impl Tileset {
             image,
             tiles,
             properties,
+            source: None,
         })
     }
 
     fn parse_xml_reference(
         attrs: &Vec<OwnedAttribute>,
-        map_path: Option<&Path>,
+        path_relative_to: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
         let ((), (first_gid, source)) = get_attrs!(
             attrs,
@@ -132,20 +158,28 @@ impl Tileset {
                 ("firstgid", first_gid, |v:String| v.parse().ok()),
                 ("source", name, |v| Some(v)),
             ],
-            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
+            TiledError::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
         );
 
-        let tileset_path = map_path.ok_or(TiledError::Other("Maps with external tilesets must know their file location.  See parse_with_path(Path).".to_string()))?.with_file_name(source);
+        let tileset_path = path_relative_to
+            .ok_or(TiledError::SourceRequired {
+                object_to_parse: "Tileset".to_string(),
+            })?
+            .join(source);
         let file = File::open(&tileset_path).map_err(|_| {
             TiledError::Other(format!(
                 "External tileset file not found: {:?}",
                 tileset_path
             ))
         })?;
-        Tileset::new_external(file, first_gid)
+        Tileset::new_external(file, first_gid, Some(&tileset_path))
     }
 
-    pub(crate) fn new_external<R: Read>(file: R, first_gid: u32) -> Result<Tileset, TiledError> {
+    pub(crate) fn new_external<R: Read>(
+        file: R,
+        first_gid: u32,
+        path: Option<&Path>,
+    ) -> Result<Self, TiledError> {
         let mut tileset_parser = EventReader::new(file);
         loop {
             match tileset_parser
@@ -156,10 +190,11 @@ impl Tileset {
                     name, attributes, ..
                 } => {
                     if name.local_name == "tileset" {
-                        return Tileset::parse_external_tileset(
+                        return Self::parse_external_tileset(
                             first_gid,
                             &mut tileset_parser,
                             &attributes,
+                            path,
                         );
                     }
                 }
@@ -177,6 +212,7 @@ impl Tileset {
         first_gid: u32,
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
+        path: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
         let ((spacing, margin, tilecount, columns), (name, width, height)) = get_attrs!(
             attrs,
@@ -194,12 +230,14 @@ impl Tileset {
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
+        let source_path = path.and_then(|p| p.parent());
+
         let mut image = Option::None;
         let mut tiles = Vec::new();
         let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs, source_path.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -207,7 +245,7 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                tiles.push(Tile::new(parser, attrs)?);
+                tiles.push(Tile::new(parser, attrs, path)?);
                 Ok(())
             },
         });
@@ -236,6 +274,7 @@ impl Tileset {
             image,
             tiles: tiles,
             properties,
+            source: path.and_then(|x| Some(x.to_owned())),
         })
     }
 }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashMap, io::Read, path::Path};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
@@ -134,6 +134,7 @@ impl ImageLayer {
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         layer_index: u32,
+        path_relative_to: Option<&Path>,
     ) -> Result<ImageLayer, TiledError> {
         let ((o, v, ox, oy), n) = get_attrs!(
             attrs,
@@ -151,7 +152,7 @@ impl ImageLayer {
         let mut image: Option<Image> = None;
         parse_tag!(parser, "imagelayer", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
                 Ok(())
             },
             "properties" => |_| {
