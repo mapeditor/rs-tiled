@@ -99,7 +99,7 @@ impl Tileset {
             None => match &image {
                 None => {
                     return Err(TiledError::MalformedAttributes(
-                        "No <image> and no <columns> in <tileset>".to_string(),
+                        "No <image> nor columns attribute in <tileset>".to_string(),
                     ))
                 }
                 Some(image) => image.width as u32 / width,
