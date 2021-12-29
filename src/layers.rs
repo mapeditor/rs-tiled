@@ -67,19 +67,19 @@ impl Layer {
         layer_index: u32,
         infinite: bool,
     ) -> Result<Layer, TiledError> {
-        let ((o, v, ox, oy), (n, id)) = get_attrs!(
+        let ((o, v, ox, oy, n, id), ()) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("offsetx", offset_x, |v:String| v.parse().ok()),
                 ("offsety", offset_y, |v:String| v.parse().ok()),
-            ],
-            required: [
                 ("name", name, |v| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("layer must have a name".to_string())
+            required: [],
+            // this error should never happen since there are no required attrs
+            TiledError::MalformedAttributes("layer parsing error".to_string())
         );
         let mut tiles: LayerData = LayerData::Finite(Default::default());
         let mut properties = HashMap::new();
@@ -99,7 +99,7 @@ impl Layer {
         });
 
         Ok(Layer {
-            name: n,
+            name: n.unwrap_or(String::new()),
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
             offset_x: ox.unwrap_or(0.0),
@@ -107,7 +107,7 @@ impl Layer {
             tiles: tiles,
             properties: properties,
             layer_index,
-            id,
+            id: id.unwrap_or(0),
         })
     }
 }
