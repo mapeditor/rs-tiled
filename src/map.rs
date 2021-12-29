@@ -1,11 +1,4 @@
-use std::{
-    collections::HashMap,
-    fmt,
-    fs::File,
-    io::Read,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 

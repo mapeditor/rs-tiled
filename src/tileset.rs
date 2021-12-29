@@ -42,6 +42,20 @@ pub struct Tileset {
     pub source: Option<PathBuf>,
 }
 
+/// Internal structure for holding mid-parse information.
+struct TilesetProperties {
+    spacing: Option<u32>,
+    margin: Option<u32>,
+    tilecount: Option<u32>,
+    columns: Option<u32>,
+    first_gid: u32,
+    name: String,
+    tile_width: u32,
+    tile_height: u32,
+    path_relative_to: Option<PathBuf>,
+    source: Option<PathBuf>,
+}
+
 impl Tileset {
     /// Parse a buffer hopefully containing the contents of a Tiled tileset.
     ///
@@ -79,102 +93,6 @@ impl Tileset {
         })
     }
 
-    fn parse_xml_embedded<R: Read>(
-        parser: &mut EventReader<R>,
-        attrs: &Vec<OwnedAttribute>,
-        path_relative_to: Option<&Path>,
-    ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, tilecount, columns), (first_gid, name, width, height)) = get_attrs!(
-           attrs,
-           optionals: [
-                ("spacing", spacing, |v:String| v.parse().ok()),
-                ("margin", margin, |v:String| v.parse().ok()),
-                ("tilecount", tilecount, |v:String| v.parse().ok()),
-                ("columns", columns, |v:String| v.parse().ok()),
-            ],
-           required: [
-                ("firstgid", first_gid, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
-                ("tilewidth", width, |v:String| v.parse().ok()),
-                ("tileheight", height, |v:String| v.parse().ok()),
-            ],
-            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
-        );
-
-        let mut image = Option::None;
-        let mut tiles = Vec::new();
-        let mut properties = HashMap::new();
-        parse_tag!(parser, "tileset", {
-            "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
-                Ok(())
-            },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
-                Ok(())
-            },
-            "tile" => |attrs| {
-                tiles.push(Tile::new(parser, attrs, path_relative_to)?);
-                Ok(())
-            },
-        });
-
-        let columns = match columns {
-            Some(col) => col,
-            None => match &image {
-                None => {
-                    return Err(TiledError::MalformedAttributes(
-                        "No <image> nor columns attribute in <tileset>".to_string(),
-                    ))
-                }
-                Some(image) => image.width as u32 / width,
-            },
-        };
-
-        Ok(Tileset {
-            tile_width: width,
-            tile_height: height,
-            spacing: spacing.unwrap_or(0),
-            margin: margin.unwrap_or(0),
-            first_gid,
-            name,
-            tilecount,
-            columns,
-            image,
-            tiles,
-            properties,
-            source: None,
-        })
-    }
-
-    fn parse_xml_reference(
-        attrs: &Vec<OwnedAttribute>,
-        path_relative_to: Option<&Path>,
-    ) -> Result<Tileset, TiledError> {
-        let ((), (first_gid, source)) = get_attrs!(
-            attrs,
-            optionals: [],
-            required: [
-                ("firstgid", first_gid, |v:String| v.parse().ok()),
-                ("source", name, |v| Some(v)),
-            ],
-            TiledError::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
-        );
-
-        let tileset_path = path_relative_to
-            .ok_or(TiledError::SourceRequired {
-                object_to_parse: "Tileset".to_string(),
-            })?
-            .join(source);
-        let file = File::open(&tileset_path).map_err(|_| {
-            TiledError::Other(format!(
-                "External tileset file not found: {:?}",
-                tileset_path
-            ))
-        })?;
-        Tileset::new_external(file, first_gid, Some(&tileset_path))
-    }
-
     pub(crate) fn new_external<R: Read>(
         file: R,
         first_gid: u32,
@@ -208,13 +126,80 @@ impl Tileset {
         }
     }
 
+    fn parse_xml_embedded<R: Read>(
+        parser: &mut EventReader<R>,
+        attrs: &Vec<OwnedAttribute>,
+        path_relative_to: Option<&Path>,
+    ) -> Result<Tileset, TiledError> {
+        let ((spacing, margin, tilecount, columns), (first_gid, name, tile_width, tile_height)) = get_attrs!(
+           attrs,
+           optionals: [
+                ("spacing", spacing, |v:String| v.parse().ok()),
+                ("margin", margin, |v:String| v.parse().ok()),
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
+                ("columns", columns, |v:String| v.parse().ok()),
+            ],
+           required: [
+                ("firstgid", first_gid, |v:String| v.parse().ok()),
+                ("name", name, |v| Some(v)),
+                ("tilewidth", width, |v:String| v.parse().ok()),
+                ("tileheight", height, |v:String| v.parse().ok()),
+            ],
+            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
+        );
+
+        Self::finish_parsing_xml(
+            parser,
+            TilesetProperties {
+                spacing,
+                margin,
+                name,
+                path_relative_to: path_relative_to.map(Path::to_owned),
+                columns,
+                tilecount,
+                tile_height,
+                tile_width,
+                first_gid,
+                source: None,
+            },
+        )
+    }
+
+    fn parse_xml_reference(
+        attrs: &Vec<OwnedAttribute>,
+        path_relative_to: Option<&Path>,
+    ) -> Result<Tileset, TiledError> {
+        let ((), (first_gid, source)) = get_attrs!(
+            attrs,
+            optionals: [],
+            required: [
+                ("firstgid", first_gid, |v:String| v.parse().ok()),
+                ("source", name, |v| Some(v)),
+            ],
+            TiledError::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
+        );
+
+        let tileset_path = path_relative_to
+            .ok_or(TiledError::SourceRequired {
+                object_to_parse: "Tileset".to_string(),
+            })?
+            .join(source);
+        let file = File::open(&tileset_path).map_err(|_| {
+            TiledError::Other(format!(
+                "External tileset file not found: {:?}",
+                tileset_path
+            ))
+        })?;
+        Tileset::new_external(file, first_gid, Some(&tileset_path))
+    }
+
     fn parse_external_tileset<R: Read>(
         first_gid: u32,
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
         path: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, tilecount, columns), (name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount, columns), (name, tile_width, tile_height)) = get_attrs!(
             attrs,
             optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
@@ -230,14 +215,35 @@ impl Tileset {
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
-        let source_path = path.and_then(|p| p.parent());
+        let source_path = path.and_then(|p| p.parent().map(Path::to_owned));
 
+        Self::finish_parsing_xml(
+            parser,
+            TilesetProperties {
+                spacing,
+                margin,
+                name,
+                path_relative_to: source_path,
+                columns,
+                tilecount,
+                tile_height,
+                tile_width,
+                first_gid,
+                source: path.map(Path::to_owned),
+            },
+        )
+    }
+
+    fn finish_parsing_xml<R: Read>(
+        parser: &mut EventReader<R>,
+        prop: TilesetProperties,
+    ) -> Result<Self, TiledError> {
         let mut image = Option::None;
         let mut tiles = Vec::new();
         let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, source_path.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
+                image = Some(Image::new(parser, attrs, prop.path_relative_to.as_ref().ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -245,36 +251,45 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                tiles.push(Tile::new(parser, attrs, path)?);
+                tiles.push(Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?);
                 Ok(())
             },
         });
 
-        let columns = match columns {
-            Some(col) => col,
-            None => match &image {
-                None => {
-                    return Err(TiledError::MalformedAttributes(
-                        "No <image> and no <columns> in <tileset>".to_string(),
-                    ))
-                }
-                Some(image) => image.width as u32 / width,
-            },
-        };
+        let (margin, spacing) = (prop.margin.unwrap_or(0), prop.spacing.unwrap_or(0));
+
+        let columns = prop
+            .columns
+            .map(Ok)
+            .unwrap_or_else(|| Self::calculate_columns(&image, prop.tile_width, margin, spacing))?;
 
         Ok(Tileset {
-            first_gid: first_gid,
-            name: name,
-            tile_width: width,
-            tile_height: height,
-            spacing: spacing.unwrap_or(0),
-            margin: margin.unwrap_or(0),
+            first_gid: prop.first_gid,
+            name: prop.name,
+            tile_width: prop.tile_width,
+            tile_height: prop.tile_height,
+            spacing,
+            margin,
             columns,
-            tilecount,
+            tilecount: prop.tilecount,
             image,
-            tiles: tiles,
+            tiles,
             properties,
-            source: path.and_then(|x| Some(x.to_owned())),
+            source: prop.source,
         })
+    }
+
+    fn calculate_columns(
+        image: &Option<Image>,
+        tile_width: u32,
+        margin: u32,
+        spacing: u32,
+    ) -> Result<u32, TiledError> {
+        image
+            .as_ref()
+            .ok_or(TiledError::MalformedAttributes(
+                "No <image> nor columns attribute in <tileset>".to_string(),
+            ))
+            .and_then(|image| Ok((image.width as u32 - margin + spacing) / (tile_width + spacing)))
     }
 }
