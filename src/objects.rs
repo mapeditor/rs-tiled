@@ -31,18 +31,18 @@ impl ObjectGroup {
         attrs: Vec<OwnedAttribute>,
         layer_index: Option<u32>,
     ) -> Result<ObjectGroup, TiledError> {
-        let ((o, v, c, n), id) = get_attrs!(
+        let ((o, v, c, n, id), ()) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("color", colour, |v:String| v.parse().ok()),
-                ("name", name, |v:String| v.into()),
-            ],
-            required: [
+                ("name", name, |v:String| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("object groups must have a name".to_string())
+            required: [],
+            // this error should never happen since there are no required attrs
+            TiledError::MalformedAttributes("object group parsing error".to_string())
         );
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
@@ -64,7 +64,7 @@ impl ObjectGroup {
             colour: c,
             layer_index,
             properties,
-            id,
+            id: id.unwrap_or(0),
         })
     }
 }
