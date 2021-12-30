@@ -29,15 +29,8 @@ fn main() {
 }
 ```
 
-### Things missing
-
-There are a few things missing at the moment:
-
-- Terrain
-- A nice API. At the moment you can access attributes and properties, find tilesets by GID and loop through the tiles. This leaves a user of the library with a bit to do.
-
 ### Licences
 
-assets/tilesheet.png by Buch (http://blog-buch.rhcloud.com/)
+assets/tilesheet.png by Buch (https://opengameart.org/content/sci-fi-interior-tiles)
 
 Licenced under MIT
