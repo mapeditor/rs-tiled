@@ -4,7 +4,7 @@ use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     error::TiledError,
-    properties::{parse_properties, Colour, Properties},
+    properties::{parse_properties, Color, Properties},
     util::{get_attrs, parse_tag},
 };
 
@@ -14,7 +14,7 @@ pub struct ObjectGroup {
     pub opacity: f32,
     pub visible: bool,
     pub objects: Vec<Object>,
-    pub colour: Option<Colour>,
+    pub colour: Option<Color>,
     /**
      * Layer index is not preset for tile collision boxes
      */
