@@ -64,7 +64,7 @@ impl Tile {
         });
         Ok(Tile {
             id,
-            image: image,
+            image,
             properties,
             objectgroup,
             animation,
