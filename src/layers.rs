@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashMap, io::Read, path::Path};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
@@ -67,26 +67,26 @@ impl Layer {
         layer_index: u32,
         infinite: bool,
     ) -> Result<Layer, TiledError> {
-        let ((o, v, ox, oy), (n, id)) = get_attrs!(
+        let ((o, v, ox, oy, n, id), ()) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("offsetx", offset_x, |v:String| v.parse().ok()),
                 ("offsety", offset_y, |v:String| v.parse().ok()),
-            ],
-            required: [
                 ("name", name, |v| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("layer must have a name".to_string())
+            required: [],
+            // this error should never happen since there are no required attrs
+            TiledError::MalformedAttributes("layer parsing error".to_string())
         );
         let mut tiles: LayerData = LayerData::Finite(Default::default());
         let mut properties = HashMap::new();
         parse_tag!(parser, "layer", {
             "data" => |attrs| {
                 if infinite {
-                    tiles = parse_infinite_data(parser, attrs, width)?;
+                    tiles = parse_infinite_data(parser, attrs)?;
                 } else {
                     tiles = parse_data(parser, attrs, width)?;
                 }
@@ -99,7 +99,7 @@ impl Layer {
         });
 
         Ok(Layer {
-            name: n,
+            name: n.unwrap_or(String::new()),
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
             offset_x: ox.unwrap_or(0.0),
@@ -107,7 +107,7 @@ impl Layer {
             tiles: tiles,
             properties: properties,
             layer_index,
-            id,
+            id: id.unwrap_or(0),
         })
     }
 }
@@ -127,6 +127,9 @@ pub struct ImageLayer {
     pub image: Option<Image>,
     pub properties: Properties,
     pub layer_index: u32,
+    /// The ID of the layer, as shown in the editor.
+    /// Layer ID stays the same even if layers are reordered or modified in the editor.
+    pub id: u32,
 }
 
 impl ImageLayer {
@@ -134,24 +137,27 @@ impl ImageLayer {
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         layer_index: u32,
+        path_relative_to: Option<&Path>,
     ) -> Result<ImageLayer, TiledError> {
-        let ((o, v, ox, oy), n) = get_attrs!(
+        let ((o, v, ox, oy, n, id), ()) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("offsetx", offset_x, |v:String| v.parse().ok()),
                 ("offsety", offset_y, |v:String| v.parse().ok()),
-            ],
-            required: [
                 ("name", name, |v| Some(v)),
+                ("id", id, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("layer must have a name".to_string()));
+            required: [],
+            // this error should never happen since there are no required attrs
+            TiledError::MalformedAttributes("image layer parsing error".to_string())
+        );
         let mut properties = HashMap::new();
         let mut image: Option<Image> = None;
         parse_tag!(parser, "imagelayer", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -160,7 +166,7 @@ impl ImageLayer {
             },
         });
         Ok(ImageLayer {
-            name: n,
+            name: n.unwrap_or(String::new()),
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
             offset_x: ox.unwrap_or(0.0),
@@ -168,6 +174,7 @@ impl ImageLayer {
             image,
             properties,
             layer_index,
+            id: id.unwrap_or(0),
         })
     }
 }

@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug, Copy, Clone)]
 pub enum ParseTileError {
-    ColourError,
+    ColorError,
     OrientationError,
 }
 
@@ -18,6 +18,11 @@ pub enum TiledError {
     Base64DecodingError(base64::DecodeError),
     XmlDecodingError(xml::reader::Error),
     PrematureEnd(String),
+    /// Tried to parse external data of an object without a file location,
+    /// e.g. by using Map::parse_reader.
+    SourceRequired {
+        object_to_parse: String,
+    },
     Other(String),
 }
 
@@ -29,6 +34,11 @@ impl fmt::Display for TiledError {
             TiledError::Base64DecodingError(ref e) => write!(fmt, "{}", e),
             TiledError::XmlDecodingError(ref e) => write!(fmt, "{}", e),
             TiledError::PrematureEnd(ref e) => write!(fmt, "{}", e),
+            TiledError::SourceRequired {
+                ref object_to_parse,
+            } => {
+                write!(fmt, "Tried to parse external {} without a file location, e.g. by using Map::parse_reader.", object_to_parse)
+            }
             TiledError::Other(ref s) => write!(fmt, "{}", s),
         }
     }
@@ -43,6 +53,7 @@ impl std::error::Error for TiledError {
             TiledError::Base64DecodingError(ref e) => Some(e as &dyn std::error::Error),
             TiledError::XmlDecodingError(ref e) => Some(e as &dyn std::error::Error),
             TiledError::PrematureEnd(_) => None,
+            TiledError::SourceRequired { .. } => None,
             TiledError::Other(_) => None,
         }
     }
