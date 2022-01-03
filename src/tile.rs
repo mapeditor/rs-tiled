@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashMap, io::Read, path::Path};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
@@ -14,7 +14,7 @@ use crate::{
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tile {
     pub id: u32,
-    pub images: Vec<Image>,
+    pub image: Option<Image>,
     pub properties: Properties,
     pub objectgroup: Option<ObjectGroup>,
     pub animation: Option<Vec<Frame>>,
@@ -26,6 +26,7 @@ impl Tile {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
+        path_relative_to: Option<&Path>,
     ) -> Result<Tile, TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
@@ -39,13 +40,13 @@ impl Tile {
             TiledError::MalformedAttributes("tile must have an id with the correct type".to_string())
         );
 
-        let mut images = Vec::new();
+        let mut image = Option::None;
         let mut properties = HashMap::new();
         let mut objectgroup = None;
         let mut animation = None;
         parse_tag!(parser, "tile", {
             "image" => |attrs| {
-                images.push(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_owned()})?)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -63,7 +64,7 @@ impl Tile {
         });
         Ok(Tile {
             id,
-            images,
+            image,
             properties,
             objectgroup,
             animation,
