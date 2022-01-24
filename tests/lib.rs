@@ -199,7 +199,7 @@ fn test_ldk_export() {
 
 #[test]
 fn test_parallax_layers() {
-    let r = read_from_file_with_path(&Path::new("assets/tiled_parallax.tmx")).unwrap();
+    let r = Map::parse_file("assets/tiled_parallax.tmx").unwrap();
     for (i, layer) in r.layers.iter().enumerate() {
         match i {
             0 => {
