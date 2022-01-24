@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `Tileset::source` for obtaining where the tileset actually came from.
 - `Tileset::columns`.
-- `layers::Layer::id`.
+- `Layer::id`, `Layer::width` and `Layer::height`.
 - Support for 'object'-type properties.
 - Documentation for map members.
 - Tests for `tiled_base64_zstandard.tmx`.
@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `Tile` has been moved into the `tile` module.
     - `Tileset` has been moved into the `tileset` module.
     - `Map::get_tileset_by_gid` -> `Map::tileset_by_gid`
+- `Layer::tiles` changed from `Vec<Vec<LayerTile>>` to `Vec<LayerTile>`.
 - Tile now has `image` instead of `images`. ([Issue comment](https://github.com/mapeditor/rs-tiled/issues/103#issuecomment-940773123))
 - Tileset now has `image` instead of `images`.
 - `Image::source` is now a `PathBuf` instead of a `String`.
