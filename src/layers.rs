@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashMap, io::Read, path::Path};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
@@ -45,6 +45,8 @@ impl LayerTile {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Layer {
     pub name: String,
+    pub width: u32,
+    pub height: u32,
     pub opacity: f32,
     pub visible: bool,
     pub offset_x: f32,
@@ -65,11 +67,10 @@ impl Layer {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
-        width: u32,
         layer_index: u32,
         infinite: bool,
     ) -> Result<Layer, TiledError> {
-        let ((o, v, ox, oy, px, py), (n, id)) = get_attrs!(
+        let ((o, v, ox, oy, px, py, n, id), (w, h)) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
@@ -78,21 +79,23 @@ impl Layer {
                 ("offsety", offset_y, |v:String| v.parse().ok()),
                 ("parallaxx", parallax_x, |v:String| v.parse().ok()),
                 ("parallaxy", parallax_y, |v:String| v.parse().ok()),
-            ],
-            required: [
                 ("name", name, |v| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("layer must have a name".to_string())
+            required: [
+                ("width", width, |v: String| v.parse().ok()),
+                ("height", height, |v: String| v.parse().ok()),
+            ],
+            TiledError::MalformedAttributes("layer parsing error, width and height attributes required".to_string())
         );
         let mut tiles: LayerData = LayerData::Finite(Default::default());
         let mut properties = HashMap::new();
         parse_tag!(parser, "layer", {
             "data" => |attrs| {
                 if infinite {
-                    tiles = parse_infinite_data(parser, attrs, width)?;
+                    tiles = parse_infinite_data(parser, attrs)?;
                 } else {
-                    tiles = parse_data(parser, attrs, width)?;
+                    tiles = parse_data(parser, attrs)?;
                 }
                 Ok(())
             },
@@ -103,7 +106,9 @@ impl Layer {
         });
 
         Ok(Layer {
-            name: n,
+            name: n.unwrap_or(String::new()),
+            width: w,
+            height: h,
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
             offset_x: ox.unwrap_or(0.0),
@@ -113,13 +118,14 @@ impl Layer {
             tiles: tiles,
             properties: properties,
             layer_index,
-            id,
+            id: id.unwrap_or(0),
         })
     }
 }
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum LayerData {
-    Finite(Vec<Vec<LayerTile>>),
+    Finite(Vec<LayerTile>),
     Infinite(HashMap<(i32, i32), Chunk>),
 }
 
@@ -133,6 +139,9 @@ pub struct ImageLayer {
     pub image: Option<Image>,
     pub properties: Properties,
     pub layer_index: u32,
+    /// The ID of the layer, as shown in the editor.
+    /// Layer ID stays the same even if layers are reordered or modified in the editor.
+    pub id: u32,
 }
 
 impl ImageLayer {
@@ -140,24 +149,27 @@ impl ImageLayer {
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         layer_index: u32,
+        path_relative_to: Option<&Path>,
     ) -> Result<ImageLayer, TiledError> {
-        let ((o, v, ox, oy), n) = get_attrs!(
+        let ((o, v, ox, oy, n, id), ()) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("offsetx", offset_x, |v:String| v.parse().ok()),
                 ("offsety", offset_y, |v:String| v.parse().ok()),
-            ],
-            required: [
                 ("name", name, |v| Some(v)),
+                ("id", id, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("layer must have a name".to_string()));
+            required: [],
+            // this error should never happen since there are no required attrs
+            TiledError::MalformedAttributes("image layer parsing error".to_string())
+        );
         let mut properties = HashMap::new();
         let mut image: Option<Image> = None;
         parse_tag!(parser, "imagelayer", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs)?);
+                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -166,7 +178,7 @@ impl ImageLayer {
             },
         });
         Ok(ImageLayer {
-            name: n,
+            name: n.unwrap_or(String::new()),
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
             offset_x: ox.unwrap_or(0.0),
@@ -174,6 +186,7 @@ impl ImageLayer {
             image,
             properties,
             layer_index,
+            id: id.unwrap_or(0),
         })
     }
 }
@@ -184,7 +197,7 @@ pub struct Chunk {
     pub y: i32,
     pub width: u32,
     pub height: u32,
-    pub tiles: Vec<Vec<LayerTile>>,
+    pub tiles: Vec<LayerTile>,
 }
 
 impl Chunk {
@@ -206,7 +219,7 @@ impl Chunk {
             TiledError::MalformedAttributes("layer must have a name".to_string())
         );
 
-        let tiles = parse_data_line(encoding, compression, parser, width)?;
+        let tiles = parse_data_line(encoding, compression, parser)?;
 
         Ok(Chunk {
             x,

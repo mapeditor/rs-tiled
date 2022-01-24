@@ -26,9 +26,7 @@ macro_rules! get_attrs {
 }
 
 /// Goes through the children of the tag and will call the correct function for
-/// that child. Closes the tag
-///
-/// Not quite as bad.
+/// that child. Closes the tag.
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
         loop {
@@ -56,9 +54,7 @@ macro_rules! parse_tag {
 
 use std::{
     collections::HashMap,
-    fs::File,
     io::{BufReader, Read},
-    path::Path,
 };
 
 pub(crate) use get_attrs;
@@ -69,8 +65,6 @@ use crate::{
     animation::Frame,
     error::TiledError,
     layers::{Chunk, LayerData, LayerTile},
-    map::Map,
-    tileset::Tileset,
 };
 
 pub(crate) fn parse_animation<R: Read>(
@@ -89,7 +83,6 @@ pub(crate) fn parse_animation<R: Read>(
 pub(crate) fn parse_infinite_data<R: Read>(
     parser: &mut EventReader<R>,
     attrs: Vec<OwnedAttribute>,
-    width: u32,
 ) -> Result<LayerData, TiledError> {
     let ((e, c), ()) = get_attrs!(
         attrs,
@@ -116,7 +109,6 @@ pub(crate) fn parse_infinite_data<R: Read>(
 pub(crate) fn parse_data<R: Read>(
     parser: &mut EventReader<R>,
     attrs: Vec<OwnedAttribute>,
-    width: u32,
 ) -> Result<LayerData, TiledError> {
     let ((e, c), ()) = get_attrs!(
         attrs,
@@ -128,7 +120,7 @@ pub(crate) fn parse_data<R: Read>(
         TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
     );
 
-    let tiles = parse_data_line(e, c, parser, width)?;
+    let tiles = parse_data_line(e, c, parser)?;
 
     Ok(LayerData::Finite(tiles))
 }
@@ -137,8 +129,7 @@ pub(crate) fn parse_data_line<R: Read>(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut EventReader<R>,
-    width: u32,
-) -> Result<Vec<Vec<LayerTile>>, TiledError> {
+) -> Result<Vec<LayerTile>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
             return Err(TiledError::Other(
@@ -146,26 +137,26 @@ pub(crate) fn parse_data_line<R: Read>(
             ))
         }
         (Some(e), None) => match e.as_ref() {
-            "base64" => return parse_base64(parser).map(|v| convert_to_tile(&v, width)),
-            "csv" => return decode_csv(width, parser),
+            "base64" => return parse_base64(parser).map(|v| convert_to_tiles(&v)),
+            "csv" => return decode_csv(parser),
             e => return Err(TiledError::Other(format!("Unknown encoding format {}", e))),
         },
         (Some(e), Some(c)) => match (e.as_ref(), c.as_ref()) {
             ("base64", "zlib") => {
                 return parse_base64(parser)
                     .and_then(decode_zlib)
-                    .map(|v| convert_to_tile(&v, width))
+                    .map(|v| convert_to_tiles(&v))
             }
             ("base64", "gzip") => {
                 return parse_base64(parser)
                     .and_then(decode_gzip)
-                    .map(|v| convert_to_tile(&v, width))
+                    .map(|v| convert_to_tiles(&v))
             }
             #[cfg(feature = "zstd")]
             ("base64", "zstd") => {
                 return parse_base64(parser)
                     .and_then(decode_zstd)
-                    .map(|v| convert_to_tile(&v, width))
+                    .map(|v| convert_to_tiles(&v))
             }
             (e, c) => {
                 return Err(TiledError::Other(format!(
@@ -232,24 +223,17 @@ pub(crate) fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 }
 
 pub(crate) fn decode_csv<R: Read>(
-    width: u32,
     parser: &mut EventReader<R>,
-) -> Result<Vec<Vec<LayerTile>>, TiledError> {
+) -> Result<Vec<LayerTile>, TiledError> {
     loop {
         match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
-                let mut tiles_it = s
-                    .split(&['\n', '\r', ','][0..])
-                    .filter(|v| v.trim() != "")
-                    .map(|v| v.parse().unwrap())
+                let tiles = s
+                    .split(',')
+                    .map(|v| v.trim().parse().unwrap())
                     .map(LayerTile::new)
-                    .peekable();
-                let mut rows = Vec::new();
-                while tiles_it.peek().is_some() {
-                    let row = tiles_it.by_ref().take(width as usize).collect();
-                    rows.push(row);
-                }
-                return Ok(rows);
+                    .collect();
+                return Ok(tiles);
             }
             XmlEvent::EndElement { name, .. } => {
                 if name.local_name == "data" {
@@ -261,41 +245,14 @@ pub(crate) fn decode_csv<R: Read>(
     }
 }
 
-pub(crate) fn convert_to_tile(all: &Vec<u8>, width: u32) -> Vec<Vec<LayerTile>> {
+pub(crate) fn convert_to_tiles(all: &Vec<u8>) -> Vec<LayerTile> {
     let mut data = Vec::new();
-    for chunk in all.chunks((width * 4) as usize) {
-        let mut row = Vec::new();
-        for i in 0..width {
-            let start: usize = i as usize * 4;
-            let n = ((chunk[start + 3] as u32) << 24)
-                + ((chunk[start + 2] as u32) << 16)
-                + ((chunk[start + 1] as u32) << 8)
-                + chunk[start] as u32;
-            let n = LayerTile::new(n);
-            row.push(n);
-        }
-        data.push(row);
+    for chunk in all.chunks_exact(4) {
+        let n = chunk[0] as u32
+            + ((chunk[1] as u32) << 8)
+            + ((chunk[2] as u32) << 16)
+            + ((chunk[3] as u32) << 24);
+        data.push(LayerTile::new(n));
     }
     data
-}
-
-pub(crate) fn parse_impl<R: Read>(reader: R, map_path: Option<&Path>) -> Result<Map, TiledError> {
-    let mut parser = EventReader::new(reader);
-    loop {
-        match parser.next().map_err(TiledError::XmlDecodingError)? {
-            XmlEvent::StartElement {
-                name, attributes, ..
-            } => {
-                if name.local_name == "map" {
-                    return Map::new(&mut parser, attributes, map_path);
-                }
-            }
-            XmlEvent::EndDocument => {
-                return Err(TiledError::PrematureEnd(
-                    "Document ended before map was parsed".to_string(),
-                ))
-            }
-            _ => {}
-        }
-    }
 }
