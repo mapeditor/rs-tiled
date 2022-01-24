@@ -22,14 +22,12 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     assert_eq!(z, zstd);
 
     if let LayerData::Finite(tiles) = &c.layers[0].tiles {
-        assert_eq!(tiles.len(), 100);
-        assert_eq!(tiles[0].len(), 100);
-        assert_eq!(tiles[99].len(), 100);
-        assert_eq!(tiles[0][0].gid, 35);
-        assert_eq!(tiles[1][0].gid, 17);
-        assert_eq!(tiles[2][0].gid, 0);
-        assert_eq!(tiles[2][1].gid, 17);
-        assert!(tiles[99].iter().map(|t| t.gid).all(|g| g == 0));
+        assert_eq!(tiles.len(), 100 * 100);
+        assert_eq!(tiles[0].gid, 35);
+        assert_eq!(tiles[100].gid, 17);
+        assert_eq!(tiles[200].gid, 0);
+        assert_eq!(tiles[200 + 1].gid, 17);
+        assert!(tiles[9900..9999].iter().map(|t| t.gid).all(|g| g == 0));
     } else {
         assert!(false, "It is wrongly recognised as an infinite map");
     }
@@ -163,10 +161,10 @@ fn test_flipped_gid() {
     let r = Map::parse_file("assets/tiled_flipped.tmx").unwrap();
 
     if let LayerData::Finite(tiles) = &r.layers[0].tiles {
-        let t1 = tiles[0][0];
-        let t2 = tiles[0][1];
-        let t3 = tiles[1][0];
-        let t4 = tiles[1][1];
+        let t1 = tiles[0];
+        let t2 = tiles[1];
+        let t3 = tiles[2];
+        let t4 = tiles[3];
         assert_eq!(t1.gid, t2.gid);
         assert_eq!(t2.gid, t3.gid);
         assert_eq!(t3.gid, t4.gid);
@@ -191,10 +189,9 @@ fn test_flipped_gid() {
 fn test_ldk_export() {
     let r = Map::parse_file("assets/ldk_tiled_export.tmx").unwrap();
     if let LayerData::Finite(tiles) = &r.layers[0].tiles {
-        assert_eq!(tiles.len(), 8);
-        assert_eq!(tiles[0].len(), 8);
-        assert_eq!(tiles[0][0].gid, 0);
-        assert_eq!(tiles[1][0].gid, 1);
+        assert_eq!(tiles.len(), 8 * 8);
+        assert_eq!(tiles[0].gid, 0);
+        assert_eq!(tiles[8].gid, 1);
     } else {
         assert!(false, "It is wrongly recognised as an infinite map");
     }

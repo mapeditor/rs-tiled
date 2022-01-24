@@ -45,6 +45,8 @@ impl LayerTile {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Layer {
     pub name: String,
+    pub width: u32,
+    pub height: u32,
     pub opacity: f32,
     pub visible: bool,
     pub offset_x: f32,
@@ -63,11 +65,10 @@ impl Layer {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
-        width: u32,
         layer_index: u32,
         infinite: bool,
     ) -> Result<Layer, TiledError> {
-        let ((o, v, ox, oy, n, id), ()) = get_attrs!(
+        let ((o, v, ox, oy, n, id), (w, h)) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
@@ -77,9 +78,11 @@ impl Layer {
                 ("name", name, |v| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
             ],
-            required: [],
-            // this error should never happen since there are no required attrs
-            TiledError::MalformedAttributes("layer parsing error".to_string())
+            required: [
+                ("width", width, |v: String| v.parse().ok()),
+                ("height", height, |v: String| v.parse().ok()),
+            ],
+            TiledError::MalformedAttributes("layer parsing error, width and height attributes required".to_string())
         );
         let mut tiles: LayerData = LayerData::Finite(Default::default());
         let mut properties = HashMap::new();
@@ -88,7 +91,7 @@ impl Layer {
                 if infinite {
                     tiles = parse_infinite_data(parser, attrs)?;
                 } else {
-                    tiles = parse_data(parser, attrs, width)?;
+                    tiles = parse_data(parser, attrs)?;
                 }
                 Ok(())
             },
@@ -100,6 +103,8 @@ impl Layer {
 
         Ok(Layer {
             name: n.unwrap_or(String::new()),
+            width: w,
+            height: h,
             opacity: o.unwrap_or(1.0),
             visible: v.unwrap_or(true),
             offset_x: ox.unwrap_or(0.0),
@@ -111,9 +116,10 @@ impl Layer {
         })
     }
 }
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum LayerData {
-    Finite(Vec<Vec<LayerTile>>),
+    Finite(Vec<LayerTile>),
     Infinite(HashMap<(i32, i32), Chunk>),
 }
 
@@ -185,7 +191,7 @@ pub struct Chunk {
     pub y: i32,
     pub width: u32,
     pub height: u32,
-    pub tiles: Vec<Vec<LayerTile>>,
+    pub tiles: Vec<LayerTile>,
 }
 
 impl Chunk {
@@ -207,7 +213,7 @@ impl Chunk {
             TiledError::MalformedAttributes("layer must have a name".to_string())
         );
 
-        let tiles = parse_data_line(encoding, compression, parser, width)?;
+        let tiles = parse_data_line(encoding, compression, parser)?;
 
         Ok(Chunk {
             x,

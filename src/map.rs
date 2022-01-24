@@ -112,7 +112,7 @@ impl Map {
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(Layer::new(parser, attrs, w, layer_index, infinite.unwrap_or(false))?);
+                layers.push(Layer::new(parser, attrs, layer_index, infinite.unwrap_or(false))?);
                 layer_index += 1;
                 Ok(())
             },
