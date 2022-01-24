@@ -78,7 +78,7 @@ impl Layer {
                 ("offsety", offset_y, |v:String| v.parse().ok()),
                 ("parallaxx", parallax_x, |v:String| v.parse().ok()),
                 ("parallaxy", parallax_y, |v:String| v.parse().ok()),
-                ],
+            ],
             required: [
                 ("name", name, |v| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
@@ -108,7 +108,7 @@ impl Layer {
             visible: v.unwrap_or(true),
             offset_x: ox.unwrap_or(0.0),
             offset_y: oy.unwrap_or(0.0),
-            parallax_x:px.unwrap_or(1.0),
+            parallax_x: px.unwrap_or(1.0),
             parallax_y: py.unwrap_or(1.0),
             tiles: tiles,
             properties: properties,
