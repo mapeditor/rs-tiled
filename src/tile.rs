@@ -16,7 +16,7 @@ pub struct Tile {
     pub id: u32,
     pub image: Option<Image>,
     pub properties: Properties,
-    pub objectgroup: Option<(ObjectLayer, Properties)>,
+    pub collision: Option<ObjectLayer>,
     pub animation: Option<Vec<Frame>>,
     pub tile_type: Option<String>,
     pub probability: f32,
@@ -54,7 +54,7 @@ impl Tile {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectLayer::new(parser, attrs)?);
+                objectgroup = Some(ObjectLayer::new(parser, attrs)?.0);
                 Ok(())
             },
             "animation" => |_| {
@@ -66,7 +66,7 @@ impl Tile {
             id,
             image,
             properties,
-            objectgroup,
+            collision: objectgroup,
             animation,
             tile_type,
             probability: probability.unwrap_or(1.0),

@@ -51,6 +51,47 @@ pub enum LayerType {
     // TODO: Support group layers
 }
 
+impl LayerType {
+    pub fn as_tile_layer(&self) -> Option<&TileLayer> {
+        match self {
+            LayerType::TileLayer(x) => Some(x),
+            _ => None,
+        }
+    }
+    pub fn as_tile_layer_mut(&mut self) -> Option<&mut TileLayer> {
+        match self {
+            LayerType::TileLayer(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    pub fn as_object_layer(&self) -> Option<&ObjectLayer> {
+        match self {
+            LayerType::ObjectLayer(x) => Some(x),
+            _ => None,
+        }
+    }
+    pub fn as_object_layer_mut(&mut self) -> Option<&mut ObjectLayer> {
+        match self {
+            LayerType::ObjectLayer(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    pub fn as_image_layer(&self) -> Option<&ImageLayer> {
+        match self {
+            LayerType::ImageLayer(x) => Some(x),
+            _ => None,
+        }
+    }
+    pub fn as_image_layer_mut(&mut self) -> Option<&mut ImageLayer> {
+        match self {
+            LayerType::ImageLayer(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum LayerTag {
     TileLayer,

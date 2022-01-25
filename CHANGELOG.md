@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `Tile` has been moved into the `tile` module.
     - `Tileset` has been moved into the `tileset` module.
     - `Map::get_tileset_by_gid` -> `Map::tileset_by_gid`
+    - `Tile::object_group` -> `Tile::collision`
 - `Map` now has a single `layers` member which contains layers of all types in order.
 - Layer members that are common between types (i.e. `id`, `name`, `visible`, `opacity`, `offset_x`,
   `offset_y` and `properties`) have been moved into `Layer`.
