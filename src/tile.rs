@@ -6,7 +6,7 @@ use crate::{
     animation::Frame,
     error::TiledError,
     image::Image,
-    objects::ObjectGroup,
+    layers::ObjectLayer,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_animation, parse_tag},
 };
@@ -16,7 +16,7 @@ pub struct Tile {
     pub id: u32,
     pub image: Option<Image>,
     pub properties: Properties,
-    pub objectgroup: Option<ObjectGroup>,
+    pub objectgroup: Option<(ObjectLayer, Properties)>,
     pub animation: Option<Vec<Frame>>,
     pub tile_type: Option<String>,
     pub probability: f32,
@@ -54,7 +54,7 @@ impl Tile {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectGroup::new(parser, attrs, None)?);
+                objectgroup = Some(ObjectLayer::new(parser, attrs)?);
                 Ok(())
             },
             "animation" => |_| {

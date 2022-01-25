@@ -25,14 +25,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `Frame` has been moved to the `animation` module.
     - `ParseTileError` & `TiledError` have been moved into the `error` module.
     - `Image` has been moved into the `image` module.
-    - `LayerTile`, `Layer`, `LayerData`, `ImageLayer` & `Chunk` have been moved into the `layers` module.
+    - `LayerTile`, `LayerData`, `ImageLayer` & `Chunk` have been moved into the `layers` module.
+    - `Layer` has been renamed to `TileLayer` and has been moved into the `layers` module.
+    - `ObjectGroup` has been renamed to `ObjectLayer` and now resides in the `layers` module.
     - `Map` & `Orientation` have been moved into the `map` module.
-    - `ObjectGroup`, `ObjectShape` & `Object` have been moved into the `objects` module.
+    - `ObjectShape` & `Object` have been moved into the `objects` module.
     - `Colour`, `PropertyValue` & `Properties` have been moved into the `properties` module.
     - All mentions of `Colour` have been changed to `Color` for consistency with the Tiled dataformat.
     - `Tile` has been moved into the `tile` module.
     - `Tileset` has been moved into the `tileset` module.
     - `Map::get_tileset_by_gid` -> `Map::tileset_by_gid`
+- `Map` now has a single `layers` member which contains layers of all types in order.
+- Layer members that are common between types (i.e. `id`, `name`, `visible`, `opacity`, `offset_x`,
+  `offset_y` and `properties`) have been moved into `Layer`.
 - `Layer::tiles` changed from `Vec<Vec<LayerTile>>` to `Vec<LayerTile>`.
 - Tile now has `image` instead of `images`. ([Issue comment](https://github.com/mapeditor/rs-tiled/issues/103#issuecomment-940773123))
 - Tileset now has `image` instead of `images`.
