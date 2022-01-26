@@ -158,8 +158,8 @@ fn camera_transform(window_size: Vector2u, camera_position: Vector2f) -> Transfo
     let window_size = Vector2f::new(window_size.x as f32, window_size.y as f32);
 
     let mut x = Transform::IDENTITY;
-    x.scale_with_center(1. / TILE_SIZE, 1. / TILE_SIZE, 0f32, 0f32);
-    x.translate(-window_size.x / 2., -window_size.y / 2.);
-    x.translate(camera_position.x * TILE_SIZE, camera_position.y * TILE_SIZE);
-    x.inverse()
+    x.translate(window_size.x / 2., window_size.y / 2.);
+    x.translate(-camera_position.x * TILE_SIZE, -camera_position.y * TILE_SIZE);
+    x.scale_with_center(TILE_SIZE, TILE_SIZE, 0f32, 0f32);
+    x
 }
