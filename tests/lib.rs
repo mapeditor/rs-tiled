@@ -2,7 +2,7 @@ use std::path::Path;
 use std::{fs::File, path::PathBuf};
 use tiled::layers::{LayerType, ObjectLayer, TileLayer};
 use tiled::{
-    error::TiledError, layers::LayerData, map::Map, properties::PropertyValue, tileset::Tileset,
+    TiledError, LayerData, Map, PropertyValue, Tileset,
 };
 
 fn as_tile_layer(layer: &LayerType) -> &TileLayer {
