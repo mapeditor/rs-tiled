@@ -5,7 +5,8 @@ use xml::{attribute::OwnedAttribute, EventReader};
 use crate::{
     error::TiledError,
     image::Image,
-    properties::{parse_properties, Properties},
+    objects::Object,
+    properties::{parse_properties, Color, Properties},
     util::*,
 };
 
@@ -42,33 +43,42 @@ impl LayerTile {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, PartialEq, Debug)]
+pub enum LayerType {
+    TileLayer(TileLayer),
+    ObjectLayer(ObjectLayer),
+    ImageLayer(ImageLayer),
+    // TODO: Support group layers
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum LayerTag {
+    TileLayer,
+    ObjectLayer,
+    ImageLayer,
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct Layer {
     pub name: String,
-    pub width: u32,
-    pub height: u32,
-    pub opacity: f32,
+    pub id: u32,
     pub visible: bool,
     pub offset_x: f32,
     pub offset_y: f32,
-    /// The tiles are arranged in rows. Each tile is a number which can be used
-    ///  to find which tileset it belongs to and can then be rendered.
-    pub tiles: LayerData,
+    pub opacity: f32,
     pub properties: Properties,
-    pub layer_index: u32,
-    /// The ID of the layer, as shown in the editor.
-    /// Layer ID stays the same even if layers are reordered or modified in the editor.
-    pub id: u32,
+    pub layer_type: LayerType,
 }
 
 impl Layer {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
-        layer_index: u32,
+        tag: LayerTag,
         infinite: bool,
-    ) -> Result<Layer, TiledError> {
-        let ((o, v, ox, oy, n, id), (w, h)) = get_attrs!(
+        path_relative_to: Option<&Path>,
+    ) -> Result<Self, TiledError> {
+        let ((opacity, visible, offset_x, offset_y, name, id), ()) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
@@ -77,6 +87,59 @@ impl Layer {
                 ("offsety", offset_y, |v:String| v.parse().ok()),
                 ("name", name, |v| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
+            ],
+            required: [
+            ],
+
+            TiledError::MalformedAttributes("layer parsing error, no id attribute found".to_string())
+        );
+
+        let (ty, properties) = match tag {
+            LayerTag::TileLayer => {
+                let (ty, properties) = TileLayer::new(parser, attrs, infinite)?;
+                (LayerType::TileLayer(ty), properties)
+            }
+            LayerTag::ObjectLayer => {
+                let (ty, properties) = ObjectLayer::new(parser, attrs)?;
+                (LayerType::ObjectLayer(ty), properties)
+            }
+            LayerTag::ImageLayer => {
+                let (ty, properties) = ImageLayer::new(parser, path_relative_to)?;
+                (LayerType::ImageLayer(ty), properties)
+            }
+        };
+
+        Ok(Self {
+            visible: visible.unwrap_or(true),
+            offset_x: offset_x.unwrap_or(0.0),
+            offset_y: offset_y.unwrap_or(0.0),
+            opacity: opacity.unwrap_or(1.0),
+            name: name.unwrap_or_default(),
+            id: id.unwrap_or(0),
+            properties,
+            layer_type: ty,
+        })
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct TileLayer {
+    pub width: u32,
+    pub height: u32,
+    /// The tiles are arranged in rows. Each tile is a number which can be used
+    ///  to find which tileset it belongs to and can then be rendered.
+    pub tiles: LayerData,
+}
+
+impl TileLayer {
+    pub(crate) fn new<R: Read>(
+        parser: &mut EventReader<R>,
+        attrs: Vec<OwnedAttribute>,
+        infinite: bool,
+    ) -> Result<(TileLayer, Properties), TiledError> {
+        let ((), (w, h)) = get_attrs!(
+            attrs,
+            optionals: [
             ],
             required: [
                 ("width", width, |v: String| v.parse().ok()),
@@ -101,19 +164,14 @@ impl Layer {
             },
         });
 
-        Ok(Layer {
-            name: n.unwrap_or(String::new()),
-            width: w,
-            height: h,
-            opacity: o.unwrap_or(1.0),
-            visible: v.unwrap_or(true),
-            offset_x: ox.unwrap_or(0.0),
-            offset_y: oy.unwrap_or(0.0),
-            tiles: tiles,
-            properties: properties,
-            layer_index,
-            id: id.unwrap_or(0),
-        })
+        Ok((
+            TileLayer {
+                width: w,
+                height: h,
+                tiles: tiles,
+            },
+            properties,
+        ))
     }
 }
 
@@ -125,42 +183,17 @@ pub enum LayerData {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ImageLayer {
-    pub name: String,
-    pub opacity: f32,
-    pub visible: bool,
-    pub offset_x: f32,
-    pub offset_y: f32,
     pub image: Option<Image>,
-    pub properties: Properties,
-    pub layer_index: u32,
-    /// The ID of the layer, as shown in the editor.
-    /// Layer ID stays the same even if layers are reordered or modified in the editor.
-    pub id: u32,
 }
 
 impl ImageLayer {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
-        attrs: Vec<OwnedAttribute>,
-        layer_index: u32,
         path_relative_to: Option<&Path>,
-    ) -> Result<ImageLayer, TiledError> {
-        let ((o, v, ox, oy, n, id), ()) = get_attrs!(
-            attrs,
-            optionals: [
-                ("opacity", opacity, |v:String| v.parse().ok()),
-                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                ("offsetx", offset_x, |v:String| v.parse().ok()),
-                ("offsety", offset_y, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
-                ("id", id, |v:String| v.parse().ok()),
-            ],
-            required: [],
-            // this error should never happen since there are no required attrs
-            TiledError::MalformedAttributes("image layer parsing error".to_string())
-        );
-        let mut properties = HashMap::new();
+    ) -> Result<(ImageLayer, Properties), TiledError> {
         let mut image: Option<Image> = None;
+        let mut properties = HashMap::new();
+
         parse_tag!(parser, "imagelayer", {
             "image" => |attrs| {
                 image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
@@ -171,17 +204,49 @@ impl ImageLayer {
                 Ok(())
             },
         });
-        Ok(ImageLayer {
-            name: n.unwrap_or(String::new()),
-            opacity: o.unwrap_or(1.0),
-            visible: v.unwrap_or(true),
-            offset_x: ox.unwrap_or(0.0),
-            offset_y: oy.unwrap_or(0.0),
-            image,
+        Ok((ImageLayer { image }, properties))
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ObjectLayer {
+    pub objects: Vec<Object>,
+    pub colour: Option<Color>,
+}
+
+impl ObjectLayer {
+    pub(crate) fn new<R: Read>(
+        parser: &mut EventReader<R>,
+        attrs: Vec<OwnedAttribute>,
+    ) -> Result<(ObjectLayer, Properties), TiledError> {
+        let (c, ()) = get_attrs!(
+            attrs,
+            optionals: [
+                ("color", colour, |v:String| v.parse().ok()),
+            ],
+            required: [],
+            // this error should never happen since there are no required attrs
+            TiledError::MalformedAttributes("object group parsing error".to_string())
+        );
+        let mut objects = Vec::new();
+        let mut properties = HashMap::new();
+        parse_tag!(parser, "objectgroup", {
+            "object" => |attrs| {
+                objects.push(Object::new(parser, attrs)?);
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = parse_properties(parser)?;
+                Ok(())
+            },
+        });
+        Ok((
+            ObjectLayer {
+                objects: objects,
+                colour: c,
+            },
             properties,
-            layer_index,
-            id: id.unwrap_or(0),
-        })
+        ))
     }
 }
 

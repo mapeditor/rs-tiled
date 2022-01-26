@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT license file.
 
 ### Changed
+- `Layer` has been renamed to `TileLayer`, and the original `Layer` structure is now used
+  for common data from all layer types.
+- `Map` now has a single `layers` member which contains layers of all types in order.
+- Layer members that are common between types (i.e. `id`, `name`, `visible`, `opacity`, `offset_x`,
+  `offset_y` and `properties`) have been moved into `Layer`.
+- `ObjectGroup` has been renamed to `ObjectLayer`.
 - `parse_file`, `parse` -> `Map::parse_file` with optional path.
 - `parse_with_path` -> `Map::parse_reader`.
 - `parse_tileset` -> `Tileset::parse`.
