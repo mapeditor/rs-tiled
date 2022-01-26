@@ -18,7 +18,7 @@ to the dependencies section of your Cargo.toml.
 ### Example
 
 ```rust
-use tiled::map::Map;
+use tiled::Map;
 
 fn main() {
     let map = Map::parse_file("assets/tiled_base64_zlib.tmx").unwrap();
