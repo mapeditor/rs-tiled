@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-library:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,8 +18,23 @@ jobs:
 
     - uses: Swatinem/rust-cache@v1
 
-    - name: Build
-      run: cargo build --verbose
+    - name: Build library
+      run: cargo build --lib --verbose
 
     - name: Run tests
       run: cargo test --verbose
+
+    - name: Verify changed files
+      uses: tj-actions/verify-changed-files@v8.8
+      id: verify-changed-files
+      with:
+        files: |
+          examples/sfml
+
+    - name: Install dependencies
+      if: steps.verify-changed-files.outputs.files_changed == 'true'
+      run: sudo apt-get install -y libsfml-dev libcsfml-dev
+
+    - name: Build example
+      if: steps.verify-changed-files.outputs.files_changed == 'true'
+      run: cargo build --example sfml
