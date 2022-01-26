@@ -34,6 +34,5 @@ libflate = "0.1.18"
 zstd = { version = "0.9", optional = true }
 
 [dev-dependencies.sfml]
-git = "https://github.com/jeremyletang/rust-sfml"
+version = "0.16"
 features = ["graphics"]
-rev = "19b5e1082fbb58d7c1646eef32cb6fd01353c9d3"

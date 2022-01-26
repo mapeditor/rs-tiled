@@ -4,7 +4,7 @@
 mod mesh;
 mod tilesheet;
 
-use mesh::VertexMesh;
+use mesh::QuadMesh;
 use sfml::{
     graphics::{BlendMode, Color, Drawable, RenderStates, RenderTarget, RenderWindow, Transform},
     system::{Vector2f, Vector2u},
@@ -20,43 +20,14 @@ use tilesheet::Tilesheet;
 /// A path to the map to display.
 const MAP_PATH: &'static str = "assets/tiled_base64_external.tmx";
 
-/// Wrapper for [LayerTile].
+/// A [Map] wrapper which also contains graphical information such as the tileset texture or the layer meshes.
 ///
 /// Wrappers like these are generally recommended to use instead of using the crate structures (e.g. [LayerData]) as you have more freedom
 /// with what you can do with them, they won't change between crate versions and they are more specific to your needs.
 ///
-/// [LayerTile]: tiled::layers::LayerTile
-/// [LayerData]: tiled::layers::LayerData
-struct TileLayer {
-    tiles: Vec<LayerTile>,
-}
-
-impl TileLayer {
-    /// Generates a vertex mesh from this tile layer for rendering.
-    pub fn generate_mesh(&self, tilesheet: &Tilesheet, width: u32) -> VertexMesh {
-        let height = (self.tiles.len() / width as usize) as u32;
-        let mut mesh = VertexMesh::with_capacity((width * height * 4) as usize);
-        for x in 0..width {
-            for y in 0..height {
-                let tile = self.tiles[(x + y * width) as usize];
-                if tile.gid != 0 {
-                    let uv = tilesheet
-                        .tile_uv(tile.gid)
-                        .expect(&format!("Could not get tile UV for {:?}", tile));
-                    mesh.add_quad(Vector2f::new(x as f32, y as f32), 1., uv);
-                }
-            }
-        }
-
-        mesh
-    }
-}
-
-/// A [Map] wrapper which also contains graphical information such as the tileset texture or the layer meshes.
-///
 /// [Map]: tiled::map::Map
 pub struct Level {
-    layers: Vec<VertexMesh>,
+    layers: Vec<QuadMesh>,
     /// Unique tilesheet related to the level, which contains the Tiled tileset + Its only texture.
     tilesheet: Tilesheet,
 }
@@ -64,28 +35,41 @@ pub struct Level {
 impl Level {
     /// Create a new level from a Tiled map.
     pub fn from_map(map: Map) -> Self {
-        let width = map.width;
+        let width = map.width as usize;
         let tilesheet = {
             let tileset = map.tilesets[0].clone();
             Tilesheet::from_tileset(tileset)
         };
 
-        let layers = {
-            let layers = map.layers;
-            layers
+        let layers = map.layers
                 .iter()
-                .map(|layer| TileLayer {
-                    tiles: match &layer.tiles {
-                        LayerData::Finite(x) => x.iter().copied().collect(),
-                        _ => panic!("Infinite map"),
+                .map(|layer|
+                    match &layer.tiles {
+                        LayerData::Finite(x) => generate_mesh(&x, &tilesheet, width),
+                        _ => panic!("Infinite maps not supported"),
                     },
-                })
-                .map(|layer| layer.generate_mesh(&tilesheet, width))
-                .collect()
-        };
+                )
+                .collect();
 
         Self { tilesheet, layers }
     }
+}
+
+/// Generates a vertex mesh from this tile layer for rendering.
+fn generate_mesh(tiles: &Vec<LayerTile>, tilesheet: &Tilesheet, width: usize) -> QuadMesh {
+    let height = tiles.len() / width;
+    let mut mesh = QuadMesh::with_capacity(width * height);
+    for x in 0..width {
+        for y in 0..height {
+            let tile = tiles[x + y * width];
+            if tile.gid != 0 {
+                let uv = tilesheet.tile_rect(tile.gid);
+                mesh.add_quad(Vector2f::new(x as f32, y as f32), 1., uv);
+            }
+        }
+    }
+
+    mesh
 }
 
 impl Drawable for Level {
@@ -107,9 +91,7 @@ fn main() {
     let level = Level::from_map(map);
 
     let mut window = create_window();
-
     let mut camera_position = Vector2f::default();
-
     let mut last_frame_time = std::time::Instant::now();
 
     loop {
@@ -140,7 +122,7 @@ fn main() {
 /// Creates the window of the application
 fn create_window() -> RenderWindow {
     let mut context_settings = ContextSettings::default();
-    context_settings.antialiasing_level = 2;
+    context_settings.set_antialiasing_level(2);
     let mut window = RenderWindow::new(
         (1080, 720),
         "rs-tiled demo",
