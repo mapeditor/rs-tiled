@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::{fs::File, path::PathBuf};
 use tiled::{
-    error::TiledError, layers::LayerData, map::Map, properties::PropertyValue, tileset::Tileset,
+    TiledError, LayerData, Map, PropertyValue, Tileset,
 };
 
 fn parse_map_without_source(p: impl AsRef<Path>) -> Result<Map, TiledError> {
