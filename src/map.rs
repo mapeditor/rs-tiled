@@ -4,8 +4,7 @@ use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
     error::{ParseTileError, TiledError},
-    layers::{ImageLayer, Layer},
-    objects::ObjectGroup,
+    layers::{Layer, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag},
@@ -27,10 +26,8 @@ pub struct Map {
     pub tile_height: u32,
     /// The tilesets present in this map.
     pub tilesets: Vec<Tileset>,
-    /// The tile layers present in this map.
+    /// The layers present in this map.
     pub layers: Vec<Layer>,
-    pub image_layers: Vec<ImageLayer>,
-    pub object_groups: Vec<ObjectGroup>,
     /// The custom properties of this map.
     pub properties: Properties,
     /// The background color of this map, if any.
@@ -98,27 +95,23 @@ impl Map {
             TiledError::MalformedAttributes("map must have a version, width and height with correct types".to_string())
         );
 
+        let infinite = infinite.unwrap_or(false);
         let source_path = map_path.and_then(|p| p.parent());
 
         let mut tilesets = Vec::new();
         let mut layers = Vec::new();
-        let mut image_layers = Vec::new();
         let mut properties = HashMap::new();
-        let mut object_groups = Vec::new();
-        let mut layer_index = 0;
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
                 tilesets.push(Tileset::parse_xml(parser, attrs, source_path)?);
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(Layer::new(parser, attrs, layer_index, infinite.unwrap_or(false))?);
-                layer_index += 1;
+                layers.push(Layer::new(parser, attrs, LayerTag::TileLayer, infinite, source_path)?);
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                image_layers.push(ImageLayer::new(parser, attrs, layer_index, source_path)?);
-                layer_index += 1;
+                layers.push(Layer::new(parser, attrs, LayerTag::ImageLayer, infinite, source_path)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -126,8 +119,7 @@ impl Map {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                object_groups.push(ObjectGroup::new(parser, attrs, Some(layer_index))?);
-                layer_index += 1;
+                layers.push(Layer::new(parser, attrs, LayerTag::ObjectLayer, infinite, source_path)?);
                 Ok(())
             },
         });
@@ -140,11 +132,9 @@ impl Map {
             tile_height: th,
             tilesets,
             layers,
-            image_layers,
-            object_groups,
             properties,
             background_color: c,
-            infinite: infinite.unwrap_or(false),
+            infinite,
         })
     }
 

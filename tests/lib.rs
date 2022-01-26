@@ -1,8 +1,21 @@
 use std::path::Path;
 use std::{fs::File, path::PathBuf};
-use tiled::{
-    error::TiledError, layers::LayerData, map::Map, properties::PropertyValue, tileset::Tileset,
-};
+use tiled::{LayerData, Map, PropertyValue, TiledError, Tileset};
+use tiled::{LayerType, ObjectLayer, TileLayer};
+
+fn as_tile_layer(layer: &LayerType) -> &TileLayer {
+    match layer {
+        LayerType::TileLayer(x) => x,
+        _ => panic!("Not a tile layer"),
+    }
+}
+
+fn as_object_layer(layer: &LayerType) -> &ObjectLayer {
+    match layer {
+        LayerType::ObjectLayer(x) => x,
+        _ => panic!("Not an object layer"),
+    }
+}
 
 fn parse_map_without_source(p: impl AsRef<Path>) -> Result<Map, TiledError> {
     let file = File::open(p).unwrap();
@@ -21,7 +34,7 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     assert_eq!(z, c);
     assert_eq!(z, zstd);
 
-    if let LayerData::Finite(tiles) = &c.layers[0].tiles {
+    if let LayerData::Finite(tiles) = &as_tile_layer(&c.layers[0].layer_type).tiles {
         assert_eq!(tiles.len(), 100 * 100);
         assert_eq!(tiles[0].gid, 35);
         assert_eq!(tiles[100].gid, 17);
@@ -29,7 +42,7 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
         assert_eq!(tiles[200 + 1].gid, 17);
         assert!(tiles[9900..9999].iter().map(|t| t.gid).all(|g| g == 0));
     } else {
-        assert!(false, "It is wrongly recognised as an infinite map");
+        panic!("It is wrongly recognised as an infinite map");
     }
 }
 
@@ -66,7 +79,7 @@ fn test_just_tileset() {
 fn test_infinite_tileset() {
     let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx").unwrap();
 
-    if let LayerData::Infinite(chunks) = &r.layers[0].tiles {
+    if let LayerData::Infinite(chunks) = &as_tile_layer(&r.layers[0].layer_type).tiles {
         assert_eq!(chunks.len(), 4);
 
         assert_eq!(chunks[&(0, 0)].width, 32);
@@ -82,23 +95,31 @@ fn test_infinite_tileset() {
 #[test]
 fn test_image_layers() {
     let r = Map::parse_file("assets/tiled_image_layers.tmx").unwrap();
-    assert_eq!(r.image_layers.len(), 2);
+    assert_eq!(r.layers.len(), 2);
+    let mut image_layers = r.layers.iter().map(|x| {
+        if let LayerType::ImageLayer(img) = &x.layer_type {
+            (img, x)
+        } else {
+            panic!("Found layer that isn't an image layer")
+        }
+    });
     {
-        let first = &r.image_layers[0];
-        assert_eq!(first.name, "Image Layer 1");
+        let first = image_layers.next().unwrap();
+        assert_eq!(first.1.name, "Image Layer 1");
         assert!(
-            first.image.is_none(),
+            first.0.image.is_none(),
             "{}'s image should be None",
-            first.name
+            first.1.name
         );
     }
     {
-        let second = &r.image_layers[1];
-        assert_eq!(second.name, "Image Layer 2");
+        let second = image_layers.next().unwrap();
+        assert_eq!(second.1.name, "Image Layer 2");
         let image = second
+            .0
             .image
             .as_ref()
-            .expect(&format!("{}'s image shouldn't be None", second.name));
+            .expect(&format!("{}'s image shouldn't be None", second.1.name));
         assert_eq!(image.source, PathBuf::from("assets/tilesheet.png"));
         assert_eq!(image.width, 448);
         assert_eq!(image.height, 192);
@@ -133,9 +154,8 @@ fn test_layer_property() {
 #[test]
 fn test_object_group_property() {
     let r = Map::parse_file("assets/tiled_object_groups.tmx").unwrap();
-    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) = r.object_groups[0]
-        .properties
-        .get("an object group property")
+    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) =
+        r.layers[1].properties.get("an object group property")
     {
         *v
     } else {
@@ -160,7 +180,7 @@ fn test_tileset_property() {
 fn test_flipped_gid() {
     let r = Map::parse_file("assets/tiled_flipped.tmx").unwrap();
 
-    if let LayerData::Finite(tiles) = &r.layers[0].tiles {
+    if let LayerData::Finite(tiles) = &as_tile_layer(&r.layers[0].layer_type).tiles {
         let t1 = tiles[0];
         let t2 = tiles[1];
         let t3 = tiles[2];
@@ -188,7 +208,7 @@ fn test_flipped_gid() {
 #[test]
 fn test_ldk_export() {
     let r = Map::parse_file("assets/ldk_tiled_export.tmx").unwrap();
-    if let LayerData::Finite(tiles) = &r.layers[0].tiles {
+    if let LayerData::Finite(tiles) = &as_tile_layer(&r.layers[0].layer_type).tiles {
         assert_eq!(tiles.len(), 8 * 8);
         assert_eq!(tiles[0].gid, 0);
         assert_eq!(tiles[8].gid, 1);
@@ -225,9 +245,10 @@ fn test_parallax_layers() {
 #[test]
 fn test_object_property() {
     let r = parse_map_without_source(&Path::new("assets/tiled_object_property.tmx")).unwrap();
-    let prop_value = if let Some(PropertyValue::ObjectValue(v)) = r.object_groups[0].objects[0]
-        .properties
-        .get("object property")
+    let prop_value = if let Some(PropertyValue::ObjectValue(v)) =
+        as_object_layer(&r.layers[1].layer_type).objects[0]
+            .properties
+            .get("object property")
     {
         *v
     } else {

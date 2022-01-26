@@ -11,28 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Tileset::columns`.
 - `Layer::id`, `Layer::width`, `Layer::height`, `Layer::parallax_x` and `Layer::parallax_y`.
 - Support for 'object'-type properties.
+- Support for multiline string properties.
 - Documentation for map members.
 - Tests for `tiled_base64_zstandard.tmx`.
 - `.gitattributes` for line ending consistency.
-- Support for multiline string properties.
 - MIT license file.
 
 ### Changed
-- Reorganized crate:
-    - `parse_file`, `parse` -> `Map::parse_file` with optional path.
-    - `parse_with_path` -> `Map::parse_reader`
-    - `parse_tileset` -> `Tileset::parse`
-    - `Frame` has been moved to the `animation` module.
-    - `ParseTileError` & `TiledError` have been moved into the `error` module.
-    - `Image` has been moved into the `image` module.
-    - `LayerTile`, `Layer`, `LayerData`, `ImageLayer` & `Chunk` have been moved into the `layers` module.
-    - `Map` & `Orientation` have been moved into the `map` module.
-    - `ObjectGroup`, `ObjectShape` & `Object` have been moved into the `objects` module.
-    - `Colour`, `PropertyValue` & `Properties` have been moved into the `properties` module.
-    - All mentions of `Colour` have been changed to `Color` for consistency with the Tiled dataformat.
-    - `Tile` has been moved into the `tile` module.
-    - `Tileset` has been moved into the `tileset` module.
-    - `Map::get_tileset_by_gid` -> `Map::tileset_by_gid`
+- `Layer` has been renamed to `TileLayer`, and the original `Layer` structure is now used
+  for common data from all layer types.
+- `Map` now has a single `layers` member which contains layers of all types in order.
+- Layer members that are common between types (i.e. `id`, `name`, `visible`, `opacity`, `offset_x`,
+  `offset_y` and `properties`) have been moved into `Layer`.
+- `ObjectGroup` has been renamed to `ObjectLayer`.
+- `parse_file`, `parse` -> `Map::parse_file` with optional path.
+- `parse_with_path` -> `Map::parse_reader`.
+- `parse_tileset` -> `Tileset::parse`.
+- All mentions of `Colour` have been changed to `Color` for consistency with the Tiled dataformat.
+- `Map::get_tileset_by_gid` -> `Map::tileset_by_gid`.
 - `Layer::tiles` changed from `Vec<Vec<LayerTile>>` to `Vec<LayerTile>`.
 - Tile now has `image` instead of `images`. ([Issue comment](https://github.com/mapeditor/rs-tiled/issues/103#issuecomment-940773123))
 - Tileset now has `image` instead of `images`.
