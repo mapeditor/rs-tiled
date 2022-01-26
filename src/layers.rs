@@ -108,7 +108,7 @@ pub struct Layer {
     pub offset_y: f32,
     pub opacity: f32,
     pub properties: Properties,
-    pub ty: LayerType,
+    pub layer_type: LayerType,
 }
 
 impl Layer {
@@ -158,7 +158,7 @@ impl Layer {
             name: name.unwrap_or_default(),
             id: id.unwrap_or(0),
             properties,
-            ty,
+            layer_type: ty,
         })
     }
 }
