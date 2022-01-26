@@ -1,9 +1,23 @@
 use std::path::Path;
 use std::{fs::File, path::PathBuf};
-use tiled::layers::LayerType;
+use tiled::layers::{LayerType, ObjectLayer, TileLayer};
 use tiled::{
     error::TiledError, layers::LayerData, map::Map, properties::PropertyValue, tileset::Tileset,
 };
+
+fn as_tile_layer(layer: &LayerType) -> &TileLayer {
+    match layer {
+        LayerType::TileLayer(x) => x,
+        _ => panic!("Not a tile layer"),
+    }
+}
+
+fn as_object_layer(layer: &LayerType) -> &ObjectLayer {
+    match layer {
+        LayerType::ObjectLayer(x) => x,
+        _ => panic!("Not an object layer"),
+    }
+}
 
 fn parse_map_without_source(p: impl AsRef<Path>) -> Result<Map, TiledError> {
     let file = File::open(p).unwrap();
@@ -22,7 +36,7 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     assert_eq!(z, c);
     assert_eq!(z, zstd);
 
-    if let LayerData::Finite(tiles) = &c.layers[0].layer_type.as_tile_layer().unwrap().tiles {
+    if let LayerData::Finite(tiles) = &as_tile_layer(&c.layers[0].layer_type).tiles {
         assert_eq!(tiles.len(), 100 * 100);
         assert_eq!(tiles[0].gid, 35);
         assert_eq!(tiles[100].gid, 17);
@@ -67,7 +81,7 @@ fn test_just_tileset() {
 fn test_infinite_tileset() {
     let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx").unwrap();
 
-    if let LayerData::Infinite(chunks) = &r.layers[0].layer_type.as_tile_layer().unwrap().tiles {
+    if let LayerData::Infinite(chunks) = &as_tile_layer(&r.layers[0].layer_type).tiles {
         assert_eq!(chunks.len(), 4);
 
         assert_eq!(chunks[&(0, 0)].width, 32);
@@ -168,7 +182,7 @@ fn test_tileset_property() {
 fn test_flipped_gid() {
     let r = Map::parse_file("assets/tiled_flipped.tmx").unwrap();
 
-    if let LayerData::Finite(tiles) = &r.layers[0].layer_type.as_tile_layer().unwrap().tiles {
+    if let LayerData::Finite(tiles) = &as_tile_layer(&r.layers[0].layer_type).tiles {
         let t1 = tiles[0];
         let t2 = tiles[1];
         let t3 = tiles[2];
@@ -196,7 +210,7 @@ fn test_flipped_gid() {
 #[test]
 fn test_ldk_export() {
     let r = Map::parse_file("assets/ldk_tiled_export.tmx").unwrap();
-    if let LayerData::Finite(tiles) = &r.layers[0].layer_type.as_tile_layer().unwrap().tiles {
+    if let LayerData::Finite(tiles) = &as_tile_layer(&r.layers[0].layer_type).tiles {
         assert_eq!(tiles.len(), 8 * 8);
         assert_eq!(tiles[0].gid, 0);
         assert_eq!(tiles[8].gid, 1);
@@ -209,7 +223,7 @@ fn test_ldk_export() {
 fn test_object_property() {
     let r = parse_map_without_source(&Path::new("assets/tiled_object_property.tmx")).unwrap();
     let prop_value = if let Some(PropertyValue::ObjectValue(v)) =
-        r.layers[1].layer_type.as_object_layer().unwrap().objects[0]
+        as_object_layer(&r.layers[1].layer_type).objects[0]
             .properties
             .get("object property")
     {
