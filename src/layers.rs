@@ -119,7 +119,7 @@ impl Layer {
         infinite: bool,
         path_relative_to: Option<&Path>,
     ) -> Result<Self, TiledError> {
-        let ((opacity, visible, offset_x, offset_y, name), id) = get_attrs!(
+        let ((opacity, visible, offset_x, offset_y, name, id), ()) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
@@ -127,9 +127,9 @@ impl Layer {
                 ("offsetx", offset_x, |v:String| v.parse().ok()),
                 ("offsety", offset_y, |v:String| v.parse().ok()),
                 ("name", name, |v| Some(v)),
+                ("id", id, |v:String| v.parse().ok()),
             ],
             required: [
-                ("id", id, |v:String| v.parse().ok()),
             ],
 
             TiledError::MalformedAttributes("layer parsing error, no id attribute found".to_string())
@@ -156,7 +156,7 @@ impl Layer {
             offset_y: offset_y.unwrap_or(0.0),
             opacity: opacity.unwrap_or(1.0),
             name: name.unwrap_or_default(),
-            id,
+            id: id.unwrap_or(0),
             properties,
             ty,
         })
