@@ -41,15 +41,14 @@ impl Level {
             Tilesheet::from_tileset(tileset)
         };
 
-        let layers = map.layers
-                .iter()
-                .map(|layer|
-                    match &layer.tiles {
-                        LayerData::Finite(x) => generate_mesh(&x, &tilesheet, width),
-                        _ => panic!("Infinite maps not supported"),
-                    },
-                )
-                .collect();
+        let layers = map
+            .layers
+            .iter()
+            .map(|layer| match &layer.tiles {
+                LayerData::Finite(x) => generate_mesh(&x, &tilesheet, width),
+                _ => panic!("Infinite maps not supported"),
+            })
+            .collect();
 
         Self { tilesheet, layers }
     }

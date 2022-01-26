@@ -16,7 +16,10 @@ impl Tilesheet {
         let tileset_image = tileset.image.as_ref().unwrap();
 
         let texture = {
-            let texture_path = &tileset_image.source.to_str().expect("obtaining valid UTF-8 path");
+            let texture_path = &tileset_image
+                .source
+                .to_str()
+                .expect("obtaining valid UTF-8 path");
             Texture::from_file(texture_path).unwrap()
         };
 
