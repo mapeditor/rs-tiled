@@ -101,7 +101,6 @@ impl Map {
         let mut tilesets = Vec::new();
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
-        let mut layer_index = 0;
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
                 tilesets.push(Tileset::parse_xml(parser, attrs, source_path)?);
@@ -109,12 +108,10 @@ impl Map {
             },
             "layer" => |attrs| {
                 layers.push(Layer::new(parser, attrs, LayerTag::TileLayer, infinite, source_path)?);
-                layer_index += 1;
                 Ok(())
             },
             "imagelayer" => |attrs| {
                 layers.push(Layer::new(parser, attrs, LayerTag::ImageLayer, infinite, source_path)?);
-                layer_index += 1;
                 Ok(())
             },
             "properties" => |_| {
@@ -123,7 +120,6 @@ impl Map {
             },
             "objectgroup" => |attrs| {
                 layers.push(Layer::new(parser, attrs, LayerTag::ObjectLayer, infinite, source_path)?);
-                layer_index += 1;
                 Ok(())
             },
         });
