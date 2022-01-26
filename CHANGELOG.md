@@ -12,7 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Layer::id`, `Layer::width` and `Layer::height`.
 - Support for 'object'-type properties.
 - Support for multiline string properties.
+- Documentation for map members.
 - Tests for `tiled_base64_zstandard.tmx`.
+- `.gitattributes` for line ending consistency.
+- MIT license file.
 
 ### Changed
 - `parse_file`, `parse` -> `Map::parse_file` with optional path.
@@ -25,7 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tileset now has `image` instead of `images`.
 - `Image::source` is now a `PathBuf` instead of a `String`.
 - Functions that took in `&Path` now take `impl AsRef<Path>`.
+- Refactored internals.
+- Fixed library warnings.
 - Bumped `zstd` to `0.9`.
+- Fixed markdown formatting in the `CONTRIBUTORS` file.
 
 ## [0.9.5] - 2021-05-02
 ### Added
