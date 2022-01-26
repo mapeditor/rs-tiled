@@ -30,6 +30,7 @@ pub struct Level {
     layers: Vec<QuadMesh>,
     /// Unique tilesheet related to the level, which contains the Tiled tileset + Its only texture.
     tilesheet: Tilesheet,
+    tile_size: f32,
 }
 
 impl Level {
@@ -40,6 +41,7 @@ impl Level {
             let tileset = map.tilesets[0].clone();
             Tilesheet::from_tileset(tileset)
         };
+        let tile_size = map.tile_width as f32;
 
         let layers = map
             .layers
@@ -50,7 +52,7 @@ impl Level {
             })
             .collect();
 
-        Self { tilesheet, layers }
+        Self { tilesheet, layers, tile_size }
     }
 }
 
@@ -107,7 +109,7 @@ fn main() {
 
         handle_input(&mut camera_position, delta_time);
 
-        let camera_transform = camera_transform(window.size(), camera_position);
+        let camera_transform = camera_transform(window.size(), camera_position, level.tile_size);
         let render_states = RenderStates::new(BlendMode::ALPHA, camera_transform, None, None);
 
         window.clear(Color::BLACK);
@@ -153,13 +155,12 @@ fn handle_input(camera_position: &mut Vector2f, delta_time: Duration) {
     *camera_position += movement * delta_time.as_secs_f32() * SPEED;
 }
 
-fn camera_transform(window_size: Vector2u, camera_position: Vector2f) -> Transform {
-    const TILE_SIZE: f32 = 16.;
+fn camera_transform(window_size: Vector2u, camera_position: Vector2f, tile_size: f32) -> Transform {
     let window_size = Vector2f::new(window_size.x as f32, window_size.y as f32);
 
     let mut x = Transform::IDENTITY;
     x.translate(window_size.x / 2., window_size.y / 2.);
-    x.translate(-camera_position.x * TILE_SIZE, -camera_position.y * TILE_SIZE);
-    x.scale_with_center(TILE_SIZE, TILE_SIZE, 0f32, 0f32);
+    x.translate(-camera_position.x * tile_size, -camera_position.y * tile_size);
+    x.scale_with_center(tile_size, tile_size, 0f32, 0f32);
     x
 }
