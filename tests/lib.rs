@@ -1,9 +1,7 @@
 use std::path::Path;
 use std::{fs::File, path::PathBuf};
-use tiled::layers::{LayerType, ObjectLayer, TileLayer};
-use tiled::{
-    TiledError, LayerData, Map, PropertyValue, Tileset,
-};
+use tiled::{LayerData, Map, PropertyValue, TiledError, Tileset};
+use tiled::{LayerType, ObjectLayer, TileLayer};
 
 fn as_tile_layer(layer: &LayerType) -> &TileLayer {
     match layer {
