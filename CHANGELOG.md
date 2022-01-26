@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `Tileset::source` for obtaining where the tileset actually came from.
 - `Tileset::columns`.
-- `Layer::id`, `Layer::width` and `Layer::height`.
+- `Layer::id`, `Layer::width`, `Layer::height`, `Layer::parallax_x` and `Layer::parallax_y`.
 - Support for 'object'-type properties.
 - Support for multiline string properties.
 - Documentation for map members.

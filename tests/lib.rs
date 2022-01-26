@@ -218,6 +218,31 @@ fn test_ldk_export() {
 }
 
 #[test]
+fn test_parallax_layers() {
+    let r = Map::parse_file("assets/tiled_parallax.tmx").unwrap();
+    for (i, layer) in r.layers.iter().enumerate() {
+        match i {
+            0 => {
+                assert_eq!(layer.name, "Background");
+                assert_eq!(layer.parallax_x, 0.5);
+                assert_eq!(layer.parallax_y, 0.75);
+            }
+            1 => {
+                assert_eq!(layer.name, "Middle");
+                assert_eq!(layer.parallax_x, 1.0);
+                assert_eq!(layer.parallax_y, 1.0);
+            }
+            2 => {
+                assert_eq!(layer.name, "Foreground");
+                assert_eq!(layer.parallax_x, 2.0);
+                assert_eq!(layer.parallax_y, 2.0);
+            }
+            _ => panic!("unexpected layer"),
+        }
+    }
+}
+
+#[test]
 fn test_object_property() {
     let r = parse_map_without_source(&Path::new("assets/tiled_object_property.tmx")).unwrap();
     let prop_value = if let Some(PropertyValue::ObjectValue(v)) =
