@@ -11,10 +11,7 @@ use sfml::{
     window::{ContextSettings, Key, Style},
 };
 use std::{path::Path, time::Duration};
-use tiled::{
-    layers::{LayerData, LayerTile},
-    map::Map,
-};
+use tiled::{LayerData, LayerTile, Map};
 use tilesheet::Tilesheet;
 
 /// A path to the map to display.
@@ -52,7 +49,11 @@ impl Level {
             })
             .collect();
 
-        Self { tilesheet, layers, tile_size }
+        Self {
+            tilesheet,
+            layers,
+            tile_size,
+        }
     }
 }
 
@@ -160,7 +161,10 @@ fn camera_transform(window_size: Vector2u, camera_position: Vector2f, tile_size:
 
     let mut x = Transform::IDENTITY;
     x.translate(window_size.x / 2., window_size.y / 2.);
-    x.translate(-camera_position.x * tile_size, -camera_position.y * tile_size);
+    x.translate(
+        -camera_position.x * tile_size,
+        -camera_position.y * tile_size,
+    );
     x.scale_with_center(tile_size, tile_size, 0f32, 0f32);
     x
 }

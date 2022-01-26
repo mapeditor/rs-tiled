@@ -1,0 +1,28 @@
+name: SFML
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'examples/sfml/**'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'examples/sfml/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: Swatinem/rust-cache@v1
+
+    - name: Install dependencies
+      run: sudo apt-get install -y libsfml-dev libcsfml-dev
+      
+    - name: Build example
+      run: cargo test --verbose --example sfml

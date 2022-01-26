@@ -2,7 +2,7 @@ use sfml::{
     graphics::{FloatRect, Texture},
     SfBox,
 };
-use tiled::tileset::Tileset;
+use tiled::Tileset;
 
 /// A container for a tileset and the texture it references.
 pub struct Tilesheet {
