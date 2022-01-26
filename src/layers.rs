@@ -5,15 +5,16 @@ use xml::{attribute::OwnedAttribute, EventReader};
 use crate::{
     error::TiledError,
     image::Image,
+    map::Map,
     properties::{parse_properties, Properties},
+    tile::Tile,
     util::*,
 };
 
-/// Stores the proper tile gid, along with how it is flipped.
-// Maybe PartialEq and Eq should be custom, so that it ignores tile-flipping?
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Contains all the data about a tile in a layer.
+#[derive(Debug, Clone, PartialEq)]
 pub struct LayerTile {
-    pub gid: u32,
+    pub tile: Tile,
     pub flip_h: bool,
     pub flip_v: bool,
     pub flip_d: bool,
@@ -25,20 +26,36 @@ const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
 const ALL_FLIP_FLAGS: u32 =
     FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG;
 
-impl LayerTile {
-    pub fn new(id: u32) -> LayerTile {
-        let flags = id & ALL_FLIP_FLAGS;
-        let gid = id & !ALL_FLIP_FLAGS;
+/// Stores the internal tile gid about a layer tile, along with how it is flipped.
+struct LayerTileInner {
+    gid: u32,
+    flip_h: bool,
+    flip_v: bool,
+    flip_d: bool,
+}
+
+impl LayerTileInner {
+    fn new(bits: u32) -> Self {
+        let flags = bits & ALL_FLIP_FLAGS;
+        let gid = bits & !ALL_FLIP_FLAGS;
         let flip_d = flags & FLIPPED_DIAGONALLY_FLAG == FLIPPED_DIAGONALLY_FLAG; // Swap x and y axis (anti-diagonally) [flips over y = -x line]
         let flip_h = flags & FLIPPED_HORIZONTALLY_FLAG == FLIPPED_HORIZONTALLY_FLAG; // Flip tile over y axis
         let flip_v = flags & FLIPPED_VERTICALLY_FLAG == FLIPPED_VERTICALLY_FLAG; // Flip tile over x axis
 
-        LayerTile {
+        Self {
             gid,
             flip_h,
             flip_v,
             flip_d,
         }
+    }
+
+    /// Gets a clone of the [`Tile`] associated to this [`LayerTile`], given the map that the tile is in.
+    ///
+    /// If the layer tile has an invalid ID (which can happen if, for instance, the tile isn't from the map given),
+    /// this will return [`None`].
+    pub fn get_associated_tile(&self, map: &Map) -> Option<Tile> {
+        map.tile_by_gid(self.gid)
     }
 }
 
@@ -53,7 +70,7 @@ pub struct Layer {
     pub offset_y: f32,
     /// The tiles are arranged in rows. Each tile is a number which can be used
     ///  to find which tileset it belongs to and can then be rendered.
-    pub tiles: LayerData,
+    tiles: LayerData,
     pub properties: Properties,
     pub layer_index: u32,
     /// The ID of the layer, as shown in the editor.

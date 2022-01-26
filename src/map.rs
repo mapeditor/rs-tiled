@@ -7,6 +7,7 @@ use crate::{
     layers::{ImageLayer, Layer},
     objects::ObjectGroup,
     properties::{parse_properties, Color, Properties},
+    tile::Tile,
     tileset::Tileset,
     util::{get_attrs, parse_tag},
 };
@@ -74,6 +75,28 @@ impl Map {
         let file = File::open(path.as_ref())
             .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
         Self::parse_reader(file, Some(path.as_ref()))
+    }
+}
+
+impl Map {
+    pub(crate) fn tile_by_gid(&self, gid: u32) -> Option<Tile> {
+        let mut max_gid_ts = None;
+        for tileset in self.tilesets.iter() {
+            if max_gid_ts
+                .map(|(gid, _)| tileset.first_gid > gid)
+                .unwrap_or(false)
+                && tileset.first_gid <= gid
+            {
+                max_gid_ts = Some((tileset.first_gid, tileset));
+            }
+        }
+
+        if let Some((gid, ts)) = max_gid_ts {
+            let local_id = gid - ts.first_gid;
+            ts.get_tile(local_id)
+        } else {
+            None
+        }
     }
 
     fn parse_xml<R: Read>(
@@ -146,19 +169,6 @@ impl Map {
             background_color: c,
             infinite: infinite.unwrap_or(false),
         })
-    }
-
-    /// This function will return the correct Tileset given a GID.
-    pub fn tileset_by_gid(&self, gid: u32) -> Option<&Tileset> {
-        let mut maximum_gid: i32 = -1;
-        let mut maximum_ts = None;
-        for tileset in self.tilesets.iter() {
-            if tileset.first_gid as i32 > maximum_gid && tileset.first_gid <= gid {
-                maximum_gid = tileset.first_gid as i32;
-                maximum_ts = Some(tileset);
-            }
-        }
-        maximum_ts
     }
 }
 

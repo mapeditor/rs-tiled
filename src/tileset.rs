@@ -17,7 +17,7 @@ use crate::util::*;
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tileset {
     /// The GID of the first tile stored.
-    pub first_gid: u32,
+    pub(crate) first_gid: u32,
     pub name: String,
     pub tile_width: u32,
     pub tile_height: u32,
@@ -34,7 +34,7 @@ pub struct Tileset {
     /// - Source: [tiled issue #2117](https://github.com/mapeditor/tiled/issues/2117)
     /// - Source: [`columns` documentation](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset)
     pub image: Option<Image>,
-    pub tiles: Vec<Tile>,
+    special_tiles: HashMap<u32, Tile>,
     pub properties: Properties,
 
     /// Where this tileset was loaded from.
@@ -79,6 +79,20 @@ impl Tileset {
         Tileset::new_external(reader, first_gid, Some(path.as_ref()))
     }
 
+    /// Gets a clone of the tile with the local ID specified, if it exists within this tileset.
+    pub fn get_tile<'s: 't, 't>(&'s self, id: u32) -> Option<Tile> {
+        if let Some(tile) = self.special_tiles.get(&id) {
+            Some(tile.clone())
+        } else {
+            Some(Tile {
+                id,
+                ..Default::default()
+            })
+        }
+    }
+}
+
+impl Tileset {
     pub(crate) fn parse_xml<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
@@ -140,7 +154,7 @@ impl Tileset {
                 ("columns", columns, |v:String| v.parse().ok()),
             ],
            required: [
-                ("firstgid", first_gid, |v:String| v.parse().ok()),
+            ("firstgid", first_gid, |v:String| v.parse().ok()),
                 ("name", name, |v| Some(v)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
@@ -239,7 +253,7 @@ impl Tileset {
         prop: TilesetProperties,
     ) -> Result<Self, TiledError> {
         let mut image = Option::None;
-        let mut tiles = Vec::new();
+        let mut tiles = HashMap::new();
         let mut properties = HashMap::new();
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
@@ -251,7 +265,8 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                tiles.push(Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?);
+                let tile = Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?;
+                tiles.insert(tile.id, tile);
                 Ok(())
             },
         });
@@ -273,7 +288,7 @@ impl Tileset {
             columns,
             tilecount: prop.tilecount,
             image,
-            tiles,
+            special_tiles: tiles,
             properties,
             source: prop.source,
         })

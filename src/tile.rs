@@ -11,7 +11,7 @@ use crate::{
     util::{get_attrs, parse_animation, parse_tag},
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub struct Tile {
     pub id: u32,
     pub image: Option<Image>,
