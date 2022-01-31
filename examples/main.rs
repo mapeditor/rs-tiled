@@ -3,5 +3,5 @@ use tiled::Map;
 fn main() {
     let map = Map::parse_file("assets/tiled_base64_zlib.tmx").unwrap();
     println!("{:?}", map);
-    println!("{:?}", map.tileset_by_gid(22));
+    println!("{:?}", map.get_tile(0, 0, 0));
 }

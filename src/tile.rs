@@ -11,9 +11,10 @@ use crate::{
     util::{get_attrs, parse_animation, parse_tag},
 };
 
+pub type TileId = u32;
+
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct Tile {
-    pub id: u32,
     pub image: Option<Image>,
     pub properties: Properties,
     pub collision: Option<ObjectLayer>,
@@ -27,7 +28,7 @@ impl Tile {
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: Option<&Path>,
-    ) -> Result<Tile, TiledError> {
+    ) -> Result<(TileId, Tile), TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
             optionals: [
@@ -62,14 +63,16 @@ impl Tile {
                 Ok(())
             },
         });
-        Ok(Tile {
+        Ok((
             id,
-            image,
-            properties,
-            collision: objectgroup,
-            animation,
-            tile_type,
-            probability: probability.unwrap_or(1.0),
-        })
+            Tile {
+                image,
+                properties,
+                collision: objectgroup,
+                animation,
+                tile_type,
+                probability: probability.unwrap_or(1.0),
+            },
+        ))
     }
 }

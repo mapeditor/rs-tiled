@@ -9,6 +9,7 @@ use crate::{
     tile::Tile,
     tileset::Tileset,
     util::{get_attrs, parse_tag},
+    LayerTileRef, LayerType,
 };
 
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
@@ -73,13 +74,25 @@ impl Map {
             .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
         Self::parse_reader(file, Some(path.as_ref()))
     }
+
+    /// Gets a tile from a [`Layer`] with the [`LayerType::TileLayer`] `layer_type` with the specified location.
+    pub fn get_tile(&self, layer_index: usize, x: usize, y: usize) -> Option<LayerTileRef> {
+        self.layers
+            .get(layer_index)
+            .and_then(|layer| match &layer.layer_type {
+                LayerType::TileLayer(layer) => Some(layer),
+                _ => None,
+            })
+            .and_then(|layer| layer.get_tile(x, y))
+            .and_then(|layer_tile| LayerTileRef::from_gid(layer_tile, self))
+    }
 }
 
 impl Map {
-    pub(crate) fn get_tile_by_gid(&self, gid: u32) -> Option<&Tile> {
+    pub(crate) fn get_tile_by_gid(&self, gid: Gid) -> Option<(&Tile, &Tileset)> {
         self.tilesets
             .iter()
-            .filter_map(|ts| ts.get_tile_by_gid(gid))
+            .filter_map(|ts| ts.get_tile_by_gid(gid).map(|tile| (tile, ts)))
             .nth(0)
     }
 
@@ -181,4 +194,22 @@ impl fmt::Display for Orientation {
             Orientation::Hexagonal => write!(f, "hexagonal"),
         }
     }
+}
+
+/// A Tiled global tile ID.
+///
+/// These are used to identify tiles in a map. Since the map may have more than one tileset, an
+/// unique mapping is required to convert the tiles' local tileset ID to one which will work nicely
+/// even if there is more than one tileset.
+///
+/// Tiled also treats GID 0 as empty space, which means that the first tileset in the map will have
+/// a starting GID of 1.
+///
+/// See also: https://doc.mapeditor.org/en/latest/reference/global-tile-ids/
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct Gid(pub u32);
+
+impl Gid {
+    /// The GID representing an empty tile in the map.
+    pub const EMPTY: Gid = Gid(0);
 }

@@ -6,6 +6,7 @@ use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag},
+    Gid,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -20,7 +21,7 @@ pub enum ObjectShape {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Object {
     pub id: u32,
-    pub gid: u32,
+    gid: Gid,
     pub name: String,
     pub obj_type: String,
     pub width: f32,
@@ -61,7 +62,7 @@ impl Object {
         let h = h.unwrap_or(0f32);
         let r = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
-        let gid = gid.unwrap_or(0u32);
+        let gid = Gid(gid.unwrap_or(0u32));
         let n = n.unwrap_or(String::new());
         let t = t.unwrap_or(String::new());
         let mut shape = None;
@@ -99,18 +100,18 @@ impl Object {
         });
 
         Ok(Object {
-            id: id,
-            gid: gid,
+            id,
+            gid,
             name: n.clone(),
             obj_type: t.clone(),
             width: w,
             height: h,
-            x: x,
-            y: y,
+            x,
+            y,
             rotation: r,
             visible: v,
-            shape: shape,
-            properties: properties,
+            shape,
+            properties,
         })
     }
 

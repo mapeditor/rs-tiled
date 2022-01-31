@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::{fs::File, path::PathBuf};
-use tiled::{LayerData, Map, PropertyValue, TiledError, Tileset};
 use tiled::{LayerType, ObjectLayer, TileLayer};
+use tiled::{Map, PropertyValue, TiledError, Tileset};
 
 fn as_tile_layer(layer: &LayerType) -> &TileLayer {
     match layer {
@@ -34,16 +34,17 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     assert_eq!(z, c);
     assert_eq!(z, zstd);
 
-    if let LayerData::Finite(tiles) = &as_tile_layer(&c.layers[0].layer_type).tiles {
-        assert_eq!(tiles.len(), 100 * 100);
-        assert_eq!(tiles[0].gid, 35);
-        assert_eq!(tiles[100].gid, 17);
-        assert_eq!(tiles[200].gid, 0);
-        assert_eq!(tiles[200 + 1].gid, 17);
-        assert!(tiles[9900..9999].iter().map(|t| t.gid).all(|g| g == 0));
-    } else {
-        panic!("It is wrongly recognised as an infinite map");
+    {
+        let layer = as_tile_layer(&c.layers[0].layer_type);
+        assert_eq!(layer.width, 100);
+        assert_eq!(layer.height, 100);
     }
+
+    assert_eq!(c.get_tile(0, 0, 0).unwrap().id, 35);
+    assert_eq!(c.get_tile(0, 0, 1).unwrap().id, 17);
+    assert_eq!(c.get_tile(0, 0, 2).unwrap().id, 0);
+    assert_eq!(c.get_tile(0, 1, 2).unwrap().id, 17);
+    assert!((0..99).map(|x| c.get_tile(0, x, 99)).all(|t| t.is_none()));
 }
 
 #[test]
@@ -79,6 +80,8 @@ fn test_just_tileset() {
 fn test_infinite_tileset() {
     let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx").unwrap();
 
+    todo!()
+    /*
     if let LayerData::Infinite(chunks) = &as_tile_layer(&r.layers[0].layer_type).tiles {
         assert_eq!(chunks.len(), 4);
 
@@ -89,7 +92,7 @@ fn test_infinite_tileset() {
         assert_eq!(chunks[&(-32, 32)].height, 32);
     } else {
         assert!(false, "It is wrongly recognised as a finite map");
-    }
+    }*/
 }
 
 #[test]
@@ -130,7 +133,7 @@ fn test_image_layers() {
 fn test_tile_property() {
     let r = Map::parse_file("assets/tiled_base64.tmx").unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
-        r.tilesets[0].tiles[0].properties.get("a tile property")
+        r.tilesets[0].tiles[&0].properties.get("a tile property")
     {
         v.clone()
     } else {
@@ -177,44 +180,40 @@ fn test_tileset_property() {
 }
 
 #[test]
-fn test_flipped_gid() {
+fn test_flipped() {
     let r = Map::parse_file("assets/tiled_flipped.tmx").unwrap();
 
-    if let LayerData::Finite(tiles) = &as_tile_layer(&r.layers[0].layer_type).tiles {
-        let t1 = tiles[0];
-        let t2 = tiles[1];
-        let t3 = tiles[2];
-        let t4 = tiles[3];
-        assert_eq!(t1.gid, t2.gid);
-        assert_eq!(t2.gid, t3.gid);
-        assert_eq!(t3.gid, t4.gid);
-        assert!(t1.flip_d);
-        assert!(t1.flip_h);
-        assert!(t1.flip_v);
-        assert!(!t2.flip_d);
-        assert!(!t2.flip_h);
-        assert!(t2.flip_v);
-        assert!(!t3.flip_d);
-        assert!(t3.flip_h);
-        assert!(!t3.flip_v);
-        assert!(t4.flip_d);
-        assert!(!t4.flip_h);
-        assert!(!t4.flip_v);
-    } else {
-        assert!(false, "It is wrongly recognised as an infinite map");
-    }
+    let t1 = r.get_tile(0, 0, 0).unwrap();
+    let t2 = r.get_tile(0, 1, 0).unwrap();
+    let t3 = r.get_tile(0, 2, 0).unwrap();
+    let t4 = r.get_tile(0, 3, 0).unwrap();
+    assert_eq!(t1.tile, t2.tile);
+    assert_eq!(t2.tile, t3.tile);
+    assert_eq!(t3.tile, t4.tile);
+    assert!(t1.flip_d);
+    assert!(t1.flip_h);
+    assert!(t1.flip_v);
+    assert!(!t2.flip_d);
+    assert!(!t2.flip_h);
+    assert!(t2.flip_v);
+    assert!(!t3.flip_d);
+    assert!(t3.flip_h);
+    assert!(!t3.flip_v);
+    assert!(t4.flip_d);
+    assert!(!t4.flip_h);
+    assert!(!t4.flip_v);
 }
 
 #[test]
 fn test_ldk_export() {
     let r = Map::parse_file("assets/ldk_tiled_export.tmx").unwrap();
-    if let LayerData::Finite(tiles) = &as_tile_layer(&r.layers[0].layer_type).tiles {
-        assert_eq!(tiles.len(), 8 * 8);
-        assert_eq!(tiles[0].gid, 0);
-        assert_eq!(tiles[8].gid, 1);
-    } else {
-        assert!(false, "It is wrongly recognised as an infinite map");
+    {
+        let layer = as_tile_layer(&r.layers[0].layer_type);
+        assert_eq!(layer.width, 8);
+        assert_eq!(layer.height, 8);
     }
+    assert!(r.get_tile(0, 0, 0).is_none());
+    assert_eq!(r.get_tile(0, 0, 1).unwrap().id, 0);
 }
 
 #[test]

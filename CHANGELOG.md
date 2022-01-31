@@ -30,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `parse_with_path` -> `Map::parse_reader`.
 - `parse_tileset` -> `Tileset::parse`.
 - All mentions of `Colour` have been changed to `Color` for consistency with the Tiled dataformat.
-- `Map::get_tileset_by_gid` -> `Map::tileset_by_gid`.
 - `Layer::tiles` changed from `Vec<Vec<LayerTile>>` to `Vec<LayerTile>`.
 - Tile now has `image` instead of `images`. ([Issue comment](https://github.com/mapeditor/rs-tiled/issues/103#issuecomment-940773123))
 - Tileset now has `image` instead of `images`.

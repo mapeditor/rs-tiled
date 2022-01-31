@@ -9,10 +9,9 @@ use xml::EventReader;
 
 use crate::error::TiledError;
 use crate::image::Image;
-use crate::map::Map;
 use crate::properties::{parse_properties, Properties};
 use crate::tile::Tile;
-use crate::util::*;
+use crate::{util::*, Gid};
 
 /// A tileset, usually the tilesheet image.
 #[derive(Debug, PartialEq, Clone)]
@@ -86,9 +85,9 @@ impl Tileset {
 }
 
 impl Tileset {
-    pub(crate) fn get_tile_by_gid(&self, gid: u32) -> Option<&Tile> {
-        let local_id = gid - self.first_gid;
-        self.tiles.get(&gid)
+    pub(crate) fn get_tile_by_gid(&self, gid: Gid) -> Option<&Tile> {
+        let local_id = gid.0 - self.first_gid;
+        self.tiles.get(&local_id)
     }
 
     pub(crate) fn parse_xml<R: Read>(
@@ -263,8 +262,8 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                let tile = Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?;
-                tiles.insert(tile.id, tile);
+                let (id, tile) = Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?;
+                tiles.insert(id, tile);
                 Ok(())
             },
         });
@@ -274,10 +273,7 @@ impl Tileset {
 
         if !is_image_collection_tileset {
             for tile_id in 0..prop.tilecount {
-                tiles.entry(tile_id).or_insert(Tile {
-                    id: tile_id,
-                    ..Default::default()
-                });
+                tiles.entry(tile_id).or_insert_with(Default::default);
             }
         }
 

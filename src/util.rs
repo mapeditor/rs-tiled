@@ -64,9 +64,11 @@ use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 use crate::{
     animation::Frame,
     error::TiledError,
-    layers::{Chunk, LayerData, LayerTile},
+    layers::{Chunk, LayerData},
+    LayerTileGid,
 };
 
+// TODO: Move to animation module
 pub(crate) fn parse_animation<R: Read>(
     parser: &mut EventReader<R>,
 ) -> Result<Vec<Frame>, TiledError> {
@@ -80,6 +82,7 @@ pub(crate) fn parse_animation<R: Read>(
     Ok(animation)
 }
 
+// TODO: Move to layers module
 pub(crate) fn parse_infinite_data<R: Read>(
     parser: &mut EventReader<R>,
     attrs: Vec<OwnedAttribute>,
@@ -106,6 +109,7 @@ pub(crate) fn parse_infinite_data<R: Read>(
     Ok(LayerData::Infinite(chunks))
 }
 
+// TODO: Move to layers module
 pub(crate) fn parse_data<R: Read>(
     parser: &mut EventReader<R>,
     attrs: Vec<OwnedAttribute>,
@@ -125,11 +129,12 @@ pub(crate) fn parse_data<R: Read>(
     Ok(LayerData::Finite(tiles))
 }
 
+// TODO: Move to layers module
 pub(crate) fn parse_data_line<R: Read>(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut EventReader<R>,
-) -> Result<Vec<LayerTile>, TiledError> {
+) -> Result<Vec<LayerTileGid>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
             return Err(TiledError::Other(
@@ -222,16 +227,17 @@ pub(crate) fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
+// TODO: Move to layers module
 pub(crate) fn decode_csv<R: Read>(
     parser: &mut EventReader<R>,
-) -> Result<Vec<LayerTile>, TiledError> {
+) -> Result<Vec<LayerTileGid>, TiledError> {
     loop {
         match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 let tiles = s
                     .split(',')
                     .map(|v| v.trim().parse().unwrap())
-                    .map(LayerTile::new)
+                    .map(LayerTileGid::from_bits)
                     .collect();
                 return Ok(tiles);
             }
@@ -245,14 +251,15 @@ pub(crate) fn decode_csv<R: Read>(
     }
 }
 
-pub(crate) fn convert_to_tiles(all: &Vec<u8>) -> Vec<LayerTile> {
+// TODO: Move to layers module
+pub(crate) fn convert_to_tiles(all: &Vec<u8>) -> Vec<LayerTileGid> {
     let mut data = Vec::new();
     for chunk in all.chunks_exact(4) {
         let n = chunk[0] as u32
             + ((chunk[1] as u32) << 8)
             + ((chunk[2] as u32) << 16)
             + ((chunk[3] as u32) << 24);
-        data.push(LayerTile::new(n));
+        data.push(LayerTileGid::from_bits(n));
     }
     data
 }
