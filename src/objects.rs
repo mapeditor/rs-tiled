@@ -4,70 +4,9 @@ use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     error::TiledError,
-    properties::{parse_properties, Color, Properties},
+    properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag},
 };
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct ObjectGroup {
-    pub name: String,
-    pub opacity: f32,
-    pub visible: bool,
-    pub objects: Vec<Object>,
-    pub colour: Option<Color>,
-    /**
-     * Layer index is not preset for tile collision boxes
-     */
-    pub layer_index: Option<u32>,
-    pub properties: Properties,
-    /// The ID of the layer, as shown in the editor.
-    /// Layer ID stays the same even if layers are reordered or modified in the editor.
-    pub id: u32,
-}
-
-impl ObjectGroup {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
-        attrs: Vec<OwnedAttribute>,
-        layer_index: Option<u32>,
-    ) -> Result<ObjectGroup, TiledError> {
-        let ((o, v, c, n, id), ()) = get_attrs!(
-            attrs,
-            optionals: [
-                ("opacity", opacity, |v:String| v.parse().ok()),
-                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                ("color", colour, |v:String| v.parse().ok()),
-                ("name", name, |v:String| Some(v)),
-                ("id", id, |v:String| v.parse().ok()),
-            ],
-            required: [],
-            // this error should never happen since there are no required attrs
-            TiledError::MalformedAttributes("object group parsing error".to_string())
-        );
-        let mut objects = Vec::new();
-        let mut properties = HashMap::new();
-        parse_tag!(parser, "objectgroup", {
-            "object" => |attrs| {
-                objects.push(Object::new(parser, attrs)?);
-                Ok(())
-            },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
-                Ok(())
-            },
-        });
-        Ok(ObjectGroup {
-            name: n.unwrap_or(String::new()),
-            opacity: o.unwrap_or(1.0),
-            visible: v.unwrap_or(true),
-            objects: objects,
-            colour: c,
-            layer_index,
-            properties,
-            id: id.unwrap_or(0),
-        })
-    }
-}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectShape {
@@ -95,7 +34,7 @@ pub struct Object {
 }
 
 impl Object {
-    fn new<R: Read>(
+    pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
     ) -> Result<Object, TiledError> {

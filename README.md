@@ -20,7 +20,7 @@ The minimum supported TMX version is 0.13.
 ### Example
 
 ```rust
-use tiled::map::Map;
+use tiled::Map;
 
 fn main() {
     let map = Map::parse_file("assets/tiled_base64_zlib.tmx").unwrap();
