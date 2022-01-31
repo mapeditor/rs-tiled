@@ -10,7 +10,7 @@ use sfml::{
     system::{Vector2f, Vector2u},
     window::{ContextSettings, Key, Style},
 };
-use std::{path::Path, time::Duration};
+use std::{env, path::PathBuf, time::Duration};
 use tiled::{LayerData, LayerTile, Map};
 use tilesheet::Tilesheet;
 
@@ -89,7 +89,14 @@ impl Drawable for Level {
 }
 
 fn main() {
-    let map = Map::parse_file(Path::new(MAP_PATH)).unwrap();
+    let map = Map::parse_file(
+        PathBuf::from(
+            env::var("CARGO_MANIFEST_DIR")
+                .expect("To run the example, use `cargo run --example sfml`"),
+        )
+        .join(MAP_PATH),
+    )
+    .unwrap();
     let level = Level::from_map(map);
 
     let mut window = create_window();
