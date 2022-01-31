@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT license file.
 
 ### Changed
+- **Set the minimum Tiled TMX version to 0.13.**
 - Reorganized crate:
     - `parse_file`, `parse` -> `Map::parse_file` with optional path.
     - `parse_with_path` -> `Map::parse_reader`
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `Tile` has been moved into the `tile` module.
     - `Tileset` has been moved into the `tileset` module.
     - `Map::get_tileset_by_gid` -> `Map::tileset_by_gid`
+- `Tileset::tilecount` is no longer optional.
 - `Layer::tiles` changed from `Vec<Vec<LayerTile>>` to `Vec<LayerTile>`.
 - Tile now has `image` instead of `images`. ([Issue comment](https://github.com/mapeditor/rs-tiled/issues/103#issuecomment-940773123))
 - Tileset now has `image` instead of `images`.

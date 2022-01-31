@@ -9,6 +9,7 @@ use xml::EventReader;
 
 use crate::error::TiledError;
 use crate::image::Image;
+use crate::map::Map;
 use crate::properties::{parse_properties, Properties};
 use crate::tile::Tile;
 use crate::util::*;
@@ -23,7 +24,7 @@ pub struct Tileset {
     pub tile_height: u32,
     pub spacing: u32,
     pub margin: u32,
-    pub tilecount: Option<u32>,
+    pub tilecount: u32,
     pub columns: u32,
 
     /// A tileset can either:
@@ -34,7 +35,11 @@ pub struct Tileset {
     /// - Source: [tiled issue #2117](https://github.com/mapeditor/tiled/issues/2117)
     /// - Source: [`columns` documentation](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset)
     pub image: Option<Image>,
-    special_tiles: HashMap<u32, Tile>,
+
+    /// All the tiles present in this tileset, indexed by their local IDs.
+    pub tiles: HashMap<u32, Tile>,
+
+    /// The custom properties of the tileset.
     pub properties: Properties,
 
     /// Where this tileset was loaded from.
@@ -46,7 +51,7 @@ pub struct Tileset {
 struct TilesetProperties {
     spacing: Option<u32>,
     margin: Option<u32>,
-    tilecount: Option<u32>,
+    tilecount: u32,
     columns: Option<u32>,
     first_gid: u32,
     name: String,
@@ -78,21 +83,14 @@ impl Tileset {
     ) -> Result<Self, TiledError> {
         Tileset::new_external(reader, first_gid, Some(path.as_ref()))
     }
-
-    /// Gets a clone of the tile with the local ID specified, if it exists within this tileset.
-    pub fn get_tile<'s: 't, 't>(&'s self, id: u32) -> Option<Tile> {
-        if let Some(tile) = self.special_tiles.get(&id) {
-            Some(tile.clone())
-        } else {
-            Some(Tile {
-                id,
-                ..Default::default()
-            })
-        }
-    }
 }
 
 impl Tileset {
+    pub(crate) fn get_tile_by_gid(&self, gid: u32) -> Option<&Tile> {
+        let local_id = gid - self.first_gid;
+        self.tiles.get(&gid)
+    }
+
     pub(crate) fn parse_xml<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
@@ -145,16 +143,16 @@ impl Tileset {
         attrs: &Vec<OwnedAttribute>,
         path_relative_to: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, tilecount, columns), (first_gid, name, tile_width, tile_height)) = get_attrs!(
+        let ((spacing, margin, columns), (tilecount, first_gid, name, tile_width, tile_height)) = get_attrs!(
            attrs,
            optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
-                ("tilecount", tilecount, |v:String| v.parse().ok()),
                 ("columns", columns, |v:String| v.parse().ok()),
             ],
            required: [
-            ("firstgid", first_gid, |v:String| v.parse().ok()),
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
+                ("firstgid", first_gid, |v:String| v.parse().ok()),
                 ("name", name, |v| Some(v)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
@@ -213,15 +211,15 @@ impl Tileset {
         attrs: &Vec<OwnedAttribute>,
         path: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, tilecount, columns), (name, tile_width, tile_height)) = get_attrs!(
+        let ((spacing, margin, columns), (tilecount, name, tile_width, tile_height)) = get_attrs!(
             attrs,
             optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
-                ("tilecount", tilecount, |v:String| v.parse().ok()),
                 ("columns", columns, |v:String| v.parse().ok()),
             ],
             required: [
+                ("tilecount", tilecount, |v:String| v.parse().ok()),
                 ("name", name, |v| Some(v)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
@@ -271,6 +269,18 @@ impl Tileset {
             },
         });
 
+        // A tileset is considered an image collection tileset if there is no image attribute (because its tiles do).
+        let is_image_collection_tileset = image.is_none();
+
+        if !is_image_collection_tileset {
+            for tile_id in 0..prop.tilecount {
+                tiles.entry(tile_id).or_insert(Tile {
+                    id: tile_id,
+                    ..Default::default()
+                });
+            }
+        }
+
         let (margin, spacing) = (prop.margin.unwrap_or(0), prop.spacing.unwrap_or(0));
 
         let columns = prop
@@ -288,7 +298,7 @@ impl Tileset {
             columns,
             tilecount: prop.tilecount,
             image,
-            special_tiles: tiles,
+            tiles,
             properties,
             source: prop.source,
         })

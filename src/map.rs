@@ -79,24 +79,11 @@ impl Map {
 }
 
 impl Map {
-    pub(crate) fn tile_by_gid(&self, gid: u32) -> Option<Tile> {
-        let mut max_gid_ts = None;
-        for tileset in self.tilesets.iter() {
-            if max_gid_ts
-                .map(|(gid, _)| tileset.first_gid > gid)
-                .unwrap_or(false)
-                && tileset.first_gid <= gid
-            {
-                max_gid_ts = Some((tileset.first_gid, tileset));
-            }
-        }
-
-        if let Some((gid, ts)) = max_gid_ts {
-            let local_id = gid - ts.first_gid;
-            ts.get_tile(local_id)
-        } else {
-            None
-        }
+    pub(crate) fn get_tile_by_gid(&self, gid: u32) -> Option<&Tile> {
+        self.tilesets
+            .iter()
+            .filter_map(|ts| ts.get_tile_by_gid(gid))
+            .nth(0)
     }
 
     fn parse_xml<R: Read>(

@@ -11,15 +11,6 @@ use crate::{
     util::*,
 };
 
-/// Contains all the data about a tile in a layer.
-#[derive(Debug, Clone, PartialEq)]
-pub struct LayerTile {
-    pub tile: Tile,
-    pub flip_h: bool,
-    pub flip_v: bool,
-    pub flip_d: bool,
-}
-
 const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
 const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
 const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
@@ -27,15 +18,16 @@ const ALL_FLIP_FLAGS: u32 =
     FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG;
 
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
-struct LayerTileInner {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LayerTile {
     gid: u32,
-    flip_h: bool,
-    flip_v: bool,
-    flip_d: bool,
+    pub flip_h: bool,
+    pub flip_v: bool,
+    pub flip_d: bool,
 }
 
-impl LayerTileInner {
-    fn new(bits: u32) -> Self {
+impl LayerTile {
+    fn from_bits(bits: u32) -> Self {
         let flags = bits & ALL_FLIP_FLAGS;
         let gid = bits & !ALL_FLIP_FLAGS;
         let flip_d = flags & FLIPPED_DIAGONALLY_FLAG == FLIPPED_DIAGONALLY_FLAG; // Swap x and y axis (anti-diagonally) [flips over y = -x line]
@@ -48,14 +40,6 @@ impl LayerTileInner {
             flip_v,
             flip_d,
         }
-    }
-
-    /// Gets a clone of the [`Tile`] associated to this [`LayerTile`], given the map that the tile is in.
-    ///
-    /// If the layer tile has an invalid ID (which can happen if, for instance, the tile isn't from the map given),
-    /// this will return [`None`].
-    pub fn get_associated_tile(&self, map: &Map) -> Option<Tile> {
-        map.tile_by_gid(self.gid)
     }
 }
 
