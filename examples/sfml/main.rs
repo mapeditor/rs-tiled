@@ -1,5 +1,7 @@
-//! rs-tiled demo with SFML
-//! Displays a map, use WASD keys to move the camera around
+//! ## rs-tiled demo with SFML
+//! --------------------------
+//! Displays a map, use WASD keys to move the camera around.
+//! Only draws its tile layers and nothing else.
 
 mod mesh;
 mod tilesheet;
@@ -33,7 +35,6 @@ pub struct Level {
 impl Level {
     /// Create a new level from a Tiled map.
     pub fn from_map(map: Map) -> Self {
-        let width = map.width as usize;
         let tilesheet = {
             let tileset = map.tilesets[0].clone();
             Tilesheet::from_tileset(tileset)
@@ -44,7 +45,7 @@ impl Level {
             .layers
             .iter()
             .map(|layer| match &layer.tiles {
-                LayerData::Finite(x) => generate_mesh(&x, &tilesheet, width),
+                LayerData::Finite(x) => generate_mesh(&x, &tilesheet, layer.width as usize),
                 _ => panic!("Infinite maps not supported"),
             })
             .collect();
@@ -57,8 +58,8 @@ impl Level {
     }
 }
 
-/// Generates a vertex mesh from this tile layer for rendering.
-fn generate_mesh(tiles: &Vec<LayerTile>, tilesheet: &Tilesheet, width: usize) -> QuadMesh {
+/// Generates a vertex mesh from a tile layer for rendering.
+fn generate_mesh(tiles: &[LayerTile], tilesheet: &Tilesheet, width: usize) -> QuadMesh {
     let height = tiles.len() / width;
     let mut mesh = QuadMesh::with_capacity(width * height);
     for x in 0..width {
