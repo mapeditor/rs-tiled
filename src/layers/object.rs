@@ -9,16 +9,16 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ObjectLayer {
+pub struct ObjectLayerData {
     pub objects: Vec<Object>,
     pub colour: Option<Color>,
 }
 
-impl ObjectLayer {
+impl ObjectLayerData {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
-    ) -> Result<(ObjectLayer, Properties), TiledError> {
+    ) -> Result<(ObjectLayerData, Properties), TiledError> {
         let (c, ()) = get_attrs!(
             attrs,
             optionals: [
@@ -40,6 +40,6 @@ impl ObjectLayer {
                 Ok(())
             },
         });
-        Ok((ObjectLayer { objects, colour: c }, properties))
+        Ok((ObjectLayerData { objects, colour: c }, properties))
     }
 }

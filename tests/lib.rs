@@ -1,18 +1,18 @@
 use std::path::Path;
 use std::{fs::File, path::PathBuf};
-use tiled::{LayerType, ObjectLayer, TileLayerData};
+use tiled::{LayerDataType, ObjectLayerData, TileLayerData};
 use tiled::{Map, PropertyValue, TiledError, Tileset};
 
-fn as_tile_layer(layer: &LayerType) -> &TileLayerData {
+fn as_tile_layer(layer: &LayerDataType) -> &TileLayerData {
     match layer {
-        LayerType::TileLayer(x) => x,
+        LayerDataType::TileLayer(x) => x,
         _ => panic!("Not a tile layer"),
     }
 }
 
-fn as_object_layer(layer: &LayerType) -> &ObjectLayer {
+fn as_object_layer(layer: &LayerDataType) -> &ObjectLayerData {
     match layer {
-        LayerType::ObjectLayer(x) => x,
+        LayerDataType::ObjectLayer(x) => x,
         _ => panic!("Not an object layer"),
     }
 }
@@ -100,7 +100,7 @@ fn test_image_layers() {
     let r = Map::parse_file("assets/tiled_image_layers.tmx").unwrap();
     assert_eq!(r.layers.len(), 2);
     let mut image_layers = r.layers.iter().map(|x| {
-        if let LayerType::ImageLayer(img) = &x.layer_type {
+        if let LayerDataType::ImageLayer(img) = &x.layer_type {
             (img, x)
         } else {
             panic!("Found layer that isn't an image layer")

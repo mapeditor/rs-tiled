@@ -5,11 +5,11 @@ use xml::EventReader;
 use crate::{parse_properties, util::parse_tag, Image, Properties, TiledError};
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ImageLayer {
+pub struct ImageLayerData {
     pub image: Option<Image>,
 }
 
-impl ImageLayer {
+impl ImageLayerData {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         map_path: &Path,
@@ -29,6 +29,6 @@ impl ImageLayer {
                 Ok(())
             },
         });
-        Ok((ImageLayer { image }, properties))
+        Ok((ImageLayerData { image }, properties))
     }
 }

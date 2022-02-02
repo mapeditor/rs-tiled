@@ -12,10 +12,10 @@ mod tile;
 pub use tile::*;
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum LayerType {
+pub enum LayerDataType {
     TileLayer(TileLayerData),
-    ObjectLayer(ObjectLayer),
-    ImageLayer(ImageLayer),
+    ObjectLayer(ObjectLayerData),
+    ImageLayer(ImageLayerData),
     // TODO: Support group layers
 }
 
@@ -37,7 +37,7 @@ pub struct LayerData {
     pub parallax_y: f32,
     pub opacity: f32,
     pub properties: Properties,
-    pub layer_type: LayerType,
+    pub layer_type: LayerDataType,
 }
 
 impl LayerData {
@@ -69,15 +69,15 @@ impl LayerData {
         let (ty, properties) = match tag {
             LayerTag::TileLayer => {
                 let (ty, properties) = TileLayerData::new(parser, attrs, infinite)?;
-                (LayerType::TileLayer(ty), properties)
+                (LayerDataType::TileLayer(ty), properties)
             }
             LayerTag::ObjectLayer => {
-                let (ty, properties) = ObjectLayer::new(parser, attrs)?;
-                (LayerType::ObjectLayer(ty), properties)
+                let (ty, properties) = ObjectLayerData::new(parser, attrs)?;
+                (LayerDataType::ObjectLayer(ty), properties)
             }
             LayerTag::ImageLayer => {
-                let (ty, properties) = ImageLayer::new(parser, map_path)?;
-                (LayerType::ImageLayer(ty), properties)
+                let (ty, properties) = ImageLayerData::new(parser, map_path)?;
+                (LayerDataType::ImageLayer(ty), properties)
             }
         };
 
