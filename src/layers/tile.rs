@@ -1,100 +1,12 @@
-use std::{collections::HashMap, io::Read, path::Path};
+use std::{collections::HashMap, io::Read};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
-    error::TiledError,
-    image::Image,
-    objects::Object,
-    properties::{parse_properties, Color, Properties},
-    util::*,
-    Gid,
+    parse_properties,
+    util::{get_attrs, parse_data_line, parse_tag},
+    Gid, Properties, TiledError,
 };
-
-#[derive(Clone, PartialEq, Debug)]
-pub enum LayerType {
-    TileLayer(TileLayerData),
-    ObjectLayer(ObjectLayer),
-    ImageLayer(ImageLayer),
-    // TODO: Support group layers
-}
-
-#[derive(Clone, Copy)]
-pub(crate) enum LayerTag {
-    TileLayer,
-    ObjectLayer,
-    ImageLayer,
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct LayerData {
-    pub name: String,
-    pub id: u32,
-    pub visible: bool,
-    pub offset_x: f32,
-    pub offset_y: f32,
-    pub parallax_x: f32,
-    pub parallax_y: f32,
-    pub opacity: f32,
-    pub properties: Properties,
-    pub layer_type: LayerType,
-}
-
-impl LayerData {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
-        attrs: Vec<OwnedAttribute>,
-        tag: LayerTag,
-        infinite: bool,
-        map_path: &Path,
-    ) -> Result<Self, TiledError> {
-        let ((opacity, visible, offset_x, offset_y, parallax_x, parallax_y, name, id), ()) = get_attrs!(
-            attrs,
-            optionals: [
-                ("opacity", opacity, |v:String| v.parse().ok()),
-                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                ("offsetx", offset_x, |v:String| v.parse().ok()),
-                ("offsety", offset_y, |v:String| v.parse().ok()),
-                ("parallaxx", parallax_x, |v:String| v.parse().ok()),
-                ("parallaxy", parallax_y, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
-                ("id", id, |v:String| v.parse().ok()),
-            ],
-            required: [
-            ],
-
-            TiledError::MalformedAttributes("layer parsing error, no id attribute found".to_string())
-        );
-
-        let (ty, properties) = match tag {
-            LayerTag::TileLayer => {
-                let (ty, properties) = TileLayerData::new(parser, attrs, infinite)?;
-                (LayerType::TileLayer(ty), properties)
-            }
-            LayerTag::ObjectLayer => {
-                let (ty, properties) = ObjectLayer::new(parser, attrs)?;
-                (LayerType::ObjectLayer(ty), properties)
-            }
-            LayerTag::ImageLayer => {
-                let (ty, properties) = ImageLayer::new(parser, map_path)?;
-                (LayerType::ImageLayer(ty), properties)
-            }
-        };
-
-        Ok(Self {
-            visible: visible.unwrap_or(true),
-            offset_x: offset_x.unwrap_or(0.0),
-            offset_y: offset_y.unwrap_or(0.0),
-            parallax_x: parallax_x.unwrap_or(1.0),
-            parallax_y: parallax_y.unwrap_or(1.0),
-            opacity: opacity.unwrap_or(1.0),
-            name: name.unwrap_or_default(),
-            id: id.unwrap_or(0),
-            properties,
-            layer_type: ty,
-        })
-    }
-}
 
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -252,77 +164,6 @@ impl InfiniteTileLayerData {
         });
 
         Ok(Self { chunks })
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct ImageLayer {
-    pub image: Option<Image>,
-}
-
-impl ImageLayer {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
-        map_path: &Path,
-    ) -> Result<(ImageLayer, Properties), TiledError> {
-        let mut image: Option<Image> = None;
-        let mut properties = HashMap::new();
-
-        let path_relative_to = map_path.parent().ok_or(TiledError::InvalidPath)?;
-
-        parse_tag!(parser, "imagelayer", {
-            "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to)?);
-                Ok(())
-            },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
-                Ok(())
-            },
-        });
-        Ok((ImageLayer { image }, properties))
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct ObjectLayer {
-    pub objects: Vec<Object>,
-    pub colour: Option<Color>,
-}
-
-impl ObjectLayer {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
-        attrs: Vec<OwnedAttribute>,
-    ) -> Result<(ObjectLayer, Properties), TiledError> {
-        let (c, ()) = get_attrs!(
-            attrs,
-            optionals: [
-                ("color", colour, |v:String| v.parse().ok()),
-            ],
-            required: [],
-            // this error should never happen since there are no required attrs
-            TiledError::MalformedAttributes("object group parsing error".to_string())
-        );
-        let mut objects = Vec::new();
-        let mut properties = HashMap::new();
-        parse_tag!(parser, "objectgroup", {
-            "object" => |attrs| {
-                objects.push(Object::new(parser, attrs)?);
-                Ok(())
-            },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
-                Ok(())
-            },
-        });
-        Ok((
-            ObjectLayer {
-                objects: objects,
-                colour: c,
-            },
-            properties,
-        ))
     }
 }
 
