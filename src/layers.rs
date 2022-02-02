@@ -11,12 +11,6 @@ use crate::{
     Gid,
 };
 
-const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
-const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
-const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
-const ALL_FLIP_FLAGS: u32 =
-    FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG;
-
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayerType {
     TileLayer(TileLayerData),
@@ -112,12 +106,19 @@ pub(crate) struct LayerTileGid {
 }
 
 impl LayerTileGid {
+    const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
+    const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
+    const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
+    const ALL_FLIP_FLAGS: u32 = Self::FLIPPED_HORIZONTALLY_FLAG
+        | Self::FLIPPED_VERTICALLY_FLAG
+        | Self::FLIPPED_DIAGONALLY_FLAG;
+
     pub(crate) fn from_bits(bits: u32) -> Self {
-        let flags = bits & ALL_FLIP_FLAGS;
-        let gid = Gid(bits & !ALL_FLIP_FLAGS);
-        let flip_d = flags & FLIPPED_DIAGONALLY_FLAG == FLIPPED_DIAGONALLY_FLAG; // Swap x and y axis (anti-diagonally) [flips over y = -x line]
-        let flip_h = flags & FLIPPED_HORIZONTALLY_FLAG == FLIPPED_HORIZONTALLY_FLAG; // Flip tile over y axis
-        let flip_v = flags & FLIPPED_VERTICALLY_FLAG == FLIPPED_VERTICALLY_FLAG; // Flip tile over x axis
+        let flags = bits & Self::ALL_FLIP_FLAGS;
+        let gid = Gid(bits & !Self::ALL_FLIP_FLAGS);
+        let flip_d = flags & Self::FLIPPED_DIAGONALLY_FLAG == Self::FLIPPED_DIAGONALLY_FLAG; // Swap x and y axis (anti-diagonally) [flips over y = -x line]
+        let flip_h = flags & Self::FLIPPED_HORIZONTALLY_FLAG == Self::FLIPPED_HORIZONTALLY_FLAG; // Flip tile over y axis
+        let flip_v = flags & Self::FLIPPED_VERTICALLY_FLAG == Self::FLIPPED_VERTICALLY_FLAG; // Flip tile over x axis
 
         Self {
             gid,
@@ -130,8 +131,8 @@ impl LayerTileGid {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TileLayerData {
-    Finite(FiniteTileLayer),
-    Infinite(InfiniteTileLayer),
+    Finite(FiniteTileLayerData),
+    Infinite(InfiniteTileLayerData),
 }
 
 impl TileLayerData {
@@ -155,9 +156,9 @@ impl TileLayerData {
         parse_tag!(parser, "layer", {
             "data" => |attrs| {
                 if infinite {
-                    result = Self::Infinite(InfiniteTileLayer::new(parser, attrs)?);
+                    result = Self::Infinite(InfiniteTileLayerData::new(parser, attrs)?);
                 } else {
-                    result = Self::Finite(FiniteTileLayer::new(parser, attrs, width, height)?);
+                    result = Self::Finite(FiniteTileLayerData::new(parser, attrs, width, height)?);
                 }
                 Ok(())
             },
@@ -179,14 +180,14 @@ impl TileLayerData {
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
-pub struct FiniteTileLayer {
+pub struct FiniteTileLayerData {
     width: u32,
     height: u32,
     /// The tiles are arranged in rows.
     tiles: Vec<LayerTileGid>,
 }
 
-impl FiniteTileLayer {
+impl FiniteTileLayerData {
     fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
@@ -222,11 +223,11 @@ impl FiniteTileLayer {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct InfiniteTileLayer {
+pub struct InfiniteTileLayerData {
     chunks: HashMap<(i32, i32), Chunk>,
 }
 
-impl InfiniteTileLayer {
+impl InfiniteTileLayerData {
     fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
