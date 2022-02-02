@@ -9,7 +9,7 @@ use crate::{
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct InfiniteTileLayerData {
-    chunks: HashMap<(i32, i32), Chunk>,
+    pub chunks: HashMap<(i32, i32), Chunk>,
 }
 
 impl InfiniteTileLayerData {

@@ -110,7 +110,7 @@ impl<'map, DataT> LayerWrapper<'map, DataT>
 where
     DataT: Clone + PartialEq + std::fmt::Debug,
 {
-    fn new(map: &'map Map, data: &'map DataT) -> Self {
+    pub(crate) fn new(map: &'map Map, data: &'map DataT) -> Self {
         Self { map, data }
     }
 

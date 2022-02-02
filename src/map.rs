@@ -15,7 +15,7 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag},
-    TilesetCache,
+    Layer, TilesetCache,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -115,6 +115,33 @@ impl Map {
     /// Get a reference to the map's tilesets.
     pub fn tilesets(&self) -> &[TilesetRef] {
         self.tilesets.as_ref()
+    }
+
+    /// Get an iterator over all the layers in the map.
+    pub fn layers(&self) -> LayerIter {
+        LayerIter::new(self)
+    }
+}
+
+/// An iterator that iterates over all the layers in a map, obtained via [`Map::layers`].
+pub struct LayerIter<'map> {
+    map: &'map Map,
+    index: usize,
+}
+
+impl<'map> LayerIter<'map> {
+    fn new(map: &'map Map) -> Self {
+        Self { map, index: 0 }
+    }
+}
+
+impl<'map> Iterator for LayerIter<'map> {
+    type Item = Layer<'map>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let layer_data = self.map.layers.get(self.index)?;
+        self.index += 1;
+        Some(Layer::new(self.map, layer_data))
     }
 }
 

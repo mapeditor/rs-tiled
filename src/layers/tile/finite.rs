@@ -48,4 +48,14 @@ impl FiniteTileLayerData {
             None
         }
     }
+
+    /// Get the tile layer's width in tiles.
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Get the tile layer's height in tiles.
+    pub fn height(&self) -> u32 {
+        self.height
+    }
 }
