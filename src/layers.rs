@@ -53,7 +53,7 @@ impl Layer {
         attrs: Vec<OwnedAttribute>,
         tag: LayerTag,
         infinite: bool,
-        path_relative_to: Option<&Path>,
+        map_path: &Path,
     ) -> Result<Self, TiledError> {
         let ((opacity, visible, offset_x, offset_y, parallax_x, parallax_y, name, id), ()) = get_attrs!(
             attrs,
@@ -83,7 +83,7 @@ impl Layer {
                 (LayerType::ObjectLayer(ty), properties)
             }
             LayerTag::ImageLayer => {
-                let (ty, properties) = ImageLayer::new(parser, path_relative_to)?;
+                let (ty, properties) = ImageLayer::new(parser, map_path)?;
                 (LayerType::ImageLayer(ty), properties)
             }
         };
@@ -114,27 +114,6 @@ pub struct LayerTileRef<'map> {
     pub flip_d: bool,
 }
 
-impl<'map> LayerTileRef<'map> {
-    pub(crate) fn from_gid(layer_tile: &LayerTileGid, map: &'map Map) -> Option<Self> {
-        if layer_tile.gid == Gid::EMPTY {
-            None
-        } else {
-            map.get_tileset_for_gid(layer_tile.gid)
-                .map(|tileset| Self {
-                    tileset,
-                    id: layer_tile.gid.0 - tileset.first_gid,
-                    flip_h: layer_tile.flip_h,
-                    flip_v: layer_tile.flip_v,
-                    flip_d: layer_tile.flip_d,
-                })
-        }
-    }
-
-    pub fn tile(&self) -> Option<&Tile> {
-        self.tileset.get_tile(self.id)
-    }
-}
-
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct LayerTileGid {
@@ -162,12 +141,9 @@ impl LayerTileGid {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TileLayer {
-    pub width: u32,
-    pub height: u32,
-    /// The tiles are arranged in rows. Each tile is a number which can be used
-    ///  to find which tileset it belongs to and can then be rendered.
-    tiles: LayerData,
+pub enum TileLayer {
+    Finite(FiniteTileLayer),
+    Infinite(InfiniteTileLayer),
 }
 
 impl TileLayer {
@@ -175,8 +151,8 @@ impl TileLayer {
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         infinite: bool,
-    ) -> Result<(TileLayer, Properties), TiledError> {
-        let ((), (w, h)) = get_attrs!(
+    ) -> Result<(Self, Properties), TiledError> {
+        let ((), (width, height)) = get_attrs!(
             attrs,
             optionals: [
             ],
@@ -186,14 +162,14 @@ impl TileLayer {
             ],
             TiledError::MalformedAttributes("layer parsing error, width and height attributes required".to_string())
         );
-        let mut tiles: LayerData = LayerData::Finite(Default::default());
+        let mut result = Self::Finite(Default::default());
         let mut properties = HashMap::new();
         parse_tag!(parser, "layer", {
             "data" => |attrs| {
                 if infinite {
-                    tiles = parse_infinite_data(parser, attrs)?;
+                    result = Self::Infinite(InfiniteTileLayer::new(parser, attrs)?);
                 } else {
-                    tiles = parse_data(parser, attrs)?;
+                    result = Self::Finite(FiniteTileLayer::new(parser, attrs, width, height)?);
                 }
                 Ok(())
             },
@@ -203,22 +179,54 @@ impl TileLayer {
             },
         });
 
-        Ok((
-            TileLayer {
-                width: w,
-                height: h,
-                tiles: tiles,
-            },
-            properties,
-        ))
+        Ok((result, properties))
+    }
+
+    pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileGid> {
+        match &self {
+            Self::Finite(finite) => finite.get_tile(x, y),
+            Self::Infinite(_) => todo!("Getting tiles from infinite layers"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Default)]
+pub struct FiniteTileLayer {
+    width: u32,
+    height: u32,
+    /// The tiles are arranged in rows.
+    tiles: Vec<LayerTileGid>,
+}
+
+impl FiniteTileLayer {
+    fn new<R: Read>(
+        parser: &mut EventReader<R>,
+        attrs: Vec<OwnedAttribute>,
+        width: u32,
+        height: u32,
+    ) -> Result<Self, TiledError> {
+        let ((e, c), ()) = get_attrs!(
+            attrs,
+            optionals: [
+                ("encoding", encoding, |v| Some(v)),
+                ("compression", compression, |v| Some(v)),
+            ],
+            required: [],
+            TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
+        );
+
+        let tiles = parse_data_line(e, c, parser)?;
+
+        Ok(Self {
+            width,
+            height,
+            tiles,
+        })
     }
 
     pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileGid> {
         if x <= self.width as usize && y <= self.height as usize {
-            match &self.tiles {
-                LayerData::Finite(tiles) => tiles.get(x + y * self.width as usize),
-                LayerData::Infinite(_) => todo!("Getting tiles from infinite layers"),
-            }
+            self.tiles.get(x + y * self.width as usize)
         } else {
             None
         }
@@ -226,9 +234,36 @@ impl TileLayer {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) enum LayerData {
-    Finite(Vec<LayerTileGid>),
-    Infinite(HashMap<(i32, i32), Chunk>),
+pub struct InfiniteTileLayer {
+    chunks: HashMap<(i32, i32), Chunk>,
+}
+
+impl InfiniteTileLayer {
+    fn new<R: Read>(
+        parser: &mut EventReader<R>,
+        attrs: Vec<OwnedAttribute>,
+    ) -> Result<Self, TiledError> {
+        let ((e, c), ()) = get_attrs!(
+            attrs,
+            optionals: [
+                ("encoding", encoding, |v| Some(v)),
+                ("compression", compression, |v| Some(v)),
+            ],
+            required: [],
+            TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
+        );
+
+        let mut chunks = HashMap::<(i32, i32), Chunk>::new();
+        parse_tag!(parser, "data", {
+            "chunk" => |attrs| {
+                let chunk = Chunk::new(parser, attrs, e.clone(), c.clone())?;
+                chunks.insert((chunk.x, chunk.y), chunk);
+                Ok(())
+            }
+        });
+
+        Ok(Self { chunks })
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -239,14 +274,16 @@ pub struct ImageLayer {
 impl ImageLayer {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
-        path_relative_to: Option<&Path>,
+        map_path: &Path,
     ) -> Result<(ImageLayer, Properties), TiledError> {
         let mut image: Option<Image> = None;
         let mut properties = HashMap::new();
 
+        let path_relative_to = map_path.parent().ok_or(TiledError::InvalidPath)?;
+
         parse_tag!(parser, "imagelayer", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
+                image = Some(Image::new(parser, attrs, path_relative_to)?);
                 Ok(())
             },
             "properties" => |_| {

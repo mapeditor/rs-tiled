@@ -18,11 +18,8 @@ pub enum TiledError {
     Base64DecodingError(base64::DecodeError),
     XmlDecodingError(xml::reader::Error),
     PrematureEnd(String),
-    /// Tried to parse external data of an object without a file location,
-    /// e.g. by using Map::parse_reader.
-    SourceRequired {
-        object_to_parse: String,
-    },
+    /// The path given is invalid because it isn't contained in any folder.
+    InvalidPath,
     Other(String),
 }
 
@@ -34,10 +31,11 @@ impl fmt::Display for TiledError {
             TiledError::Base64DecodingError(ref e) => write!(fmt, "{}", e),
             TiledError::XmlDecodingError(ref e) => write!(fmt, "{}", e),
             TiledError::PrematureEnd(ref e) => write!(fmt, "{}", e),
-            TiledError::SourceRequired {
-                ref object_to_parse,
-            } => {
-                write!(fmt, "Tried to parse external {} without a file location, e.g. by using Map::parse_reader.", object_to_parse)
+            TiledError::InvalidPath => {
+                write!(
+                    fmt,
+                    "The map path given is invalid because it isn't contained in any folder."
+                )
             }
             TiledError::Other(ref s) => write!(fmt, "{}", s),
         }
@@ -48,13 +46,10 @@ impl fmt::Display for TiledError {
 impl std::error::Error for TiledError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
-            TiledError::MalformedAttributes(_) => None,
             TiledError::DecompressingError(ref e) => Some(e as &dyn std::error::Error),
             TiledError::Base64DecodingError(ref e) => Some(e as &dyn std::error::Error),
             TiledError::XmlDecodingError(ref e) => Some(e as &dyn std::error::Error),
-            TiledError::PrematureEnd(_) => None,
-            TiledError::SourceRequired { .. } => None,
-            TiledError::Other(_) => None,
+            _ => None,
         }
     }
 }

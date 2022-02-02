@@ -1,4 +1,11 @@
-use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt,
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
@@ -8,8 +15,21 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag},
-    LayerTileRef, LayerType,
+    TilesetCache,
 };
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct TilesetRef {
+    first_gid: Gid,
+    path: PathBuf,
+}
+
+impl TilesetRef {
+    /// Get a reference to the tileset's path.
+    pub fn path(&self) -> &PathBuf {
+        &self.path
+    }
+}
 
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
 #[derive(Debug, PartialEq, Clone)]
@@ -25,8 +45,8 @@ pub struct Map {
     pub tile_width: u32,
     /// Tile height, in pixels.
     pub tile_height: u32,
-    /// The tilesets present in this map.
-    pub tilesets: Vec<Tileset>,
+    /// References to a [`TilesetCache`] representing the tilesets present in this map.
+    pub tilesets: Vec<TilesetRef>,
     /// The layers present in this map.
     pub layers: Vec<Layer>,
     /// The custom properties of this map.
@@ -42,10 +62,16 @@ impl Map {
     /// (e.g. Amethyst) simply hand over a byte stream (and file location) for parsing,
     /// in which case this function may be required.
     ///
-    /// The path is used for external dependencies such as tilesets or images, and may be skipped
-    /// if the map is fully embedded (Doesn't refer to external files). If a map *does* refer to
-    /// external files and a path is not given, the function will return [TiledError::SourceRequired].
-    pub fn parse_reader<R: Read>(reader: R, path: Option<&Path>) -> Result<Self, TiledError> {
+    /// The path is used for external dependencies such as tilesets or images. It is required.
+    /// If the map if fully embedded and doesn't refer to external files, you may input an arbitrary path;
+    /// the library won't read from the filesystem if it is not required to do so.
+    ///
+    /// The tileset cache is used to store and refer to any tilesets found along the way.
+    pub fn parse_reader<R: Read>(
+        reader: R,
+        path: impl AsRef<Path>,
+        tileset_cache: &mut impl TilesetCache,
+    ) -> Result<Self, TiledError> {
         let mut parser = EventReader::new(reader);
         loop {
             match parser.next().map_err(TiledError::XmlDecodingError)? {
@@ -53,7 +79,12 @@ impl Map {
                     name, attributes, ..
                 } => {
                     if name.local_name == "map" {
-                        return Self::parse_xml(&mut parser, attributes, path);
+                        return Self::parse_xml(
+                            &mut parser,
+                            attributes,
+                            path.as_ref(),
+                            tileset_cache,
+                        );
                     }
                 }
                 XmlEvent::EndDocument => {
@@ -68,37 +99,28 @@ impl Map {
 
     /// Parse a file hopefully containing a Tiled map and try to parse it.  All external
     /// files will be loaded relative to the path given.
-    pub fn parse_file(path: impl AsRef<Path>) -> Result<Self, TiledError> {
-        let file = File::open(path.as_ref())
+    ///
+    /// The tileset cache is used to store and refer to any tilesets found along the way.
+    pub fn parse_file(
+        path: impl AsRef<Path>,
+        tileset_cache: &mut impl TilesetCache,
+    ) -> Result<Self, TiledError> {
+        let reader = File::open(path.as_ref())
             .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
-        Self::parse_reader(file, Some(path.as_ref()))
-    }
-
-    /// Gets a tile from a [`Layer`] with the [`LayerType::TileLayer`] `layer_type` with the specified location.
-    pub fn get_tile(&self, layer_index: usize, x: usize, y: usize) -> Option<LayerTileRef> {
-        self.layers
-            .get(layer_index)
-            .and_then(|layer| match &layer.layer_type {
-                LayerType::TileLayer(layer) => Some(layer),
-                _ => None,
-            })
-            .and_then(|layer| layer.get_tile(x, y))
-            .and_then(|layer_tile| LayerTileRef::from_gid(layer_tile, self))
+        Self::parse_reader(reader, path.as_ref(), tileset_cache)
     }
 }
 
 impl Map {
-    pub(crate) fn get_tileset_for_gid(&self, gid: Gid) -> Option<&Tileset> {
-        self.tilesets
-            .iter()
-            .rev()
-            .find(|ts| ts.first_gid <= gid.0)
+    pub(crate) fn get_tileset_for_gid(&self, gid: Gid) -> Option<&TilesetRef> {
+        self.tilesets.iter().rev().find(|ts| ts.first_gid <= gid)
     }
 
     fn parse_xml<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
-        map_path: Option<&Path>,
+        map_path: &Path,
+        tileset_cache: &mut impl TilesetCache,
     ) -> Result<Map, TiledError> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
@@ -118,22 +140,23 @@ impl Map {
         );
 
         let infinite = infinite.unwrap_or(false);
-        let source_path = map_path.and_then(|p| p.parent());
 
-        let mut tilesets = Vec::new();
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
+        let mut tilesets = Vec::new();
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
-                tilesets.push(Tileset::parse_xml(parser, attrs, source_path)?);
+                let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
+                tileset_cache.get_or_insert(&res.tileset_path, res.tileset);
+                tilesets.push(TilesetRef{first_gid: res.first_gid, path: res.tileset_path});
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(Layer::new(parser, attrs, LayerTag::TileLayer, infinite, source_path)?);
+                layers.push(Layer::new(parser, attrs, LayerTag::TileLayer, infinite, map_path)?);
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                layers.push(Layer::new(parser, attrs, LayerTag::ImageLayer, infinite, source_path)?);
+                layers.push(Layer::new(parser, attrs, LayerTag::ImageLayer, infinite, map_path)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -141,7 +164,7 @@ impl Map {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                layers.push(Layer::new(parser, attrs, LayerTag::ObjectLayer, infinite, source_path)?);
+                layers.push(Layer::new(parser, attrs, LayerTag::ObjectLayer, infinite, map_path)?);
                 Ok(())
             },
         });

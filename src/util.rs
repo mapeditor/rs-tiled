@@ -52,21 +52,13 @@ macro_rules! parse_tag {
     }
 }
 
-use std::{
-    collections::HashMap,
-    io::{BufReader, Read},
-};
+use std::io::{BufReader, Read};
 
 pub(crate) use get_attrs;
 pub(crate) use parse_tag;
-use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
+use xml::{reader::XmlEvent, EventReader};
 
-use crate::{
-    animation::Frame,
-    error::TiledError,
-    layers::{Chunk, LayerData},
-    LayerTileGid,
-};
+use crate::{animation::Frame, error::TiledError, LayerTileGid};
 
 // TODO: Move to animation module
 pub(crate) fn parse_animation<R: Read>(
@@ -80,53 +72,6 @@ pub(crate) fn parse_animation<R: Read>(
         },
     });
     Ok(animation)
-}
-
-// TODO: Move to layers module
-pub(crate) fn parse_infinite_data<R: Read>(
-    parser: &mut EventReader<R>,
-    attrs: Vec<OwnedAttribute>,
-) -> Result<LayerData, TiledError> {
-    let ((e, c), ()) = get_attrs!(
-        attrs,
-        optionals: [
-            ("encoding", encoding, |v| Some(v)),
-            ("compression", compression, |v| Some(v)),
-        ],
-        required: [],
-        TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
-    );
-
-    let mut chunks = HashMap::<(i32, i32), Chunk>::new();
-    parse_tag!(parser, "data", {
-        "chunk" => |attrs| {
-            let chunk = Chunk::new(parser, attrs, e.clone(), c.clone())?;
-            chunks.insert((chunk.x, chunk.y), chunk);
-            Ok(())
-        }
-    });
-
-    Ok(LayerData::Infinite(chunks))
-}
-
-// TODO: Move to layers module
-pub(crate) fn parse_data<R: Read>(
-    parser: &mut EventReader<R>,
-    attrs: Vec<OwnedAttribute>,
-) -> Result<LayerData, TiledError> {
-    let ((e, c), ()) = get_attrs!(
-        attrs,
-        optionals: [
-            ("encoding", encoding, |v| Some(v)),
-            ("compression", compression, |v| Some(v)),
-        ],
-        required: [],
-        TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
-    );
-
-    let tiles = parse_data_line(e, c, parser)?;
-
-    Ok(LayerData::Finite(tiles))
 }
 
 // TODO: Move to layers module
