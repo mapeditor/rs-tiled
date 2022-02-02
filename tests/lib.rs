@@ -1,9 +1,9 @@
 use std::path::Path;
 use std::{fs::File, path::PathBuf};
-use tiled::{LayerType, ObjectLayer, TileLayer};
+use tiled::{LayerType, ObjectLayer, TileLayerData};
 use tiled::{Map, PropertyValue, TiledError, Tileset};
 
-fn as_tile_layer(layer: &LayerType) -> &TileLayer {
+fn as_tile_layer(layer: &LayerType) -> &TileLayerData {
     match layer {
         LayerType::TileLayer(x) => x,
         _ => panic!("Not a tile layer"),
@@ -132,8 +132,11 @@ fn test_image_layers() {
 #[test]
 fn test_tile_property() {
     let r = Map::parse_file("assets/tiled_base64.tmx").unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
-        r.tilesets[0].get_tile(1).unwrap().properties.get("a tile property")
+    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets[0]
+        .get_tile(1)
+        .unwrap()
+        .properties
+        .get("a tile property")
     {
         v.clone()
     } else {

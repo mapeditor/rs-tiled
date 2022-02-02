@@ -11,7 +11,7 @@ use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
     error::{ParseTileError, TiledError},
-    layers::{Layer, LayerTag},
+    layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag},
@@ -46,9 +46,9 @@ pub struct Map {
     /// Tile height, in pixels.
     pub tile_height: u32,
     /// References to a [`TilesetCache`] representing the tilesets present in this map.
-    pub tilesets: Vec<TilesetRef>,
+    tilesets: Vec<TilesetRef>,
     /// The layers present in this map.
-    pub layers: Vec<Layer>,
+    layers: Vec<LayerData>,
     /// The custom properties of this map.
     pub properties: Properties,
     /// The background color of this map, if any.
@@ -112,6 +112,13 @@ impl Map {
 }
 
 impl Map {
+    /// Get a reference to the map's tilesets.
+    pub fn tilesets(&self) -> &[TilesetRef] {
+        self.tilesets.as_ref()
+    }
+}
+
+impl Map {
     pub(crate) fn get_tileset_for_gid(&self, gid: Gid) -> Option<&TilesetRef> {
         self.tilesets.iter().rev().find(|ts| ts.first_gid <= gid)
     }
@@ -152,11 +159,11 @@ impl Map {
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(Layer::new(parser, attrs, LayerTag::TileLayer, infinite, map_path)?);
+                layers.push(LayerData::new(parser, attrs, LayerTag::TileLayer, infinite, map_path)?);
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                layers.push(Layer::new(parser, attrs, LayerTag::ImageLayer, infinite, map_path)?);
+                layers.push(LayerData::new(parser, attrs, LayerTag::ImageLayer, infinite, map_path)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -164,7 +171,7 @@ impl Map {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                layers.push(Layer::new(parser, attrs, LayerTag::ObjectLayer, infinite, map_path)?);
+                layers.push(LayerData::new(parser, attrs, LayerTag::ObjectLayer, infinite, map_path)?);
                 Ok(())
             },
         });
@@ -233,5 +240,6 @@ pub(crate) struct Gid(pub u32);
 
 impl Gid {
     /// The GID representing an empty tile in the map.
+    #[allow(dead_code)]
     pub const EMPTY: Gid = Gid(0);
 }

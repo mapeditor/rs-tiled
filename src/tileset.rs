@@ -1,4 +1,3 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -58,8 +57,6 @@ struct TilesetProperties {
     tile_height: u32,
     /// The path all non-absolute paths are relative to.
     path_relative_to: PathBuf,
-    /// Where the tileset is located, independently of the filesystem used.
-    source: PathBuf,
 }
 
 impl Tileset {
@@ -152,7 +149,6 @@ impl Tileset {
                 tilecount,
                 tile_height,
                 tile_width,
-                source: map_path.to_owned(),
             },
         )
         .map(|tileset| EmbeddedParseResult {
@@ -230,7 +226,6 @@ impl Tileset {
                 tilecount,
                 tile_height,
                 tile_width,
-                source: path.to_owned(),
             },
         )
     }

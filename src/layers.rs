@@ -7,9 +7,8 @@ use crate::{
     image::Image,
     objects::Object,
     properties::{parse_properties, Color, Properties},
-    tile::Tile,
     util::*,
-    Gid, Map, Tileset,
+    Gid,
 };
 
 const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
@@ -20,7 +19,7 @@ const ALL_FLIP_FLAGS: u32 =
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayerType {
-    TileLayer(TileLayer),
+    TileLayer(TileLayerData),
     ObjectLayer(ObjectLayer),
     ImageLayer(ImageLayer),
     // TODO: Support group layers
@@ -34,7 +33,7 @@ pub(crate) enum LayerTag {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Layer {
+pub struct LayerData {
     pub name: String,
     pub id: u32,
     pub visible: bool,
@@ -47,7 +46,7 @@ pub struct Layer {
     pub layer_type: LayerType,
 }
 
-impl Layer {
+impl LayerData {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
@@ -75,7 +74,7 @@ impl Layer {
 
         let (ty, properties) = match tag {
             LayerTag::TileLayer => {
-                let (ty, properties) = TileLayer::new(parser, attrs, infinite)?;
+                let (ty, properties) = TileLayerData::new(parser, attrs, infinite)?;
                 (LayerType::TileLayer(ty), properties)
             }
             LayerTag::ObjectLayer => {
@@ -101,17 +100,6 @@ impl Layer {
             layer_type: ty,
         })
     }
-}
-
-/// Represents a tile from a tile layer.
-#[derive(Debug, Clone, PartialEq)]
-pub struct LayerTileRef<'map> {
-    pub tileset: &'map Tileset,
-    /// The ID of the tile in its corresponding tileset.
-    pub id: u32,
-    pub flip_h: bool,
-    pub flip_v: bool,
-    pub flip_d: bool,
 }
 
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
@@ -141,12 +129,12 @@ impl LayerTileGid {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum TileLayer {
+pub enum TileLayerData {
     Finite(FiniteTileLayer),
     Infinite(InfiniteTileLayer),
 }
 
-impl TileLayer {
+impl TileLayerData {
     pub(crate) fn new<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
