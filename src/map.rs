@@ -32,7 +32,7 @@ impl TilesetRef {
 }
 
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Map {
     /// The TMX format version this map was saved to.
     pub version: String,
@@ -121,6 +121,11 @@ impl Map {
     pub fn layers(&self) -> LayerIter {
         LayerIter::new(self)
     }
+
+    /// Returns the layer that has the specified index, if it exists.
+    pub fn get_layer(&self, index: usize) -> Option<Layer> {
+        self.layers.get(index).map(|data| Layer::new(self, data))
+    }
 }
 
 /// An iterator that iterates over all the layers in a map, obtained via [`Map::layers`].
@@ -142,6 +147,12 @@ impl<'map> Iterator for LayerIter<'map> {
         let layer_data = self.map.layers.get(self.index)?;
         self.index += 1;
         Some(Layer::new(self.map, layer_data))
+    }
+}
+
+impl<'map> ExactSizeIterator for LayerIter<'map> {
+    fn len(&self) -> usize {
+        self.map.layers.len() - self.index
     }
 }
 

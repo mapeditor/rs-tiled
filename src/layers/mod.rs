@@ -115,12 +115,12 @@ where
     }
 
     /// Get the layer's data.
-    pub fn data(&self) -> &DataT {
+    pub fn data(&self) -> &'map DataT {
         self.data
     }
 
     /// Get the layer's map.
-    pub fn map(&self) -> &Map {
+    pub fn map(&self) -> &'map Map {
         self.map
     }
 }
@@ -129,7 +129,7 @@ pub type Layer<'map> = LayerWrapper<'map, LayerData>;
 
 impl<'map> Layer<'map> {
     /// Get the layer's type.
-    pub fn layer_type(&self) -> LayerType {
+    pub fn layer_type(&self) -> LayerType<'map> {
         LayerType::new(self.map, &self.data.layer_type)
     }
 }

@@ -7,9 +7,15 @@ use crate::{
     LayerTileData, TiledError,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub struct InfiniteTileLayerData {
     pub chunks: HashMap<(i32, i32), Chunk>,
+}
+
+impl std::fmt::Debug for InfiniteTileLayerData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InfiniteTileLayerData").finish()
+    }
 }
 
 impl InfiniteTileLayerData {
