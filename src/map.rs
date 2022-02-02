@@ -20,7 +20,7 @@ use crate::{
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TilesetRef {
-    first_gid: Gid,
+    pub(crate) first_gid: Gid,
     path: PathBuf,
 }
 

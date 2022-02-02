@@ -2,7 +2,7 @@ use std::{io::Read, path::Path};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
-use crate::{error::TiledError, properties::Properties, util::*};
+use crate::{error::TiledError, properties::Properties, util::*, Map};
 
 mod image;
 pub use image::*;
@@ -93,5 +93,53 @@ impl LayerData {
             properties,
             layer_type: ty,
         })
+    }
+}
+
+/// A wrapper over a naive layer-related type that holds a reference to the parent map as well as the layer data.
+pub struct LayerWrapper<'map, DataT> {
+    map: &'map Map,
+    data: &'map DataT,
+}
+
+impl<'map, DataT> LayerWrapper<'map, DataT> {
+    fn new(map: &'map Map, data: &'map DataT) -> Self {
+        Self { map, data }
+    }
+
+    /// Get the layer's data.
+    pub fn data(&self) -> &DataT {
+        self.data
+    }
+
+    /// Get the layer's map.
+    pub fn map(&self) -> &Map {
+        self.map
+    }
+}
+
+pub type Layer<'map> = LayerWrapper<'map, LayerData>;
+
+impl<'map> Layer<'map> {
+    /// Get the layer's type.
+    pub fn layer_type(&self) -> LayerType {
+        LayerType::new(self.map, &self.data.layer_type)
+    }
+}
+
+pub enum LayerType<'map> {
+    TileLayer(TileLayer<'map>),
+    ObjectLayer(ObjectLayer<'map>),
+    ImageLayer(ImageLayer<'map>),
+    // TODO: Support group layers
+}
+
+impl<'map> LayerType<'map> {
+    fn new(map: &'map Map, data: &'map LayerDataType) -> Self {
+        match data {
+            LayerDataType::TileLayer(data) => Self::TileLayer(TileLayer::new(map, data)),
+            LayerDataType::ObjectLayer(data) => Self::ObjectLayer(ObjectLayer::new(map, data)),
+            LayerDataType::ImageLayer(data) => Self::ImageLayer(ImageLayer::new(map, data)),
+        }
     }
 }

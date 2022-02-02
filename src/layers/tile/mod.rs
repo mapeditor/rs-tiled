@@ -1,11 +1,11 @@
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashMap, io::Read, path::Path};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag},
-    Gid, Properties, TiledError,
+    Gid, LayerWrapper, Properties, TileId, TiledError,
 };
 
 mod finite;
@@ -15,14 +15,14 @@ pub use infinite::*;
 
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct LayerTileGid {
+pub(crate) struct LayerTileData {
     gid: Gid,
     pub flip_h: bool,
     pub flip_v: bool,
     pub flip_d: bool,
 }
 
-impl LayerTileGid {
+impl LayerTileData {
     const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
     const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
     const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
@@ -88,10 +88,37 @@ impl TileLayerData {
         Ok((result, properties))
     }
 
-    pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileGid> {
+    pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileData> {
         match &self {
             Self::Finite(finite) => finite.get_tile(x, y),
             Self::Infinite(_) => todo!("Getting tiles from infinite layers"),
         }
+    }
+}
+
+pub struct LayerTile<'map> {
+    pub tileset_path: &'map Path,
+    pub id: TileId,
+    pub flip_h: bool,
+    pub flip_v: bool,
+    pub flip_d: bool,
+}
+
+pub type TileLayer<'map> = LayerWrapper<'map, TileLayerData>;
+
+impl<'map> TileLayer<'map> {
+    pub fn get_tile(&self, x: usize, y: usize) -> Option<LayerTile<'map>> {
+        self.data.get_tile(x, y).and_then(|data| {
+            let tileset_ref = self.map.get_tileset_for_gid(data.gid)?;
+            let id = data.gid.0 - tileset_ref.first_gid.0;
+
+            Some(LayerTile {
+                tileset_path: &tileset_ref.path(),
+                id,
+                flip_h: data.flip_h,
+                flip_v: data.flip_v,
+                flip_d: data.flip_d,
+            })
+        })
     }
 }

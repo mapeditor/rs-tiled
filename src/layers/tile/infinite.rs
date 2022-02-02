@@ -4,7 +4,7 @@ use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     util::{get_attrs, parse_data_line, parse_tag},
-    LayerTileGid, TiledError,
+    LayerTileData, TiledError,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -46,7 +46,7 @@ pub struct Chunk {
     pub y: i32,
     pub width: u32,
     pub height: u32,
-    tiles: Vec<LayerTileGid>,
+    tiles: Vec<LayerTileData>,
 }
 
 impl Chunk {

@@ -58,7 +58,7 @@ pub(crate) use get_attrs;
 pub(crate) use parse_tag;
 use xml::{reader::XmlEvent, EventReader};
 
-use crate::{animation::Frame, error::TiledError, LayerTileGid};
+use crate::{animation::Frame, error::TiledError, LayerTileData};
 
 // TODO: Move to animation module
 pub(crate) fn parse_animation<R: Read>(
@@ -79,7 +79,7 @@ pub(crate) fn parse_data_line<R: Read>(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut EventReader<R>,
-) -> Result<Vec<LayerTileGid>, TiledError> {
+) -> Result<Vec<LayerTileData>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
             return Err(TiledError::Other(
@@ -175,14 +175,14 @@ pub(crate) fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 // TODO: Move to layers module
 pub(crate) fn decode_csv<R: Read>(
     parser: &mut EventReader<R>,
-) -> Result<Vec<LayerTileGid>, TiledError> {
+) -> Result<Vec<LayerTileData>, TiledError> {
     loop {
         match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 let tiles = s
                     .split(',')
                     .map(|v| v.trim().parse().unwrap())
-                    .map(LayerTileGid::from_bits)
+                    .map(LayerTileData::from_bits)
                     .collect();
                 return Ok(tiles);
             }
@@ -197,14 +197,14 @@ pub(crate) fn decode_csv<R: Read>(
 }
 
 // TODO: Move to layers module
-pub(crate) fn convert_to_tiles(all: &Vec<u8>) -> Vec<LayerTileGid> {
+pub(crate) fn convert_to_tiles(all: &Vec<u8>) -> Vec<LayerTileData> {
     let mut data = Vec::new();
     for chunk in all.chunks_exact(4) {
         let n = chunk[0] as u32
             + ((chunk[1] as u32) << 8)
             + ((chunk[2] as u32) << 16)
             + ((chunk[3] as u32) << 24);
-        data.push(LayerTileGid::from_bits(n));
+        data.push(LayerTileData::from_bits(n));
     }
     data
 }

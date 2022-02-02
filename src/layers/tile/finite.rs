@@ -4,7 +4,7 @@ use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     util::{get_attrs, parse_data_line},
-    LayerTileGid, TiledError,
+    LayerTileData, TiledError,
 };
 
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -12,7 +12,7 @@ pub struct FiniteTileLayerData {
     width: u32,
     height: u32,
     /// The tiles are arranged in rows.
-    tiles: Vec<LayerTileGid>,
+    tiles: Vec<LayerTileData>,
 }
 
 impl FiniteTileLayerData {
@@ -41,7 +41,7 @@ impl FiniteTileLayerData {
         })
     }
 
-    pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileGid> {
+    pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileData> {
         if x <= self.width as usize && y <= self.height as usize {
             self.tiles.get(x + y * self.width as usize)
         } else {

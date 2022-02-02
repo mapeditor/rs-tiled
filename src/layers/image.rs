@@ -2,7 +2,7 @@ use std::{collections::HashMap, io::Read, path::Path};
 
 use xml::EventReader;
 
-use crate::{parse_properties, util::parse_tag, Image, Properties, TiledError};
+use crate::{parse_properties, util::parse_tag, Image, LayerWrapper, Map, Properties, TiledError};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ImageLayerData {
@@ -32,3 +32,5 @@ impl ImageLayerData {
         Ok((ImageLayerData { image }, properties))
     }
 }
+
+pub type ImageLayer<'map> = LayerWrapper<'map, ImageLayerData>;

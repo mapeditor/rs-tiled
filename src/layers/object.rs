@@ -5,7 +5,7 @@ use xml::{attribute::OwnedAttribute, EventReader};
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag},
-    Color, Object, Properties, TiledError,
+    Color, Map, Object, Properties, TiledError, LayerWrapper,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -43,3 +43,5 @@ impl ObjectLayerData {
         Ok((ObjectLayerData { objects, colour: c }, properties))
     }
 }
+
+pub type ObjectLayer<'map> = LayerWrapper<'map, ObjectLayerData>;
