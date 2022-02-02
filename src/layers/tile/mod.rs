@@ -9,6 +9,7 @@ use crate::{
 };
 
 mod finite;
+mod util;
 pub use finite::*;
 mod infinite;
 pub use infinite::*;

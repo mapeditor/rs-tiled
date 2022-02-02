@@ -2,10 +2,9 @@ use std::io::Read;
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
-use crate::{
-    util::{get_attrs, parse_data_line},
-    LayerTileData, TiledError,
-};
+use crate::{util::get_attrs, LayerTileData, TiledError};
+
+use super::util::parse_data_line;
 
 #[derive(PartialEq, Clone, Default)]
 pub struct FiniteTileLayerData {

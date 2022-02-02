@@ -3,9 +3,12 @@ use std::{collections::HashMap, io::Read};
 use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
-    util::{get_attrs, parse_data_line, parse_tag},
+    util::{get_attrs, parse_tag},
     LayerTileData, TiledError,
 };
+
+use super::util::parse_data_line;
+
 
 #[derive(PartialEq, Clone)]
 pub struct InfiniteTileLayerData {
