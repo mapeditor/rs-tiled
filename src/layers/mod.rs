@@ -97,12 +97,19 @@ impl LayerData {
 }
 
 /// A wrapper over a naive layer-related type that holds a reference to the parent map as well as the layer data.
-pub struct LayerWrapper<'map, DataT> {
+#[derive(Clone, PartialEq, Debug)]
+pub struct LayerWrapper<'map, DataT>
+where
+    DataT: Clone + PartialEq + std::fmt::Debug,
+{
     map: &'map Map,
     data: &'map DataT,
 }
 
-impl<'map, DataT> LayerWrapper<'map, DataT> {
+impl<'map, DataT> LayerWrapper<'map, DataT>
+where
+    DataT: Clone + PartialEq + std::fmt::Debug,
+{
     fn new(map: &'map Map, data: &'map DataT) -> Self {
         Self { map, data }
     }

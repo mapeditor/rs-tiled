@@ -5,7 +5,7 @@ use xml::{attribute::OwnedAttribute, EventReader};
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag},
-    Color, Map, Object, Properties, TiledError, LayerWrapper,
+    Color, LayerWrapper, Object, Properties, TiledError,
 };
 
 #[derive(Debug, PartialEq, Clone)]
