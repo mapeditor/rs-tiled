@@ -106,7 +106,6 @@ impl Layer {
 /// Represents a tile from a tile layer.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LayerTileRef<'map> {
-    pub tile: &'map Tile,
     pub tileset: &'map Tileset,
     /// The ID of the tile in its corresponding tileset.
     pub id: u32,
@@ -120,9 +119,8 @@ impl<'map> LayerTileRef<'map> {
         if layer_tile.gid == Gid::EMPTY {
             None
         } else {
-            map.get_tile_by_gid(layer_tile.gid)
-                .map(|(tile, tileset)| Self {
-                    tile,
+            map.get_tileset_for_gid(layer_tile.gid)
+                .map(|tileset| Self {
                     tileset,
                     id: layer_tile.gid.0 - tileset.first_gid,
                     flip_h: layer_tile.flip_h,
@@ -130,6 +128,10 @@ impl<'map> LayerTileRef<'map> {
                     flip_d: layer_tile.flip_d,
                 })
         }
+    }
+
+    pub fn tile(&self) -> Option<&Tile> {
+        self.tileset.get_tile(self.id)
     }
 }
 

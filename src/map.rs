@@ -6,7 +6,6 @@ use crate::{
     error::{ParseTileError, TiledError},
     layers::{Layer, LayerTag},
     properties::{parse_properties, Color, Properties},
-    tile::Tile,
     tileset::Tileset,
     util::{get_attrs, parse_tag},
     LayerTileRef, LayerType,
@@ -89,11 +88,11 @@ impl Map {
 }
 
 impl Map {
-    pub(crate) fn get_tile_by_gid(&self, gid: Gid) -> Option<(&Tile, &Tileset)> {
+    pub(crate) fn get_tileset_for_gid(&self, gid: Gid) -> Option<&Tileset> {
         self.tilesets
             .iter()
-            .filter_map(|ts| ts.get_tile_by_gid(gid).map(|tile| (tile, ts)))
-            .nth(0)
+            .rev()
+            .find(|ts| ts.first_gid <= gid.0)
     }
 
     fn parse_xml<R: Read>(

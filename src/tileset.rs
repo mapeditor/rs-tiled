@@ -11,7 +11,7 @@ use crate::error::TiledError;
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
 use crate::tile::Tile;
-use crate::{util::*, Gid};
+use crate::{util::*};
 
 /// A tileset, usually the tilesheet image.
 #[derive(Debug, PartialEq, Clone)]
@@ -85,9 +85,8 @@ impl Tileset {
 }
 
 impl Tileset {
-    pub(crate) fn get_tile_by_gid(&self, gid: Gid) -> Option<&Tile> {
-        let local_id = gid.0 - self.first_gid;
-        self.tiles.get(&local_id)
+    pub fn get_tile(&self, id: u32) -> Option<&Tile> {
+        self.tiles.get(&id)
     }
 
     pub(crate) fn parse_xml<R: Read>(
@@ -250,8 +249,9 @@ impl Tileset {
         prop: TilesetProperties,
     ) -> Result<Self, TiledError> {
         let mut image = Option::None;
-        let mut tiles = HashMap::new();
+        let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
         let mut properties = HashMap::new();
+
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
                 image = Some(Image::new(parser, attrs, prop.path_relative_to.as_ref().ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
@@ -273,12 +273,12 @@ impl Tileset {
 
         if !is_image_collection_tileset {
             for tile_id in 0..prop.tilecount {
-                tiles.entry(tile_id).or_insert_with(Default::default);
+                tiles.entry(tile_id).or_default();
             }
         }
 
-        let (margin, spacing) = (prop.margin.unwrap_or(0), prop.spacing.unwrap_or(0));
-
+        let margin = prop.margin.unwrap_or(0);
+        let spacing = prop.spacing.unwrap_or(0);
         let columns = prop
             .columns
             .map(Ok)

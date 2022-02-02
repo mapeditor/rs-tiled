@@ -40,10 +40,10 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
         assert_eq!(layer.height, 100);
     }
 
-    assert_eq!(c.get_tile(0, 0, 0).unwrap().id, 35);
-    assert_eq!(c.get_tile(0, 0, 1).unwrap().id, 17);
-    assert_eq!(c.get_tile(0, 0, 2).unwrap().id, 0);
-    assert_eq!(c.get_tile(0, 1, 2).unwrap().id, 17);
+    assert_eq!(c.get_tile(0, 0, 0).unwrap().id, 34);
+    assert_eq!(c.get_tile(0, 0, 1).unwrap().id, 16);
+    assert!(c.get_tile(0, 0, 2).is_none());
+    assert_eq!(c.get_tile(0, 1, 2).unwrap().id, 16);
     assert!((0..99).map(|x| c.get_tile(0, x, 99)).all(|t| t.is_none()));
 }
 
@@ -133,7 +133,7 @@ fn test_image_layers() {
 fn test_tile_property() {
     let r = Map::parse_file("assets/tiled_base64.tmx").unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
-        r.tilesets[0].tiles[&0].properties.get("a tile property")
+        r.tilesets[0].get_tile(1).unwrap().properties.get("a tile property")
     {
         v.clone()
     } else {
@@ -185,11 +185,11 @@ fn test_flipped() {
 
     let t1 = r.get_tile(0, 0, 0).unwrap();
     let t2 = r.get_tile(0, 1, 0).unwrap();
-    let t3 = r.get_tile(0, 2, 0).unwrap();
-    let t4 = r.get_tile(0, 3, 0).unwrap();
-    assert_eq!(t1.tile, t2.tile);
-    assert_eq!(t2.tile, t3.tile);
-    assert_eq!(t3.tile, t4.tile);
+    let t3 = r.get_tile(0, 0, 1).unwrap();
+    let t4 = r.get_tile(0, 1, 1).unwrap();
+    assert_eq!(t1.id, t2.id);
+    assert_eq!(t2.id, t3.id);
+    assert_eq!(t3.id, t4.id);
     assert!(t1.flip_d);
     assert!(t1.flip_h);
     assert!(t1.flip_v);
