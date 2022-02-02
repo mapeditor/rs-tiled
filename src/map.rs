@@ -117,7 +117,7 @@ impl Map {
         self.tilesets.as_ref()
     }
 
-    /// Get an iterator over all the layers in the map.
+    /// Get an iterator over all the layers in the map in ascending order of their layer index.
     pub fn layers(&self) -> LayerIter {
         LayerIter::new(self)
     }
