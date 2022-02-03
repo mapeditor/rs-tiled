@@ -298,30 +298,3 @@ impl Tileset {
             .and_then(|image| Ok((image.width as u32 - margin + spacing) / (tile_width + spacing)))
     }
 }
-
-pub trait TilesetCache {
-    fn get(&self, path: &Path) -> Option<&Tileset>;
-    fn get_or_insert(&mut self, path: &Path, tileset: Tileset) -> &Tileset;
-}
-
-pub struct DefaultTilesetCache {
-    tilesets: HashMap<PathBuf, Tileset>,
-}
-
-impl DefaultTilesetCache {
-    pub fn new() -> Self {
-        Self {
-            tilesets: HashMap::new(),
-        }
-    }
-}
-
-impl TilesetCache for DefaultTilesetCache {
-    fn get(&self, path: &Path) -> Option<&Tileset> {
-        self.tilesets.get(path)
-    }
-
-    fn get_or_insert(&mut self, path: &Path, tileset: Tileset) -> &Tileset {
-        self.tilesets.entry(path.to_owned()).or_insert(tileset)
-    }
-}

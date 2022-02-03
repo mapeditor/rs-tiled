@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use tiled::{DefaultTilesetCache, Map};
+use tiled::{DefaultResourceCache, Map};
 
 fn main() {
-    let mut tilesets = DefaultTilesetCache::new();
+    let mut tilesets = DefaultResourceCache::new();
 
     let map = Map::parse_file(
         PathBuf::from(std::env!("CARGO_MANIFEST_DIR")).join("assets/tiled_base64_zlib.tmx"),

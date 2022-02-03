@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
-    DefaultTilesetCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, ObjectLayer,
-    TileLayer, TileLayerData, TilesetCache,
+    DefaultResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, ObjectLayer,
+    ResourceCache, TileLayer, TileLayerData,
 };
 use tiled::{Map, PropertyValue};
 
@@ -43,7 +43,7 @@ fn compare_everything_but_tileset_sources(r: &Map, e: &Map) {
 
 #[test]
 fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
     let z = Map::parse_file("assets/tiled_base64_zlib.tmx", &mut cache).unwrap();
     let g = Map::parse_file("assets/tiled_base64_gzip.tmx", &mut cache).unwrap();
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
@@ -70,7 +70,7 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
 
 #[test]
 fn test_external_tileset() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
     let e = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
@@ -79,7 +79,7 @@ fn test_external_tileset() {
 
 #[test]
 fn test_sources() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let e = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
     assert_eq!(
@@ -88,7 +88,7 @@ fn test_sources() {
     );
     assert_eq!(
         cache
-            .get(e.tilesets()[0].path())
+            .get_tileset(e.tilesets()[0].path())
             .unwrap()
             .image
             .as_ref()
@@ -100,7 +100,7 @@ fn test_sources() {
 
 #[test]
 fn test_just_tileset() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
     let path = "assets/tilesheet.tsx";
@@ -109,7 +109,7 @@ fn test_just_tileset() {
 
 #[test]
 fn test_infinite_tileset() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let _r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx", &mut cache).unwrap();
 
@@ -130,7 +130,7 @@ fn test_infinite_tileset() {
 
 #[test]
 fn test_image_layers() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_image_layers.tmx", &mut cache).unwrap();
     assert_eq!(r.layers().len(), 2);
@@ -166,11 +166,11 @@ fn test_image_layers() {
 
 #[test]
 fn test_tile_property() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = cache
-        .get(r.tilesets()[0].path())
+        .get_tileset(r.tilesets()[0].path())
         .unwrap()
         .get_tile(1)
         .unwrap()
@@ -186,7 +186,7 @@ fn test_tile_property() {
 
 #[test]
 fn test_layer_property() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
@@ -201,7 +201,7 @@ fn test_layer_property() {
 
 #[test]
 fn test_object_group_property() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_object_groups.tmx", &mut cache).unwrap();
     let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) = r
@@ -220,11 +220,11 @@ fn test_object_group_property() {
 }
 #[test]
 fn test_tileset_property() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = cache
-        .get(r.tilesets()[0].path())
+        .get_tileset(r.tilesets()[0].path())
         .unwrap()
         .properties
         .get("tileset property")
@@ -238,7 +238,7 @@ fn test_tileset_property() {
 
 #[test]
 fn test_flipped() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_flipped.tmx", &mut cache).unwrap();
     let layer = as_tile_layer(r.get_layer(0).unwrap());
@@ -266,7 +266,7 @@ fn test_flipped() {
 
 #[test]
 fn test_ldk_export() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/ldk_tiled_export.tmx", &mut cache).unwrap();
     let layer = as_tile_layer(r.get_layer(0).unwrap());
@@ -281,7 +281,7 @@ fn test_ldk_export() {
 
 #[test]
 fn test_parallax_layers() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_parallax.tmx", &mut cache).unwrap();
     for (i, layer) in r.layers().enumerate() {
@@ -309,7 +309,7 @@ fn test_parallax_layers() {
 
 #[test]
 fn test_object_property() {
-    let mut cache = DefaultTilesetCache::new();
+    let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_object_property.tmx", &mut cache).unwrap();
     let layer = r.get_layer(1).unwrap();

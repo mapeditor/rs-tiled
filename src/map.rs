@@ -15,7 +15,7 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag},
-    Layer, TilesetCache,
+    Layer, ResourceCache,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -70,7 +70,7 @@ impl Map {
     pub fn parse_reader<R: Read>(
         reader: R,
         path: impl AsRef<Path>,
-        tileset_cache: &mut impl TilesetCache,
+        tileset_cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
         let mut parser = EventReader::new(reader);
         loop {
@@ -103,7 +103,7 @@ impl Map {
     /// The tileset cache is used to store and refer to any tilesets found along the way.
     pub fn parse_file(
         path: impl AsRef<Path>,
-        tileset_cache: &mut impl TilesetCache,
+        tileset_cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
         let reader = File::open(path.as_ref())
             .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
@@ -165,7 +165,7 @@ impl Map {
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
-        tileset_cache: &mut impl TilesetCache,
+        tileset_cache: &mut impl ResourceCache,
     ) -> Result<Map, TiledError> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
@@ -192,7 +192,7 @@ impl Map {
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
                 let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
-                tileset_cache.get_or_insert(&res.tileset_path, res.tileset);
+                tileset_cache.get_or_insert_tileset(&res.tileset_path, res.tileset);
                 tilesets.push(TilesetRef{first_gid: res.first_gid, path: res.tileset_path});
                 Ok(())
             },
