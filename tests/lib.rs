@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
     DefaultResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, ObjectLayer,
-    ResourceCache, TileLayer, TileLayerData,
+    ResourceCache, ResourcePath, TileLayer, TileLayerData,
 };
 use tiled::{Map, PropertyValue};
 
@@ -84,7 +84,9 @@ fn test_sources() {
     let e = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
     assert_eq!(
         e.tilesets()[0].path(),
-        &PathBuf::from("assets/tilesheet.tsx")
+        &ResourcePath::External {
+            path: PathBuf::from("assets/tilesheet.tsx")
+        }
     );
     assert_eq!(
         cache
@@ -103,8 +105,12 @@ fn test_just_tileset() {
     let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
-    let path = "assets/tilesheet.tsx";
-    assert_eq!(r.tilesets()[0].path(), &PathBuf::from(path));
+    assert_eq!(
+        r.tilesets()[0].path(),
+        &ResourcePath::External {
+            path: PathBuf::from("assets/tilesheet.tsx")
+        }
+    );
 }
 
 #[test]

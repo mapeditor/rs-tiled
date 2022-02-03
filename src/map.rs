@@ -1,11 +1,4 @@
-use std::{
-    collections::HashMap,
-    fmt,
-    fs::File,
-    io::Read,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
@@ -15,18 +8,18 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag},
-    Layer, ResourceCache,
+    EmbeddedParseResultType, Layer, ResourceCache, ResourcePath,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TilesetRef {
     pub(crate) first_gid: Gid,
-    path: PathBuf,
+    path: ResourcePath,
 }
 
 impl TilesetRef {
-    /// Get a reference to the tileset's path.
-    pub fn path(&self) -> &PathBuf {
+    /// Get a reference to the tileset's resource path.
+    pub fn path(&self) -> &ResourcePath {
         &self.path
     }
 }
@@ -192,8 +185,20 @@ impl Map {
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
                 let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
-                tileset_cache.get_or_insert_tileset(&res.tileset_path, res.tileset);
-                tilesets.push(TilesetRef{first_gid: res.first_gid, path: res.tileset_path});
+                let path = match res.result_type {
+                    EmbeddedParseResultType::ExternalReference { tileset_path } => {
+                        let path = crate::ResourcePath::External{ path: tileset_path.clone() };
+                        let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
+                        tileset_cache.get_or_try_insert_tileset_with(path.clone(), || Tileset::new_external(file, &tileset_path))?;
+                        path
+                    }
+                    EmbeddedParseResultType::Embedded { tileset } => {
+                        let path = ResourcePath::Embedded { container_path: map_path.to_owned(), index: tilesets.len()};
+                        tileset_cache.get_or_insert_tileset(path.clone(), tileset);
+                        path
+                    },
+                };
+                tilesets.push(TilesetRef{first_gid: res.first_gid, path});
                 Ok(())
             },
             "layer" => |attrs| {

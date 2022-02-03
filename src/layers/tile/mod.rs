@@ -1,11 +1,11 @@
-use std::{collections::HashMap, io::Read, path::Path};
+use std::{collections::HashMap, io::Read};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag},
-    Gid, LayerWrapper, Properties, TileId, TiledError,
+    Gid, LayerWrapper, Properties, ResourcePath, TileId, TiledError,
 };
 
 mod finite;
@@ -98,7 +98,7 @@ impl TileLayerData {
 }
 
 pub struct LayerTile<'map> {
-    pub tileset_path: &'map Path,
+    pub tileset_path: &'map ResourcePath,
     pub id: TileId,
     pub flip_h: bool,
     pub flip_v: bool,

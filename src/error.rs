@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, path::PathBuf};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ParseTileError {
@@ -19,25 +19,37 @@ pub enum TiledError {
     XmlDecodingError(xml::reader::Error),
     PrematureEnd(String),
     /// The path given is invalid because it isn't contained in any folder.
-    InvalidPath,
+    PathIsNotFile,
+    CouldNotOpenFile {
+        path: PathBuf,
+        err: std::io::Error,
+    },
     Other(String),
 }
 
 impl fmt::Display for TiledError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        match *self {
-            TiledError::MalformedAttributes(ref s) => write!(fmt, "{}", s),
-            TiledError::DecompressingError(ref e) => write!(fmt, "{}", e),
-            TiledError::Base64DecodingError(ref e) => write!(fmt, "{}", e),
-            TiledError::XmlDecodingError(ref e) => write!(fmt, "{}", e),
-            TiledError::PrematureEnd(ref e) => write!(fmt, "{}", e),
-            TiledError::InvalidPath => {
+        match self {
+            TiledError::MalformedAttributes(s) => write!(fmt, "{}", s),
+            TiledError::DecompressingError(e) => write!(fmt, "{}", e),
+            TiledError::Base64DecodingError(e) => write!(fmt, "{}", e),
+            TiledError::XmlDecodingError(e) => write!(fmt, "{}", e),
+            TiledError::PrematureEnd(e) => write!(fmt, "{}", e),
+            TiledError::PathIsNotFile => {
                 write!(
                     fmt,
-                    "The map path given is invalid because it isn't contained in any folder."
+                    "The path given is invalid because it isn't contained in any folder."
                 )
             }
-            TiledError::Other(ref s) => write!(fmt, "{}", s),
+            TiledError::CouldNotOpenFile { path, err } => {
+                write!(
+                    fmt,
+                    "Could not open '{}'. Error: {}",
+                    path.to_string_lossy(),
+                    err
+                )
+            }
+            TiledError::Other(s) => write!(fmt, "{}", s),
         }
     }
 }
@@ -45,10 +57,11 @@ impl fmt::Display for TiledError {
 // This is a skeleton implementation, which should probably be extended in the future.
 impl std::error::Error for TiledError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match *self {
-            TiledError::DecompressingError(ref e) => Some(e as &dyn std::error::Error),
-            TiledError::Base64DecodingError(ref e) => Some(e as &dyn std::error::Error),
-            TiledError::XmlDecodingError(ref e) => Some(e as &dyn std::error::Error),
+        match self {
+            TiledError::DecompressingError(e) => Some(e as &dyn std::error::Error),
+            TiledError::Base64DecodingError(e) => Some(e as &dyn std::error::Error),
+            TiledError::XmlDecodingError(e) => Some(e as &dyn std::error::Error),
+            TiledError::CouldNotOpenFile { err, .. } => Some(err as &dyn std::error::Error),
             _ => None,
         }
     }

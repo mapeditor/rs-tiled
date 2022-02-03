@@ -17,7 +17,7 @@ impl ImageLayerData {
         let mut image: Option<Image> = None;
         let mut properties = HashMap::new();
 
-        let path_relative_to = map_path.parent().ok_or(TiledError::InvalidPath)?;
+        let path_relative_to = map_path.parent().ok_or(TiledError::PathIsNotFile)?;
 
         parse_tag!(parser, "imagelayer", {
             "image" => |attrs| {

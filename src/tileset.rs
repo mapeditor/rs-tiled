@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
@@ -40,10 +39,14 @@ pub struct Tileset {
     pub properties: Properties,
 }
 
+pub(crate) enum EmbeddedParseResultType {
+    ExternalReference { tileset_path: PathBuf },
+    Embedded { tileset: Tileset },
+}
+
 pub(crate) struct EmbeddedParseResult {
     pub first_gid: Gid,
-    pub tileset: Tileset,
-    pub tileset_path: PathBuf,
+    pub result_type: EmbeddedParseResultType,
 }
 
 /// Internal structure for holding mid-parse information.
@@ -136,7 +139,7 @@ impl Tileset {
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
-        let dir_containing_map = map_path.parent().ok_or(TiledError::InvalidPath)?;
+        let dir_containing_map = map_path.parent().ok_or(TiledError::PathIsNotFile)?;
 
         Self::finish_parsing_xml(
             parser,
@@ -153,8 +156,7 @@ impl Tileset {
         )
         .map(|tileset| EmbeddedParseResult {
             first_gid,
-            tileset,
-            tileset_path: map_path.to_owned(),
+            result_type: EmbeddedParseResultType::Embedded { tileset },
         })
     }
 
@@ -173,19 +175,12 @@ impl Tileset {
             TiledError::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
         );
 
-        let dir_containing_map = map_path.parent().ok_or(TiledError::InvalidPath)?;
+        let dir_containing_map = map_path.parent().ok_or(TiledError::PathIsNotFile)?;
         let tileset_path = dir_containing_map.join(source);
-        let file = File::open(&tileset_path).map_err(|_| {
-            TiledError::Other(format!(
-                "External tileset file not found: {:?}",
-                tileset_path
-            ))
-        })?;
 
-        Tileset::new_external(file, &tileset_path).map(|tileset| EmbeddedParseResult {
+        Ok(EmbeddedParseResult {
             first_gid,
-            tileset,
-            tileset_path,
+            result_type: EmbeddedParseResultType::ExternalReference { tileset_path },
         })
     }
 
@@ -212,7 +207,7 @@ impl Tileset {
 
         let path_relative_to = path
             .parent()
-            .ok_or(TiledError::InvalidPath)
+            .ok_or(TiledError::PathIsNotFile)
             .map(Path::to_owned)?;
 
         Self::finish_parsing_xml(
