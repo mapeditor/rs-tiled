@@ -52,7 +52,7 @@ pub struct Map {
     pub tile_width: u32,
     /// Tile height, in pixels.
     pub tile_height: u32,
-    /// The tilesets present on this map.
+    /// The tilesets present on this map, ordered ascendingly by their first [`Gid`].
     tilesets: Vec<MapTileset>,
     /// The layers present in this map.
     layers: Vec<LayerData>,
