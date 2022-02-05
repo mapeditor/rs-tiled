@@ -2,19 +2,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use crate::Tileset;
 
-#[derive(Hash, PartialEq, Eq, Clone, Debug)]
-pub enum ResourcePath {
-    External {
-        path: PathBuf,
-    },
-    Embedded {
-        /// A path to the file that contains the resource, e.g. if the resource is a tileset, this will be the map's file path.
-        container_path: PathBuf,
-        /// The index of the resource in the parent container, e.g. if a map has two embedded tilesets, the embedded tilesets
-        /// will have indices 0 & 1.
-        index: usize,
-    },
-}
+pub type ResourcePath = PathBuf;
 
 pub trait ResourceCache {
     fn get_tileset(&self, path: &ResourcePath) -> Option<&Tileset>;

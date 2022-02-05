@@ -2,7 +2,7 @@ use std::{io::Read, path::Path};
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
-use crate::{error::TiledError, properties::Properties, util::*, Map};
+use crate::{error::TiledError, properties::Properties, util::*, Map, MapTileset};
 
 mod image;
 pub use image::*;

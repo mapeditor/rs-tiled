@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
-    DefaultResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, ObjectLayer,
-    ResourceCache, ResourcePath, TileLayer, TileLayerData,
+    DefaultResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, MapTileset,
+    MapTilesetType, ObjectLayer, ResourceCache, ResourcePath, TileLayer, TileLayerData,
 };
 use tiled::{Map, PropertyValue};
 
@@ -83,14 +83,14 @@ fn test_sources() {
 
     let e = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
     assert_eq!(
-        e.tilesets()[0].path(),
-        &ResourcePath::External {
+        *e.tilesets()[0].tileset_type(),
+        MapTilesetType::External {
             path: PathBuf::from("assets/tilesheet.tsx")
         }
     );
     assert_eq!(
-        cache
-            .get_tileset(e.tilesets()[0].path())
+        e.tilesets()[0]
+            .get_tileset(&cache)
             .unwrap()
             .image
             .as_ref()
@@ -106,8 +106,8 @@ fn test_just_tileset() {
 
     let r = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
     assert_eq!(
-        r.tilesets()[0].path(),
-        &ResourcePath::External {
+        *r.tilesets()[0].tileset_type(),
+        MapTilesetType::External {
             path: PathBuf::from("assets/tilesheet.tsx")
         }
     );
@@ -175,8 +175,8 @@ fn test_tile_property() {
     let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = cache
-        .get_tileset(r.tilesets()[0].path())
+    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
+        .get_tileset(&cache)
         .unwrap()
         .get_tile(1)
         .unwrap()
@@ -229,8 +229,8 @@ fn test_tileset_property() {
     let mut cache = DefaultResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = cache
-        .get_tileset(r.tilesets()[0].path())
+    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
+        .get_tileset(&cache)
         .unwrap()
         .properties
         .get("tileset property")

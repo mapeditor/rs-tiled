@@ -2,7 +2,7 @@ use std::io::Read;
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
-use crate::{util::get_attrs, LayerTileData, TiledError};
+use crate::{util::get_attrs, LayerTileData, Map, MapTileset, TiledError};
 
 use super::util::parse_data_line;
 
@@ -11,7 +11,7 @@ pub struct FiniteTileLayerData {
     width: u32,
     height: u32,
     /// The tiles are arranged in rows.
-    tiles: Vec<LayerTileData>,
+    pub(crate) tiles: Vec<Option<LayerTileData>>,
 }
 
 impl std::fmt::Debug for FiniteTileLayerData {
@@ -51,7 +51,10 @@ impl FiniteTileLayerData {
 
     pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileData> {
         if x <= self.width as usize && y <= self.height as usize {
-            self.tiles.get(x + y * self.width as usize)
+            self.tiles
+                .get(x + y * self.width as usize)
+                .map(Option::as_ref)
+                .flatten()
         } else {
             None
         }

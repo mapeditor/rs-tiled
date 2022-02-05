@@ -24,6 +24,8 @@ pub enum TiledError {
         path: PathBuf,
         err: std::io::Error,
     },
+    /// There was an invalid tile in the map parsed.
+    InvalidTileFound,
     Other(String),
 }
 
@@ -49,6 +51,7 @@ impl fmt::Display for TiledError {
                     err
                 )
             }
+            TiledError::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
             TiledError::Other(s) => write!(fmt, "{}", s),
         }
     }

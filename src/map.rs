@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr};
 
-use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
+use xml::{attribute::OwnedAttribute, common::Position, reader::XmlEvent, EventReader};
 
 use crate::{
     error::{ParseTileError, TiledError},
@@ -8,19 +8,33 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag},
-    EmbeddedParseResultType, Layer, ResourceCache, ResourcePath,
+    EmbeddedParseResultType, Layer, ResourceCache, ResourcePath, TileLayerData,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TilesetRef {
-    pub(crate) first_gid: Gid,
-    path: ResourcePath,
+#[derive(Debug, PartialEq, Clone)]
+pub enum MapTilesetType {
+    External { path: ResourcePath },
+    Embedded { tileset: Tileset },
 }
 
-impl TilesetRef {
-    /// Get a reference to the tileset's resource path.
-    pub fn path(&self) -> &ResourcePath {
-        &self.path
+#[derive(Debug, PartialEq, Clone)]
+pub struct MapTileset {
+    pub(crate) first_gid: Gid,
+    tileset_type: MapTilesetType,
+}
+
+impl MapTileset {
+    /// Get a reference to the map tileset's type.
+    pub fn tileset_type(&self) -> &MapTilesetType {
+        &self.tileset_type
+    }
+
+    // HACK: Should this be in the interface?
+    pub fn get_tileset<'ts>(&'ts self, cache: &'ts impl ResourceCache) -> Option<&'ts Tileset> {
+        match &self.tileset_type {
+            MapTilesetType::External { path } => cache.get_tileset(&path),
+            MapTilesetType::Embedded { tileset } => Some(&tileset),
+        }
     }
 }
 
@@ -38,8 +52,8 @@ pub struct Map {
     pub tile_width: u32,
     /// Tile height, in pixels.
     pub tile_height: u32,
-    /// References to a [`TilesetCache`] representing the tilesets present in this map.
-    tilesets: Vec<TilesetRef>,
+    /// The tilesets present on this map.
+    tilesets: Vec<MapTileset>,
     /// The layers present in this map.
     layers: Vec<LayerData>,
     /// The custom properties of this map.
@@ -106,7 +120,7 @@ impl Map {
 
 impl Map {
     /// Get a reference to the map's tilesets.
-    pub fn tilesets(&self) -> &[TilesetRef] {
+    pub fn tilesets(&self) -> &[MapTileset] {
         self.tilesets.as_ref()
     }
 
@@ -150,10 +164,6 @@ impl<'map> ExactSizeIterator for LayerIter<'map> {
 }
 
 impl Map {
-    pub(crate) fn get_tileset_for_gid(&self, gid: Gid) -> Option<&TilesetRef> {
-        self.tilesets.iter().rev().find(|ts| ts.first_gid <= gid)
-    }
-
     fn parse_xml<R: Read>(
         parser: &mut EventReader<R>,
         attrs: Vec<OwnedAttribute>,
@@ -179,26 +189,32 @@ impl Map {
 
         let infinite = infinite.unwrap_or(false);
 
+        // IMPORTANT IMPLEMENTATION DETAIL:
+        // Since we can only parse sequentally, we cannot ensure tilesets are parsed before tile
+        // layers. The issue here is that tile layers require tileset data in order to set
+        // [`LayerTileData`] correctly. The current approach to this issue is to set layer tile data
+        // invalidly temporarily, sneaking in the GIDs of the tiles instead of the tileset index +
+        // local ID. Then, when all the tilesets are loaded, we do a second pass over them and
+        // "finish" them, ensuring their data is correct.
+        // TODO: Figure out a better approach
+        // HACK: This currently only works with finite layers
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
+
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
                 let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
-                let path = match res.result_type {
+                match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
-                        let path = crate::ResourcePath::External{ path: tileset_path.clone() };
                         let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                        tileset_cache.get_or_try_insert_tileset_with(path.clone(), || Tileset::new_external(file, &tileset_path))?;
-                        path
+                        tileset_cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, &tileset_path))?;
+                        tilesets.push(MapTileset{first_gid: res.first_gid, tileset_type: MapTilesetType::External{ path: tileset_path.clone()}});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
-                        let path = ResourcePath::Embedded { container_path: map_path.to_owned(), index: tilesets.len()};
-                        tileset_cache.get_or_insert_tileset(path.clone(), tileset);
-                        path
+                        tilesets.push(MapTileset{first_gid: res.first_gid, tileset_type: MapTilesetType::Embedded {tileset}});
                     },
                 };
-                tilesets.push(TilesetRef{first_gid: res.first_gid, path});
                 Ok(())
             },
             "layer" => |attrs| {
@@ -218,6 +234,24 @@ impl Map {
                 Ok(())
             },
         });
+
+        // Second pass: Process tile layers now that tilesets are in
+        layers
+            .iter_mut()
+            .for_each(|layer| match &mut layer.layer_type {
+                crate::LayerDataType::TileLayer(TileLayerData::Finite(data)) => {
+                    data.tiles
+                        .iter_mut()
+                        .filter_map(Option::as_mut)
+                        .for_each(|tile| {
+                            tile.finish_details(&tilesets)
+                                // HACK
+                                .unwrap_or_else(|_| panic!("{}", TiledError::InvalidTileFound));
+                        });
+                }
+                _ => (),
+            });
+
         Ok(Map {
             version: v,
             orientation: o,

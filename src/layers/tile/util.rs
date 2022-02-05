@@ -2,13 +2,13 @@ use std::io::{BufReader, Read};
 
 use xml::{reader::XmlEvent, EventReader};
 
-use crate::{LayerTileData, TiledError};
+use crate::{Gid, LayerTileData, MapTileset, TiledError};
 
 pub(crate) fn parse_data_line<R: Read>(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut EventReader<R>,
-) -> Result<Vec<LayerTileData>, TiledError> {
+) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
             return Err(TiledError::Other(
@@ -100,14 +100,16 @@ fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
-fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<LayerTileData>, TiledError> {
+fn decode_csv<R: Read>(
+    parser: &mut EventReader<R>,
+) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     loop {
         match parser.next().map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 let tiles = s
                     .split(',')
                     .map(|v| v.trim().parse().unwrap())
-                    .map(LayerTileData::from_bits)
+                    .map(|bits| LayerTileData::from_bits(bits))
                     .collect();
                 return Ok(tiles);
             }
@@ -121,7 +123,7 @@ fn decode_csv<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<LayerTileData>
     }
 }
 
-fn convert_to_tiles(all: &Vec<u8>) -> Vec<LayerTileData> {
+fn convert_to_tiles(all: &Vec<u8>) -> Vec<Option<LayerTileData>> {
     let mut data = Vec::new();
     for chunk in all.chunks_exact(4) {
         let n = chunk[0] as u32
@@ -131,4 +133,16 @@ fn convert_to_tiles(all: &Vec<u8>) -> Vec<LayerTileData> {
         data.push(LayerTileData::from_bits(n));
     }
     data
+}
+
+/// Returns both the tileset and its index
+pub(crate) fn get_tileset_for_gid(
+    tilesets: &[MapTileset],
+    gid: Gid,
+) -> Option<(usize, &MapTileset)> {
+    tilesets
+        .iter()
+        .enumerate()
+        .rev()
+        .find(|(idx, ts)| ts.first_gid <= gid)
 }

@@ -4,11 +4,10 @@ use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     util::{get_attrs, parse_tag},
-    LayerTileData, TiledError,
+    LayerTileData, Map, MapTileset, TiledError,
 };
 
 use super::util::parse_data_line;
-
 
 #[derive(PartialEq, Clone)]
 pub struct InfiniteTileLayerData {
@@ -55,7 +54,7 @@ pub struct Chunk {
     pub y: i32,
     pub width: u32,
     pub height: u32,
-    tiles: Vec<LayerTileData>,
+    tiles: Vec<Option<LayerTileData>>,
 }
 
 impl Chunk {
