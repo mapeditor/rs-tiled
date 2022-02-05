@@ -2,7 +2,10 @@ use std::io::Read;
 
 use xml::{attribute::OwnedAttribute, EventReader};
 
-use crate::{util::get_attrs, LayerTileData, Map, MapTileset, TiledError};
+use crate::{
+    util::{get_attrs, XmlEventResult},
+    LayerTileData, Map, MapTileset, TiledError,
+};
 
 use super::util::parse_data_line;
 
@@ -24,8 +27,8 @@ impl std::fmt::Debug for FiniteTileLayerData {
 }
 
 impl FiniteTileLayerData {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         width: u32,
         height: u32,

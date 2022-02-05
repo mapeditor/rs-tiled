@@ -5,7 +5,7 @@ use xml::{attribute::OwnedAttribute, EventReader};
 use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag},
+    util::{get_attrs, parse_tag, XmlEventResult},
     Gid,
 };
 
@@ -35,8 +35,8 @@ pub struct Object {
 }
 
 impl Object {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
     ) -> Result<Object, TiledError> {
         let ((id, gid, n, t, w, h, v, r), (x, y)) = get_attrs!(

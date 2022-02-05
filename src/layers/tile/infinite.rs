@@ -3,7 +3,7 @@ use std::{collections::HashMap, io::Read};
 use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
-    util::{get_attrs, parse_tag},
+    util::{get_attrs, parse_tag, XmlEventResult},
     LayerTileData, Map, MapTileset, TiledError,
 };
 
@@ -21,8 +21,8 @@ impl std::fmt::Debug for InfiniteTileLayerData {
 }
 
 impl InfiniteTileLayerData {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
     ) -> Result<Self, TiledError> {
         let ((e, c), ()) = get_attrs!(
@@ -58,8 +58,8 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         encoding: Option<String>,
         compression: Option<String>,

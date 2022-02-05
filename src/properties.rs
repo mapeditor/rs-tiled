@@ -1,10 +1,10 @@
 use std::{collections::HashMap, io::Read, str::FromStr};
 
-use xml::{EventReader, attribute::OwnedAttribute, reader::XmlEvent};
+use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
     error::{ParseTileError, TiledError},
-    util::{get_attrs, parse_tag},
+    util::{get_attrs, parse_tag, XmlEventResult},
 };
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -87,8 +87,8 @@ impl PropertyValue {
 
 pub type Properties = HashMap<String, PropertyValue>;
 
-pub(crate) fn parse_properties<R: Read>(
-    parser: &mut EventReader<R>,
+pub(crate) fn parse_properties(
+    parser: &mut impl Iterator<Item = XmlEventResult>,
 ) -> Result<Properties, TiledError> {
     let mut p = HashMap::new();
     parse_tag!(parser, "properties", {
@@ -105,13 +105,15 @@ pub(crate) fn parse_properties<R: Read>(
                 TiledError::MalformedAttributes("property must have a name and a value".to_string())
             );
             let t = t.unwrap_or("string".into());
-            
-            let v = match v_attr {
+
+            let v: String = match v_attr {
                 Some(val) => val,
                 None => {
                     // if the "value" attribute was missing, might be a multiline string
-                    match parser.next().map_err(TiledError::XmlDecodingError)? {
-                        XmlEvent::Characters(s) => Ok(s),
+                    match parser.next() {
+                        Some(Ok(XmlEvent::Characters(s))) => Ok(s),
+                        Some(Err(err)) => Err(TiledError::XmlDecodingError(err)),
+                        None => unreachable!(), // EndDocument or error must come first
                         _ => Err(TiledError::MalformedAttributes(format!("property '{}' is missing a value", k))),
                     }?
                 }

@@ -8,7 +8,7 @@ use crate::{
     image::Image,
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
-    util::{get_attrs, parse_animation, parse_tag},
+    util::{get_attrs, parse_animation, parse_tag, XmlEventResult},
 };
 
 pub type TileId = u32;
@@ -24,8 +24,8 @@ pub struct Tile {
 }
 
 impl Tile {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
     ) -> Result<(TileId, Tile), TiledError> {

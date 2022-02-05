@@ -2,7 +2,11 @@ use std::{collections::HashMap, io::Read, path::Path};
 
 use xml::EventReader;
 
-use crate::{parse_properties, util::parse_tag, Image, LayerWrapper, Properties, TiledError};
+use crate::{
+    parse_properties,
+    util::{parse_tag, XmlEventResult},
+    Image, LayerWrapper, Properties, TiledError,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ImageLayerData {
@@ -10,8 +14,8 @@ pub struct ImageLayerData {
 }
 
 impl ImageLayerData {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         map_path: &Path,
     ) -> Result<(Self, Properties), TiledError> {
         let mut image: Option<Image> = None;

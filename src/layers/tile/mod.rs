@@ -4,7 +4,7 @@ use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     parse_properties,
-    util::{get_attrs, parse_tag},
+    util::{get_attrs, parse_tag, XmlEventResult},
     Gid, LayerWrapper, MapTileset, Properties, TileId, TiledError,
 };
 
@@ -89,8 +89,8 @@ pub enum TileLayerData {
 }
 
 impl TileLayerData {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         infinite: bool,
     ) -> Result<(Self, Properties), TiledError> {

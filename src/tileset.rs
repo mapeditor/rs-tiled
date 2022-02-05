@@ -86,7 +86,7 @@ impl Tileset {
                 } => {
                     if name.local_name == "tileset" {
                         return Self::parse_external_tileset(
-                            &mut tileset_parser,
+                            &mut tileset_parser.into_iter(),
                             &attributes,
                             path,
                         );
@@ -102,8 +102,8 @@ impl Tileset {
         }
     }
 
-    pub(crate) fn parse_xml_in_map<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn parse_xml_in_map(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
     ) -> Result<EmbeddedParseResult, TiledError> {
@@ -117,8 +117,8 @@ impl Tileset {
     }
 
     /// Returns both the tileset and its first gid in the corresponding map.
-    fn parse_xml_embedded<R: Read>(
-        parser: &mut EventReader<R>,
+    fn parse_xml_embedded(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         map_path: &Path,
     ) -> Result<EmbeddedParseResult, TiledError> {
@@ -184,8 +184,8 @@ impl Tileset {
         })
     }
 
-    fn parse_external_tileset<R: Read>(
-        parser: &mut EventReader<R>,
+    fn parse_external_tileset(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         path: &Path,
     ) -> Result<Tileset, TiledError> {
@@ -225,8 +225,8 @@ impl Tileset {
         )
     }
 
-    fn finish_parsing_xml<R: Read>(
-        parser: &mut EventReader<R>,
+    fn finish_parsing_xml(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         prop: TilesetProperties,
     ) -> Result<Tileset, TiledError> {
         let mut image = Option::None;

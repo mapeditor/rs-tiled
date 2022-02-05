@@ -29,8 +29,8 @@ macro_rules! get_attrs {
 /// that child. Closes the tag.
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
-        loop {
-            match $parser.next().map_err(TiledError::XmlDecodingError)? {
+        while let Some(next) = $parser.next() {
+            match next.map_err(TiledError::XmlDecodingError)? {
                 xml::reader::XmlEvent::StartElement {name, attributes, ..} => {
                     if false {}
                     $(else if name.local_name == $open_tag {
@@ -61,8 +61,8 @@ use xml::EventReader;
 use crate::{animation::Frame, error::TiledError};
 
 // TODO: Move to animation module
-pub(crate) fn parse_animation<R: Read>(
-    parser: &mut EventReader<R>,
+pub(crate) fn parse_animation(
+    parser: &mut impl Iterator<Item = XmlEventResult>,
 ) -> Result<Vec<Frame>, TiledError> {
     let mut animation = Vec::new();
     parse_tag!(parser, "animation", {
@@ -73,3 +73,5 @@ pub(crate) fn parse_animation<R: Read>(
     });
     Ok(animation)
 }
+
+pub(crate) type XmlEventResult = xml::reader::Result<xml::reader::XmlEvent>;

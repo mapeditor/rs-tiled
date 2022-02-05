@@ -41,8 +41,8 @@ pub struct LayerData {
 }
 
 impl LayerData {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tag: LayerTag,
         infinite: bool,

@@ -7,7 +7,7 @@ use crate::{
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
-    util::{get_attrs, parse_tag},
+    util::{get_attrs, parse_tag, XmlEventResult},
     EmbeddedParseResultType, Layer, ResourceCache, ResourcePath, TileLayerData,
 };
 
@@ -87,7 +87,7 @@ impl Map {
                 } => {
                     if name.local_name == "map" {
                         return Self::parse_xml(
-                            &mut parser,
+                            &mut parser.into_iter(),
                             attributes,
                             path.as_ref(),
                             tileset_cache,
@@ -164,8 +164,8 @@ impl<'map> ExactSizeIterator for LayerIter<'map> {
 }
 
 impl Map {
-    fn parse_xml<R: Read>(
-        parser: &mut EventReader<R>,
+    fn parse_xml(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
         tileset_cache: &mut impl ResourceCache,

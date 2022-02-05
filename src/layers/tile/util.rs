@@ -2,12 +2,12 @@ use std::io::{BufReader, Read};
 
 use xml::{reader::XmlEvent, EventReader};
 
-use crate::{Gid, LayerTileData, MapTileset, TiledError};
+use crate::{util::XmlEventResult, Gid, LayerTileData, MapTileset, TiledError};
 
-pub(crate) fn parse_data_line<R: Read>(
+pub(crate) fn parse_data_line(
     encoding: Option<String>,
     compression: Option<String>,
-    parser: &mut EventReader<R>,
+    parser: &mut impl Iterator<Item = XmlEventResult>,
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
@@ -48,9 +48,9 @@ pub(crate) fn parse_data_line<R: Read>(
     };
 }
 
-fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledError> {
-    loop {
-        match parser.next().map_err(TiledError::XmlDecodingError)? {
+fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<u8>, TiledError> {
+    while let Some(next) = parser.next() {
+        match next.map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 return base64::decode(s.trim().as_bytes()).map_err(TiledError::Base64DecodingError)
             }
@@ -62,6 +62,7 @@ fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledEr
             _ => {}
         }
     }
+    Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
 fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
@@ -100,11 +101,11 @@ fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     Ok(data)
 }
 
-fn decode_csv<R: Read>(
-    parser: &mut EventReader<R>,
+fn decode_csv(
+    parser: &mut impl Iterator<Item = XmlEventResult>,
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
-    loop {
-        match parser.next().map_err(TiledError::XmlDecodingError)? {
+    while let Some(next) = parser.next() {
+        match next.map_err(TiledError::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 let tiles = s
                     .split(',')
@@ -121,6 +122,7 @@ fn decode_csv<R: Read>(
             _ => {}
         }
     }
+    Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
 fn convert_to_tiles(all: &Vec<u8>) -> Vec<Option<LayerTileData>> {

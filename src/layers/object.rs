@@ -4,7 +4,7 @@ use xml::{attribute::OwnedAttribute, EventReader};
 
 use crate::{
     parse_properties,
-    util::{get_attrs, parse_tag},
+    util::{get_attrs, parse_tag, XmlEventResult},
     Color, LayerWrapper, Object, Properties, TiledError,
 };
 
@@ -15,8 +15,8 @@ pub struct ObjectLayerData {
 }
 
 impl ObjectLayerData {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
     ) -> Result<(ObjectLayerData, Properties), TiledError> {
         let (c, ()) = get_attrs!(
