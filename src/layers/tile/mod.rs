@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, LayerWrapper, MapTileset, Properties, TileId, TiledError,
+    Gid, MapTileset, Properties, TileId, TiledError, TiledWrapper,
 };
 
 mod finite;
@@ -48,7 +48,7 @@ impl LayerTileData {
         if gid == Gid::EMPTY {
             None
         } else {
-            let (tileset_index, tileset) = util::get_tileset_for_gid(tilesets, gid)?;
+            let (tileset_index, tileset) = crate::util::get_tileset_for_gid(tilesets, gid)?;
             let id = gid.0 - tileset.first_gid.0;
 
             Some(Self {
@@ -121,13 +121,13 @@ pub struct LayerTile<'map> {
     pub flip_d: bool,
 }
 
-pub type TileLayer<'map> = LayerWrapper<'map, TileLayerData>;
+pub type TileLayer<'map> = TiledWrapper<'map, TileLayerData>;
 
 impl<'map> TileLayer<'map> {
     pub fn get_tile(&self, x: usize, y: usize) -> Option<LayerTile<'map>> {
-        self.data.get_tile(x, y).and_then(|data| {
+        self.data().get_tile(x, y).and_then(|data| {
             Some(LayerTile {
-                tileset: &self.map.tilesets()[data.tileset_index],
+                tileset: &self.map().tilesets()[data.tileset_index],
                 id: data.id,
                 flip_h: data.flip_h,
                 flip_v: data.flip_v,

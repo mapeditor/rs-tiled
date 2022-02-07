@@ -30,7 +30,7 @@ impl MapTileset {
     }
 
     // HACK: Should this be in the interface?
-    pub fn get_tileset<'ts>(&'ts self, cache: &'ts impl ResourceCache) -> Option<&'ts Tileset> {
+    pub fn get_tileset<'res: 's, 's>(&'s self, cache: &'res impl ResourceCache) -> Option<&'s Tileset> {
         match &self.tileset_type {
             MapTilesetType::External { path } => cache.get_tileset(&path),
             MapTilesetType::Embedded { tileset } => Some(&tileset),
@@ -341,4 +341,33 @@ impl Gid {
     /// The GID representing an empty tile in the map.
     #[allow(dead_code)]
     pub const EMPTY: Gid = Gid(0);
+}
+
+/// A wrapper over a naive datatype that holds a reference to the parent map as well as the type's data.
+#[derive(Clone, PartialEq, Debug)]
+pub struct TiledWrapper<'map, DataT>
+where
+    DataT: Clone + PartialEq + std::fmt::Debug,
+{
+    map: &'map Map,
+    data: &'map DataT,
+}
+
+impl<'map, DataT> TiledWrapper<'map, DataT>
+where
+    DataT: Clone + PartialEq + std::fmt::Debug,
+{
+    pub(crate) fn new(map: &'map Map, data: &'map DataT) -> Self {
+        Self { map, data }
+    }
+
+    /// Get the wrapper's data.
+    pub fn data(&self) -> &'map DataT {
+        self.data
+    }
+
+    /// Get the wrapper's map.
+    pub fn map(&self) -> &'map Map {
+        self.map
+    }
 }

@@ -2,7 +2,7 @@ use std::io::{BufReader, Read};
 
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, Gid, LayerTileData, MapTileset, TiledError};
+use crate::{util::XmlEventResult, LayerTileData, MapTileset, TiledError};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,
@@ -137,16 +137,4 @@ fn convert_to_tiles(all: &Vec<u8>, tilesets: &[MapTileset]) -> Vec<Option<LayerT
         data.push(LayerTileData::from_bits(n, tilesets));
     }
     data
-}
-
-/// Returns both the tileset and its index
-pub(crate) fn get_tileset_for_gid(
-    tilesets: &[MapTileset],
-    gid: Gid,
-) -> Option<(usize, &MapTileset)> {
-    tilesets
-        .iter()
-        .enumerate()
-        .rev()
-        .find(|(_idx, ts)| ts.first_gid <= gid)
 }

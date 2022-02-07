@@ -6,7 +6,7 @@ use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid,
+    Gid, MapTileset, ResourceCache, Tile, TiledWrapper,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -19,9 +19,9 @@ pub enum ObjectShape {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Object {
+pub struct ObjectData {
     pub id: u32,
-    gid: Gid,
+    tileset_idx_tile_id: Option<(u32, u32)>,
     pub name: String,
     pub obj_type: String,
     pub width: f32,
@@ -34,11 +34,14 @@ pub struct Object {
     pub properties: Properties,
 }
 
-impl Object {
+impl ObjectData {
+    /// If it is known that the object has no tile images in it (i.e. collision data)
+    /// then we can pass in [`None`] as the tilesets
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-    ) -> Result<Object, TiledError> {
+        tilesets: Option<&[MapTileset]>,
+    ) -> Result<ObjectData, TiledError> {
         let ((id, gid, n, t, w, h, v, r), (x, y)) = get_attrs!(
             attrs,
             optionals: [
@@ -63,6 +66,10 @@ impl Object {
         let r = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
         let gid = Gid(gid.unwrap_or(0u32));
+        let tileset_idx_tile_id = tilesets
+            .and_then(|tilesets| crate::util::get_tileset_for_gid(tilesets, gid))
+            .map(|(tileset_idx, tileset)| (tileset_idx as u32, gid.0 - tileset.first_gid.0));
+
         let n = n.unwrap_or(String::new());
         let t = t.unwrap_or(String::new());
         let mut shape = None;
@@ -77,15 +84,15 @@ impl Object {
                 Ok(())
             },
             "polyline" => |attrs| {
-                shape = Some(Object::new_polyline(attrs)?);
+                shape = Some(ObjectData::new_polyline(attrs)?);
                 Ok(())
             },
             "polygon" => |attrs| {
-                shape = Some(Object::new_polygon(attrs)?);
+                shape = Some(ObjectData::new_polygon(attrs)?);
                 Ok(())
             },
             "point" => |_| {
-                shape = Some(Object::new_point(x, y)?);
+                shape = Some(ObjectData::new_point(x, y)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -99,9 +106,9 @@ impl Object {
             height: h,
         });
 
-        Ok(Object {
+        Ok(ObjectData {
             id,
-            gid,
+            tileset_idx_tile_id,
             name: n.clone(),
             obj_type: t.clone(),
             width: w,
@@ -114,7 +121,9 @@ impl Object {
             properties,
         })
     }
+}
 
+impl ObjectData {
     fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, TiledError> {
         let ((), s) = get_attrs!(
             attrs,
@@ -124,7 +133,7 @@ impl Object {
             ],
             TiledError::MalformedAttributes("A polyline must have points".to_string())
         );
-        let points = Object::parse_points(s)?;
+        let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polyline { points: points })
     }
 
@@ -137,7 +146,7 @@ impl Object {
             ],
             TiledError::MalformedAttributes("A polygon must have points".to_string())
         );
-        let points = Object::parse_points(s)?;
+        let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polygon { points: points })
     }
 
@@ -164,5 +173,19 @@ impl Object {
             points.push((x.unwrap(), y.unwrap()));
         }
         Ok(points)
+    }
+}
+
+pub type Object<'map> = TiledWrapper<'map, ObjectData>;
+
+impl<'map> Object<'map> {
+    /// Returns the tile that the object is using as image, if any.
+    pub fn get_tile<'res: 'map>(&self, cache: &'res impl ResourceCache) -> Option<&'map Tile> {
+        let tileset_idx_tile_id = self.data().tileset_idx_tile_id?;
+        self.map()
+            .tilesets()
+            .get(tileset_idx_tile_id.0 as usize)?
+            .get_tileset(cache)?
+            .get_tile(tileset_idx_tile_id.1)
     }
 }

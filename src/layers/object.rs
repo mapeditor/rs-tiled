@@ -1,23 +1,26 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
-use xml::{attribute::OwnedAttribute};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Color, LayerWrapper, Object, Properties, TiledError,
+    Color, MapTileset, Object, ObjectData, Properties, TiledError, TiledWrapper,
 };
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectLayerData {
-    pub objects: Vec<Object>,
+    pub objects: Vec<ObjectData>,
     pub colour: Option<Color>,
 }
 
 impl ObjectLayerData {
+    /// If it is known that there are no objects with tile images in it (i.e. collision data)
+    /// then we can pass in [`None`] as the tilesets
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
+        tilesets: Option<&[MapTileset]>,
     ) -> Result<(ObjectLayerData, Properties), TiledError> {
         let (c, ()) = get_attrs!(
             attrs,
@@ -32,7 +35,7 @@ impl ObjectLayerData {
         let mut properties = HashMap::new();
         parse_tag!(parser, "objectgroup", {
             "object" => |attrs| {
-                objects.push(Object::new(parser, attrs)?);
+                objects.push(ObjectData::new(parser, attrs, tilesets)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -44,4 +47,13 @@ impl ObjectLayerData {
     }
 }
 
-pub type ObjectLayer<'map> = LayerWrapper<'map, ObjectLayerData>;
+pub type ObjectLayer<'map> = TiledWrapper<'map, ObjectLayerData>;
+
+impl<'map> ObjectLayer<'map> {
+    pub fn get_object(&self, idx: usize) -> Option<Object<'map>> {
+        self.data()
+            .objects
+            .get(idx)
+            .map(|data| Object::new(self.map(), data))
+    }
+}

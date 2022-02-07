@@ -55,7 +55,7 @@ impl Tile {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectLayerData::new(parser, attrs)?.0);
+                objectgroup = Some(ObjectLayerData::new(parser, attrs, None)?.0);
                 Ok(())
             },
             "animation" => |_| {

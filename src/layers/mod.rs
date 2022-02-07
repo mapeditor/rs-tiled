@@ -2,7 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::TiledError, properties::Properties, util::*, Map, MapTileset};
+use crate::{error::TiledError, properties::Properties, util::*, Map, MapTileset, TiledWrapper};
 
 mod image;
 pub use image::*;
@@ -73,7 +73,7 @@ impl LayerData {
                 (LayerDataType::TileLayer(ty), properties)
             }
             LayerTag::ObjectLayer => {
-                let (ty, properties) = ObjectLayerData::new(parser, attrs)?;
+                let (ty, properties) = ObjectLayerData::new(parser, attrs, Some(tilesets))?;
                 (LayerDataType::ObjectLayer(ty), properties)
             }
             LayerTag::ImageLayer => {
@@ -97,41 +97,12 @@ impl LayerData {
     }
 }
 
-/// A wrapper over a naive layer-related type that holds a reference to the parent map as well as the layer data.
-#[derive(Clone, PartialEq, Debug)]
-pub struct LayerWrapper<'map, DataT>
-where
-    DataT: Clone + PartialEq + std::fmt::Debug,
-{
-    map: &'map Map,
-    data: &'map DataT,
-}
-
-impl<'map, DataT> LayerWrapper<'map, DataT>
-where
-    DataT: Clone + PartialEq + std::fmt::Debug,
-{
-    pub(crate) fn new(map: &'map Map, data: &'map DataT) -> Self {
-        Self { map, data }
-    }
-
-    /// Get the layer's data.
-    pub fn data(&self) -> &'map DataT {
-        self.data
-    }
-
-    /// Get the layer's map.
-    pub fn map(&self) -> &'map Map {
-        self.map
-    }
-}
-
-pub type Layer<'map> = LayerWrapper<'map, LayerData>;
+pub type Layer<'map> = TiledWrapper<'map, LayerData>;
 
 impl<'map> Layer<'map> {
     /// Get the layer's type.
     pub fn layer_type(&self) -> LayerType<'map> {
-        LayerType::new(self.map, &self.data.layer_type)
+        LayerType::new(self.map(), &self.data().layer_type)
     }
 }
 
