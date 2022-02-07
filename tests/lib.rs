@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
-    DefaultResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, MapTileset,
-    MapTilesetType, ObjectLayer, ResourceCache, ResourcePath, TileLayer, TileLayerData,
+    DefaultResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, MapTilesetType,
+    ObjectLayer, TileLayer, TileLayerData,
 };
 use tiled::{Map, PropertyValue};
 

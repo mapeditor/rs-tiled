@@ -1,6 +1,4 @@
-use std::{collections::HashMap, io::Read, path::Path};
-
-use xml::EventReader;
+use std::{collections::HashMap, path::Path};
 
 use crate::{
     parse_properties,

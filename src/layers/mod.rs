@@ -1,6 +1,6 @@
-use std::{io::Read, path::Path};
+use std::path::Path;
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{error::TiledError, properties::Properties, util::*, Map, MapTileset};
 

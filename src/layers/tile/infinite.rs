@@ -1,10 +1,10 @@
-use std::{collections::HashMap, io::Read};
+use std::collections::HashMap;
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, parse_tag, XmlEventResult},
-    LayerTileData, Map, MapTileset, TiledError,
+    LayerTileData, MapTileset, TiledError,
 };
 
 use super::util::parse_data_line;

@@ -1,6 +1,6 @@
-use std::{collections::HashMap, io::Read};
+use std::collections::HashMap;
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::TiledError,

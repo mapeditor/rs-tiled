@@ -52,11 +52,8 @@ macro_rules! parse_tag {
     }
 }
 
-use std::io::Read;
-
 pub(crate) use get_attrs;
 pub(crate) use parse_tag;
-use xml::EventReader;
 
 use crate::{animation::Frame, error::TiledError};
 

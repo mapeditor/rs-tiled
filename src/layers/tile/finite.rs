@@ -1,10 +1,8 @@
-use std::io::Read;
-
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, XmlEventResult},
-    LayerTileData, Map, MapTileset, TiledError,
+    LayerTileData, MapTileset, TiledError,
 };
 
 use super::util::parse_data_line;

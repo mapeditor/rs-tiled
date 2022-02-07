@@ -1,6 +1,6 @@
-use std::{collections::HashMap, io::Read, path::Path};
+use std::{collections::HashMap, path::Path};
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     animation::Frame,

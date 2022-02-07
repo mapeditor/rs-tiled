@@ -1,6 +1,6 @@
 use std::io::{BufReader, Read};
 
-use xml::{reader::XmlEvent, EventReader};
+use xml::reader::XmlEvent;
 
 use crate::{util::XmlEventResult, Gid, LayerTileData, MapTileset, TiledError};
 
@@ -8,7 +8,7 @@ pub(crate) fn parse_data_line(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut impl Iterator<Item = XmlEventResult>,
-    tilesets: &[MapTileset]
+    tilesets: &[MapTileset],
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
@@ -148,5 +148,5 @@ pub(crate) fn get_tileset_for_gid(
         .iter()
         .enumerate()
         .rev()
-        .find(|(idx, ts)| ts.first_gid <= gid)
+        .find(|(_idx, ts)| ts.first_gid <= gid)
 }

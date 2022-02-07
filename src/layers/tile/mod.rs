@@ -1,6 +1,6 @@
-use std::{collections::HashMap, io::Read};
+use std::collections::HashMap;
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     parse_properties,
@@ -73,7 +73,7 @@ impl TileLayerData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         infinite: bool,
-        tilesets: &[MapTileset]
+        tilesets: &[MapTileset],
     ) -> Result<(Self, Properties), TiledError> {
         let ((), (width, height)) = get_attrs!(
             attrs,

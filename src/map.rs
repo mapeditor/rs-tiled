@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr};
 
-use xml::{attribute::OwnedAttribute, common::Position, reader::XmlEvent, EventReader};
+use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
     error::{ParseTileError, TiledError},
@@ -8,7 +8,7 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag, XmlEventResult},
-    EmbeddedParseResultType, Layer, ResourceCache, ResourcePath, TileLayerData,
+    EmbeddedParseResultType, Layer, ResourceCache, ResourcePath,
 };
 
 #[derive(Debug, PartialEq, Clone)]

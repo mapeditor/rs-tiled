@@ -1,6 +1,6 @@
-use std::{collections::HashMap, io::Read, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
-use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
+use xml::{attribute::OwnedAttribute, reader::XmlEvent};
 
 use crate::{
     error::{ParseTileError, TiledError},
