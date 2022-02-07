@@ -24,6 +24,7 @@ impl InfiniteTileLayerData {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
+        tilesets: &[MapTileset],
     ) -> Result<Self, TiledError> {
         let ((e, c), ()) = get_attrs!(
             attrs,
@@ -38,7 +39,7 @@ impl InfiniteTileLayerData {
         let mut chunks = HashMap::<(i32, i32), Chunk>::new();
         parse_tag!(parser, "data", {
             "chunk" => |attrs| {
-                let chunk = Chunk::new(parser, attrs, e.clone(), c.clone())?;
+                let chunk = Chunk::new(parser, attrs, e.clone(), c.clone(), tilesets)?;
                 chunks.insert((chunk.x, chunk.y), chunk);
                 Ok(())
             }
@@ -63,6 +64,7 @@ impl Chunk {
         attrs: Vec<OwnedAttribute>,
         encoding: Option<String>,
         compression: Option<String>,
+        tilesets: &[MapTileset],
     ) -> Result<Chunk, TiledError> {
         let ((), (x, y, width, height)) = get_attrs!(
             attrs,
@@ -76,7 +78,7 @@ impl Chunk {
             TiledError::MalformedAttributes("layer must have a name".to_string())
         );
 
-        let tiles = parse_data_line(encoding, compression, parser)?;
+        let tiles = parse_data_line(encoding, compression, parser, tilesets)?;
 
         Ok(Chunk {
             x,

@@ -32,6 +32,7 @@ impl FiniteTileLayerData {
         attrs: Vec<OwnedAttribute>,
         width: u32,
         height: u32,
+        tilesets: &[MapTileset],
     ) -> Result<Self, TiledError> {
         let ((e, c), ()) = get_attrs!(
             attrs,
@@ -43,7 +44,7 @@ impl FiniteTileLayerData {
             TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
         );
 
-        let tiles = parse_data_line(e, c, parser)?;
+        let tiles = parse_data_line(e, c, parser, tilesets)?;
 
         Ok(Self {
             width,

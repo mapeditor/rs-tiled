@@ -189,18 +189,42 @@ impl Map {
 
         let infinite = infinite.unwrap_or(false);
 
-        // IMPORTANT IMPLEMENTATION DETAIL:
         // Since we can only parse sequentally, we cannot ensure tilesets are parsed before tile
         // layers. The issue here is that tile layers require tileset data in order to set
-        // [`LayerTileData`] correctly. The current approach to this issue is to set layer tile data
-        // invalidly temporarily, sneaking in the GIDs of the tiles instead of the tileset index +
-        // local ID. Then, when all the tilesets are loaded, we do a second pass over them and
-        // "finish" them, ensuring their data is correct.
-        // TODO: Figure out a better approach
-        // HACK: This currently only works with finite layers
+        // [`LayerTileData`] correctly. As such, we parse layer processing data into a vector as well as tilesets
+        // and then, when all the tilesets are parsed, we actually construct each layer.
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
+        struct LayerProcessingData {
+            attrs: Vec<OwnedAttribute>,
+            events: Vec<XmlEventResult>,
+            tag: LayerTag,
+        }
+        fn obtain_processing_data(
+            attrs: Vec<OwnedAttribute>,
+            events: &mut impl Iterator<Item = XmlEventResult>,
+            tag: LayerTag,
+            closing_tag: &str,
+        ) -> Result<LayerProcessingData, TiledError> {
+            let mut layer_events = Vec::new();
+            for event in events {
+                match event {
+                    Ok(XmlEvent::EndElement { name, .. }) if name.local_name == closing_tag => {
+                        return Ok(LayerProcessingData {
+                            attrs,
+                            events: layer_events,
+                            tag,
+                        });
+                    }
+                    _ => (),
+                }
+                layer_events.push(event);
+            }
+            Err(TiledError::PrematureEnd(
+                "Couldn't obtain layer data".to_owned(),
+            ))
+        }
 
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
@@ -218,39 +242,37 @@ impl Map {
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(LayerData::new(parser, attrs, LayerTag::TileLayer, infinite, map_path)?);
+                layers.push(obtain_processing_data(attrs, parser, LayerTag::TileLayer, "layer")?);
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                layers.push(LayerData::new(parser, attrs, LayerTag::ImageLayer, infinite, map_path)?);
+                layers.push(obtain_processing_data(attrs, parser, LayerTag::ImageLayer, "imagelayer")?);
+                Ok(())
+            },
+            "objectgroup" => |attrs| {
+                layers.push(obtain_processing_data(attrs, parser, LayerTag::ObjectLayer, "objectgroup")?);
                 Ok(())
             },
             "properties" => |_| {
                 properties = parse_properties(parser)?;
                 Ok(())
             },
-            "objectgroup" => |attrs| {
-                layers.push(LayerData::new(parser, attrs, LayerTag::ObjectLayer, infinite, map_path)?);
-                Ok(())
-            },
         });
 
-        // Second pass: Process tile layers now that tilesets are in
-        layers
-            .iter_mut()
-            .for_each(|layer| match &mut layer.layer_type {
-                crate::LayerDataType::TileLayer(TileLayerData::Finite(data)) => {
-                    data.tiles
-                        .iter_mut()
-                        .filter_map(Option::as_mut)
-                        .for_each(|tile| {
-                            tile.finish_details(&tilesets)
-                                // HACK
-                                .unwrap_or_else(|_| panic!("{}", TiledError::InvalidTileFound));
-                        });
-                }
-                _ => (),
-            });
+        // Second pass: Process layers now that tilesets are all in
+        let layers = layers
+            .into_iter()
+            .map(|data| {
+                LayerData::new(
+                    &mut data.events.into_iter(),
+                    data.attrs,
+                    data.tag,
+                    infinite,
+                    map_path,
+                    &tilesets,
+                )
+            })
+            .collect::<Result<Vec<_>, TiledError>>()?;
 
         Ok(Map {
             version: v,

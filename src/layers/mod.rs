@@ -47,6 +47,7 @@ impl LayerData {
         tag: LayerTag,
         infinite: bool,
         map_path: &Path,
+        tilesets: &[MapTileset],
     ) -> Result<Self, TiledError> {
         let ((opacity, visible, offset_x, offset_y, parallax_x, parallax_y, name, id), ()) = get_attrs!(
             attrs,
@@ -68,7 +69,7 @@ impl LayerData {
 
         let (ty, properties) = match tag {
             LayerTag::TileLayer => {
-                let (ty, properties) = TileLayerData::new(parser, attrs, infinite)?;
+                let (ty, properties) = TileLayerData::new(parser, attrs, infinite, tilesets)?;
                 (LayerDataType::TileLayer(ty), properties)
             }
             LayerTag::ObjectLayer => {

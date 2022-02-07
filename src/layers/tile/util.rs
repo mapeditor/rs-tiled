@@ -8,6 +8,7 @@ pub(crate) fn parse_data_line(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut impl Iterator<Item = XmlEventResult>,
+    tilesets: &[MapTileset]
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
@@ -16,26 +17,26 @@ pub(crate) fn parse_data_line(
             ))
         }
         (Some(e), None) => match e.as_ref() {
-            "base64" => return parse_base64(parser).map(|v| convert_to_tiles(&v)),
-            "csv" => return decode_csv(parser),
+            "base64" => return parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets)),
+            "csv" => return decode_csv(parser, tilesets),
             e => return Err(TiledError::Other(format!("Unknown encoding format {}", e))),
         },
         (Some(e), Some(c)) => match (e.as_ref(), c.as_ref()) {
             ("base64", "zlib") => {
                 return parse_base64(parser)
                     .and_then(decode_zlib)
-                    .map(|v| convert_to_tiles(&v))
+                    .map(|v| convert_to_tiles(&v, tilesets))
             }
             ("base64", "gzip") => {
                 return parse_base64(parser)
                     .and_then(decode_gzip)
-                    .map(|v| convert_to_tiles(&v))
+                    .map(|v| convert_to_tiles(&v, tilesets))
             }
             #[cfg(feature = "zstd")]
             ("base64", "zstd") => {
                 return parse_base64(parser)
                     .and_then(decode_zstd)
-                    .map(|v| convert_to_tiles(&v))
+                    .map(|v| convert_to_tiles(&v, tilesets))
             }
             (e, c) => {
                 return Err(TiledError::Other(format!(
@@ -103,6 +104,7 @@ fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 
 fn decode_csv(
     parser: &mut impl Iterator<Item = XmlEventResult>,
+    tilesets: &[MapTileset],
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     while let Some(next) = parser.next() {
         match next.map_err(TiledError::XmlDecodingError)? {
@@ -110,7 +112,7 @@ fn decode_csv(
                 let tiles = s
                     .split(',')
                     .map(|v| v.trim().parse().unwrap())
-                    .map(|bits| LayerTileData::from_bits(bits))
+                    .map(|bits| LayerTileData::from_bits(bits, tilesets))
                     .collect();
                 return Ok(tiles);
             }
@@ -125,14 +127,14 @@ fn decode_csv(
     Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
-fn convert_to_tiles(all: &Vec<u8>) -> Vec<Option<LayerTileData>> {
+fn convert_to_tiles(all: &Vec<u8>, tilesets: &[MapTileset]) -> Vec<Option<LayerTileData>> {
     let mut data = Vec::new();
     for chunk in all.chunks_exact(4) {
         let n = chunk[0] as u32
             + ((chunk[1] as u32) << 8)
             + ((chunk[2] as u32) << 16)
             + ((chunk[3] as u32) << 24);
-        data.push(LayerTileData::from_bits(n));
+        data.push(LayerTileData::from_bits(n, tilesets));
     }
     data
 }
