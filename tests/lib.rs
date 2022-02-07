@@ -117,11 +117,10 @@ fn test_just_tileset() {
 fn test_infinite_tileset() {
     let mut cache = DefaultResourceCache::new();
 
-    let _r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx", &mut cache).unwrap();
+    let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx", &mut cache).unwrap();
 
-    todo!()
-    /*
-    if let LayerData::Infinite(chunks) = &as_tile_layer(&r.layers[0].layer_type).tiles {
+    if let TileLayerData::Infinite(inf) = &as_tile_layer(r.get_layer(0).unwrap()).data() {
+        let chunks = &inf.chunks;
         assert_eq!(chunks.len(), 4);
 
         assert_eq!(chunks[&(0, 0)].width, 32);
@@ -131,7 +130,7 @@ fn test_infinite_tileset() {
         assert_eq!(chunks[&(-32, 32)].height, 32);
     } else {
         assert!(false, "It is wrongly recognised as a finite map");
-    }*/
+    }
 }
 
 #[test]
