@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTileset, Properties, TileId, TiledError, TiledWrapper,
+    Gid, MapTileset, Properties, TileId, TiledError, MapWrapper,
 };
 
 mod finite;
@@ -121,7 +121,7 @@ pub struct LayerTile<'map> {
     pub flip_d: bool,
 }
 
-pub type TileLayer<'map> = TiledWrapper<'map, TileLayerData>;
+pub type TileLayer<'map> = MapWrapper<'map, TileLayerData>;
 
 impl<'map> TileLayer<'map> {
     pub fn get_tile(&self, x: usize, y: usize) -> Option<LayerTile<'map>> {

@@ -6,7 +6,7 @@ use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTileset, ResourceCache, Tile, TiledWrapper,
+    Gid, MapTileset, ResourceCache, Tile, MapWrapper,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -176,7 +176,7 @@ impl ObjectData {
     }
 }
 
-pub type Object<'map> = TiledWrapper<'map, ObjectData>;
+pub type Object<'map> = MapWrapper<'map, ObjectData>;
 
 impl<'map> Object<'map> {
     /// Returns the tile that the object is using as image, if any.

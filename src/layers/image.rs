@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use crate::{
     parse_properties,
     util::{parse_tag, XmlEventResult},
-    Image, TiledWrapper, Properties, TiledError,
+    Image, MapWrapper, Properties, TiledError,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -35,4 +35,4 @@ impl ImageLayerData {
     }
 }
 
-pub type ImageLayer<'map> = TiledWrapper<'map, ImageLayerData>;
+pub type ImageLayer<'map> = MapWrapper<'map, ImageLayerData>;

@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Color, MapTileset, Object, ObjectData, Properties, TiledError, TiledWrapper,
+    Color, MapTileset, Object, ObjectData, Properties, TiledError, MapWrapper,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -47,7 +47,7 @@ impl ObjectLayerData {
     }
 }
 
-pub type ObjectLayer<'map> = TiledWrapper<'map, ObjectLayerData>;
+pub type ObjectLayer<'map> = MapWrapper<'map, ObjectLayerData>;
 
 impl<'map> ObjectLayer<'map> {
     pub fn get_object(&self, idx: usize) -> Option<Object<'map>> {
