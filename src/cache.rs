@@ -43,7 +43,7 @@ impl ResourceCache for DefaultResourceCache {
 
     fn get_or_insert_tileset(&mut self, path: ResourcePathBuf, tileset: Tileset) -> Rc<Tileset> {
         self.tilesets
-            .entry(path.to_owned())
+            .entry(path)
             .or_insert(Rc::new(tileset))
             .clone()
     }
@@ -53,7 +53,7 @@ impl ResourceCache for DefaultResourceCache {
         F: FnOnce() -> Tileset,
     {
         self.tilesets
-            .entry(path.to_owned())
+            .entry(path)
             .or_insert_with(|| Rc::new(f()))
             .clone()
     }

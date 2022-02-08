@@ -52,11 +52,8 @@ impl FiniteTileLayerData {
     }
 
     pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileData> {
-        if x <= self.width as usize && y <= self.height as usize {
-            self.tiles
-                .get(x + y * self.width as usize)
-                .map(Option::as_ref)
-                .flatten()
+        if x < self.width as usize && y < self.height as usize {
+            self.tiles[x + y * self.width as usize].as_ref()
         } else {
             None
         }

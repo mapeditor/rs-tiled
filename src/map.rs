@@ -30,7 +30,7 @@ pub struct Map {
     pub tile_width: u32,
     /// Tile height, in pixels.
     pub tile_height: u32,
-    /// The tilesets present on this map, ordered ascendingly by their first [`Gid`].
+    /// The tilesets present on this map.
     tilesets: Vec<Rc<Tileset>>,
     /// The layers present in this map.
     layers: Vec<LayerData>,
@@ -146,7 +146,7 @@ impl Map {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
-        tileset_cache: &mut impl ResourceCache,
+        cache: &mut impl ResourceCache,
     ) -> Result<Map, TiledError> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
@@ -210,7 +210,7 @@ impl Map {
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                        let tileset = tileset_cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, Some(&tileset_path)))?;
+                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, Some(&tileset_path)))?;
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {

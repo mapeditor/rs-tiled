@@ -9,9 +9,10 @@ use crate::{
 };
 
 mod finite;
-mod util;
-pub use finite::*;
 mod infinite;
+mod util;
+
+pub use finite::*;
 pub use infinite::*;
 
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
