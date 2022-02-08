@@ -2,7 +2,7 @@ use std::io::{BufReader, Read};
 
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, LayerTileData, MapTileset, MapTilesetGid, TiledError};
+use crate::{util::XmlEventResult, LayerTileData, MapTilesetGid, TiledError};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,

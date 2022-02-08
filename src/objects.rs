@@ -6,7 +6,7 @@ use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTileset, MapTilesetGid, MapWrapper, Tile,
+    Gid, MapTilesetGid, MapWrapper, Tile,
 };
 
 #[derive(Debug, PartialEq, Clone)]

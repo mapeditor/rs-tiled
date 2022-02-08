@@ -55,7 +55,7 @@ macro_rules! parse_tag {
 pub(crate) use get_attrs;
 pub(crate) use parse_tag;
 
-use crate::{animation::Frame, error::TiledError, Gid, MapTileset, MapTilesetGid};
+use crate::{animation::Frame, error::TiledError, Gid, MapTilesetGid};
 
 // TODO: Move to animation module
 pub(crate) fn parse_animation(

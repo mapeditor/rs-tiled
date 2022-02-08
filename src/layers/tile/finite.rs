@@ -2,7 +2,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, XmlEventResult},
-    LayerTileData, MapTileset, MapTilesetGid, TiledError,
+    LayerTileData, MapTilesetGid, TiledError,
 };
 
 use super::util::parse_data_line;
