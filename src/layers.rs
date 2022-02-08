@@ -115,7 +115,7 @@ impl Layer {
             LayerTag::GroupLayer => {
                 let (ty, properties) = GroupLayer::new(parser, infinite, path_relative_to)?;
                 (LayerType::GroupLayer(ty), properties)
-            }
+            },
         };
 
         Ok(Self {
