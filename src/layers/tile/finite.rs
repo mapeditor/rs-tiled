@@ -2,7 +2,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, XmlEventResult},
-    LayerTileData, MapTileset, TiledError,
+    LayerTileData, MapTileset, MapTilesetGid, TiledError,
 };
 
 use super::util::parse_data_line;
@@ -30,7 +30,7 @@ impl FiniteTileLayerData {
         attrs: Vec<OwnedAttribute>,
         width: u32,
         height: u32,
-        tilesets: &[MapTileset],
+        tilesets: &[MapTilesetGid],
     ) -> Result<Self, TiledError> {
         let ((e, c), ()) = get_attrs!(
             attrs,

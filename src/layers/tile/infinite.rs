@@ -4,7 +4,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, parse_tag, XmlEventResult},
-    LayerTileData, MapTileset, TiledError,
+    LayerTileData, MapTileset, MapTilesetGid, TiledError,
 };
 
 use super::util::parse_data_line;
@@ -24,7 +24,7 @@ impl InfiniteTileLayerData {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-        tilesets: &[MapTileset],
+        tilesets: &[MapTilesetGid],
     ) -> Result<Self, TiledError> {
         let ((e, c), ()) = get_attrs!(
             attrs,
@@ -64,7 +64,7 @@ impl Chunk {
         attrs: Vec<OwnedAttribute>,
         encoding: Option<String>,
         compression: Option<String>,
-        tilesets: &[MapTileset],
+        tilesets: &[MapTilesetGid],
     ) -> Result<Chunk, TiledError> {
         let ((), (x, y, width, height)) = get_attrs!(
             attrs,

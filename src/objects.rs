@@ -6,7 +6,7 @@ use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTileset, MapWrapper, Tile,
+    Gid, MapTileset, MapTilesetGid, MapWrapper, Tile,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -40,7 +40,7 @@ impl ObjectData {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-        tilesets: Option<&[MapTileset]>,
+        tilesets: Option<&[MapTilesetGid]>,
     ) -> Result<ObjectData, TiledError> {
         let ((id, gid, n, t, w, h, v, r), (x, y)) = get_attrs!(
             attrs,

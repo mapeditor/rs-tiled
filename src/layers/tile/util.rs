@@ -2,13 +2,13 @@ use std::io::{BufReader, Read};
 
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, LayerTileData, MapTileset, TiledError};
+use crate::{util::XmlEventResult, LayerTileData, MapTileset, MapTilesetGid, TiledError};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut impl Iterator<Item = XmlEventResult>,
-    tilesets: &[MapTileset],
+    tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding, compression) {
         (None, None) => {
@@ -104,7 +104,7 @@ fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 
 fn decode_csv(
     parser: &mut impl Iterator<Item = XmlEventResult>,
-    tilesets: &[MapTileset],
+    tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     while let Some(next) = parser.next() {
         match next.map_err(TiledError::XmlDecodingError)? {
@@ -127,7 +127,7 @@ fn decode_csv(
     Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
-fn convert_to_tiles(all: &Vec<u8>, tilesets: &[MapTileset]) -> Vec<Option<LayerTileData>> {
+fn convert_to_tiles(all: &Vec<u8>, tilesets: &[MapTilesetGid]) -> Vec<Option<LayerTileData>> {
     let mut data = Vec::new();
     for chunk in all.chunks_exact(4) {
         let n = chunk[0] as u32

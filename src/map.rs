@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum MapTilesetType {
+pub enum MapTileset {
     External {
         path: ResourcePathBuf,
         tileset: Rc<Tileset>,
@@ -22,24 +22,18 @@ pub enum MapTilesetType {
     },
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct MapTileset {
-    pub(crate) first_gid: Gid,
-    tileset_type: MapTilesetType,
-}
-
 impl MapTileset {
-    /// Get a reference to the map tileset's type.
-    pub fn tileset_type(&self) -> &MapTilesetType {
-        &self.tileset_type
-    }
-
     pub fn tileset(&self) -> &Tileset {
-        match &self.tileset_type {
-            MapTilesetType::External { tileset, .. } => &*tileset,
-            MapTilesetType::Embedded { tileset } => &tileset,
+        match self {
+            MapTileset::External { tileset, .. } => &*tileset,
+            MapTileset::Embedded { tileset } => &tileset,
         }
     }
+}
+
+pub(crate) struct MapTilesetGid {
+    pub first_gid: Gid,
+    pub tileset: MapTileset,
 }
 
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
@@ -237,10 +231,10 @@ impl Map {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
                         let tileset = tileset_cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, &tileset_path))?;
-                        tilesets.push(MapTileset{first_gid: res.first_gid, tileset_type: MapTilesetType::External{ path: tileset_path.clone(), tileset}});
+                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: MapTileset::External{ path: tileset_path.clone(), tileset}});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
-                        tilesets.push(MapTileset{first_gid: res.first_gid, tileset_type: MapTilesetType::Embedded {tileset}});
+                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: MapTileset::Embedded {tileset}});
                     },
                 };
                 Ok(())
@@ -277,6 +271,8 @@ impl Map {
                 )
             })
             .collect::<Result<Vec<_>, TiledError>>()?;
+
+        let tilesets = tilesets.into_iter().map(|ts| ts.tileset).collect();
 
         Ok(Map {
             version: v,

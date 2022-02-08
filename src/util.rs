@@ -55,7 +55,7 @@ macro_rules! parse_tag {
 pub(crate) use get_attrs;
 pub(crate) use parse_tag;
 
-use crate::{animation::Frame, error::TiledError, Gid, MapTileset};
+use crate::{animation::Frame, error::TiledError, Gid, MapTileset, MapTilesetGid};
 
 // TODO: Move to animation module
 pub(crate) fn parse_animation(
@@ -75,9 +75,9 @@ pub(crate) type XmlEventResult = xml::reader::Result<xml::reader::XmlEvent>;
 
 /// Returns both the tileset and its index
 pub(crate) fn get_tileset_for_gid(
-    tilesets: &[MapTileset],
+    tilesets: &[MapTilesetGid],
     gid: Gid,
-) -> Option<(usize, &MapTileset)> {
+) -> Option<(usize, &MapTilesetGid)> {
     tilesets
         .iter()
         .enumerate()

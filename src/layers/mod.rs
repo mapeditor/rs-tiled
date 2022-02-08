@@ -2,7 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::TiledError, properties::Properties, util::*, Map, MapTileset, MapWrapper};
+use crate::{error::TiledError, properties::Properties, util::*, Map, MapTileset, MapWrapper, MapTilesetGid};
 
 mod image;
 pub use image::*;
@@ -47,7 +47,7 @@ impl LayerData {
         tag: LayerTag,
         infinite: bool,
         map_path: &Path,
-        tilesets: &[MapTileset],
+        tilesets: &[MapTilesetGid],
     ) -> Result<Self, TiledError> {
         let ((opacity, visible, offset_x, offset_y, parallax_x, parallax_y, name, id), ()) = get_attrs!(
             attrs,

@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTileset, Properties, TileId, TiledError, MapWrapper,
+    Gid, MapTileset, MapTilesetGid, MapWrapper, Properties, TileId, TiledError,
 };
 
 mod finite;
@@ -38,7 +38,7 @@ impl LayerTileData {
     /// properties:
     /// - `tileset_index` is set to an unspecified value.
     /// - `id` is actually the tile's GID.
-    pub(crate) fn from_bits(bits: u32, tilesets: &[MapTileset]) -> Option<Self> {
+    pub(crate) fn from_bits(bits: u32, tilesets: &[MapTilesetGid]) -> Option<Self> {
         let flags = bits & Self::ALL_FLIP_FLAGS;
         let gid = Gid(bits & !Self::ALL_FLIP_FLAGS);
         let flip_d = flags & Self::FLIPPED_DIAGONALLY_FLAG == Self::FLIPPED_DIAGONALLY_FLAG; // Swap x and y axis (anti-diagonally) [flips over y = -x line]
@@ -73,7 +73,7 @@ impl TileLayerData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         infinite: bool,
-        tilesets: &[MapTileset],
+        tilesets: &[MapTilesetGid],
     ) -> Result<(Self, Properties), TiledError> {
         let ((), (width, height)) = get_attrs!(
             attrs,

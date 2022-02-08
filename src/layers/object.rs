@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Color, MapTileset, Object, ObjectData, Properties, TiledError, MapWrapper,
+    Color, MapTileset, MapTilesetGid, MapWrapper, Object, ObjectData, Properties, TiledError,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -20,7 +20,7 @@ impl ObjectLayerData {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-        tilesets: Option<&[MapTileset]>,
+        tilesets: Option<&[MapTilesetGid]>,
     ) -> Result<(ObjectLayerData, Properties), TiledError> {
         let (c, ()) = get_attrs!(
             attrs,
