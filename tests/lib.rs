@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
     DefaultResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, MapTilesetType,
-    ObjectLayer, TileLayer, TileLayerData,
+    ObjectLayer, ResourceCache, TileLayer, TileLayerData,
 };
 use tiled::{Map, PropertyValue};
 
@@ -85,17 +85,12 @@ fn test_sources() {
     assert_eq!(
         *e.tilesets()[0].tileset_type(),
         MapTilesetType::External {
-            path: PathBuf::from("assets/tilesheet.tsx")
+            path: PathBuf::from("assets/tilesheet.tsx"),
+            tileset: cache.get_tileset("assets/tilesheet.tsx").unwrap()
         }
     );
     assert_eq!(
-        e.tilesets()[0]
-            .get_tileset(&cache)
-            .unwrap()
-            .image
-            .as_ref()
-            .unwrap()
-            .source,
+        e.tilesets()[0].tileset().image.as_ref().unwrap().source,
         PathBuf::from("assets/tilesheet.png")
     );
 }
@@ -108,7 +103,8 @@ fn test_just_tileset() {
     assert_eq!(
         *r.tilesets()[0].tileset_type(),
         MapTilesetType::External {
-            path: PathBuf::from("assets/tilesheet.tsx")
+            path: PathBuf::from("assets/tilesheet.tsx"),
+            tileset: cache.get_tileset("assets/tilesheet.tsx").unwrap()
         }
     );
 }
@@ -175,8 +171,7 @@ fn test_tile_property() {
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
-        .get_tileset(&cache)
-        .unwrap()
+        .tileset()
         .get_tile(1)
         .unwrap()
         .properties
@@ -229,8 +224,7 @@ fn test_tileset_property() {
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
-        .get_tileset(&cache)
-        .unwrap()
+        .tileset()
         .properties
         .get("tileset property")
     {

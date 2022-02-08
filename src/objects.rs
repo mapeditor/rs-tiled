@@ -6,7 +6,7 @@ use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTileset, ResourceCache, Tile, MapWrapper,
+    Gid, MapTileset, MapWrapper, Tile,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -180,12 +180,12 @@ pub type Object<'map> = MapWrapper<'map, ObjectData>;
 
 impl<'map> Object<'map> {
     /// Returns the tile that the object is using as image, if any.
-    pub fn get_tile<'res: 'map>(&self, cache: &'res impl ResourceCache) -> Option<&'map Tile> {
+    pub fn get_tile<'res: 'map>(&self) -> Option<&'map Tile> {
         let tileset_idx_tile_id = self.data().tileset_idx_tile_id?;
         self.map()
             .tilesets()
             .get(tileset_idx_tile_id.0 as usize)?
-            .get_tileset(cache)?
+            .tileset()
             .get_tile(tileset_idx_tile_id.1)
     }
 }

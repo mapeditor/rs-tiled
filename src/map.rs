@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr};
+use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, rc::Rc, str::FromStr};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
@@ -8,13 +8,18 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag, XmlEventResult},
-    EmbeddedParseResultType, Layer, ResourceCache, ResourcePath,
+    EmbeddedParseResultType, Layer, ResourceCache, ResourcePathBuf,
 };
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum MapTilesetType {
-    External { path: ResourcePath },
-    Embedded { tileset: Tileset },
+    External {
+        path: ResourcePathBuf,
+        tileset: Rc<Tileset>,
+    },
+    Embedded {
+        tileset: Tileset,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -29,14 +34,10 @@ impl MapTileset {
         &self.tileset_type
     }
 
-    // HACK: Should this be in the interface?
-    pub fn get_tileset<'res: 's, 's>(
-        &'s self,
-        cache: &'res impl ResourceCache,
-    ) -> Option<&'s Tileset> {
+    pub fn tileset(&self) -> &Tileset {
         match &self.tileset_type {
-            MapTilesetType::External { path } => cache.get_tileset(&path),
-            MapTilesetType::Embedded { tileset } => Some(&tileset),
+            MapTilesetType::External { tileset, .. } => &*tileset,
+            MapTilesetType::Embedded { tileset } => &tileset,
         }
     }
 }
@@ -235,8 +236,8 @@ impl Map {
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                        tileset_cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, &tileset_path))?;
-                        tilesets.push(MapTileset{first_gid: res.first_gid, tileset_type: MapTilesetType::External{ path: tileset_path.clone()}});
+                        let tileset = tileset_cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, &tileset_path))?;
+                        tilesets.push(MapTileset{first_gid: res.first_gid, tileset_type: MapTilesetType::External{ path: tileset_path.clone(), tileset}});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
                         tilesets.push(MapTileset{first_gid: res.first_gid, tileset_type: MapTilesetType::Embedded {tileset}});
