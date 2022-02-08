@@ -167,42 +167,12 @@ impl Map {
 
         let infinite = infinite.unwrap_or(false);
 
-        // Since we can only parse sequentally, we cannot ensure tilesets are parsed before tile
-        // layers. The issue here is that tile layers require tileset data in order to set
-        // [`LayerTileData`] correctly. As such, we parse layer processing data into a vector as well as tilesets
-        // and then, when all the tilesets are parsed, we actually construct each layer.
+        // We can only parse sequentally, but tilesets are guaranteed to appear before layers.
+        // So we can pass in tileset data to layer construction without worrying about unfinished
+        // data usage.
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
-        struct LayerProcessingData {
-            attrs: Vec<OwnedAttribute>,
-            events: Vec<XmlEventResult>,
-            tag: LayerTag,
-        }
-        fn obtain_processing_data(
-            attrs: Vec<OwnedAttribute>,
-            events: &mut impl Iterator<Item = XmlEventResult>,
-            tag: LayerTag,
-            closing_tag: &str,
-        ) -> Result<LayerProcessingData, TiledError> {
-            let mut layer_events = Vec::new();
-            for event in events {
-                match event {
-                    Ok(XmlEvent::EndElement { name, .. }) if name.local_name == closing_tag => {
-                        return Ok(LayerProcessingData {
-                            attrs,
-                            events: layer_events,
-                            tag,
-                        });
-                    }
-                    _ => (),
-                }
-                layer_events.push(event);
-            }
-            Err(TiledError::PrematureEnd(
-                "Couldn't obtain layer data".to_owned(),
-            ))
-        }
 
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
@@ -220,15 +190,36 @@ impl Map {
                 Ok(())
             },
             "layer" => |attrs| {
-                layers.push(obtain_processing_data(attrs, parser, LayerTag::TileLayer, "layer")?);
+                layers.push(LayerData::new(
+                    parser,
+                    attrs,
+                    LayerTag::TileLayer,
+                    infinite,
+                    map_path,
+                    &tilesets,
+                )?);
                 Ok(())
             },
             "imagelayer" => |attrs| {
-                layers.push(obtain_processing_data(attrs, parser, LayerTag::ImageLayer, "imagelayer")?);
+                layers.push(LayerData::new(
+                    parser,
+                    attrs,
+                    LayerTag::ImageLayer,
+                    infinite,
+                    map_path,
+                    &tilesets,
+                )?);
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                layers.push(obtain_processing_data(attrs, parser, LayerTag::ObjectLayer, "objectgroup")?);
+                layers.push(LayerData::new(
+                    parser,
+                    attrs,
+                    LayerTag::ObjectLayer,
+                    infinite,
+                    map_path,
+                    &tilesets,
+                )?);
                 Ok(())
             },
             "properties" => |_| {
@@ -237,21 +228,7 @@ impl Map {
             },
         });
 
-        // Second pass: Process layers now that tilesets are all in
-        let layers = layers
-            .into_iter()
-            .map(|data| {
-                LayerData::new(
-                    &mut data.events.into_iter(),
-                    data.attrs,
-                    data.tag,
-                    infinite,
-                    map_path,
-                    &tilesets,
-                )
-            })
-            .collect::<Result<Vec<_>, TiledError>>()?;
-
+        // We do not need first GIDs any more
         let tilesets = tilesets.into_iter().map(|ts| ts.tileset).collect();
 
         Ok(Map {
