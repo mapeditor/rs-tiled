@@ -260,3 +260,50 @@ fn test_object_property() {
     };
     assert_eq!(3, prop_value);
 }
+
+#[test]
+fn test_group_layers() {
+    let r = Map::parse_file("assets/tiled_group_layers.tmx").unwrap();
+    let (layer_tile_1, layer_group_1, layer_group_2) = (&r.layers[0], &r.layers[1], &r.layers[2]);
+    let layer_tile_2 = match layer_group_1.layer_type {
+        LayerType::GroupLayer(ref group_layer) => &group_layer.layers[0],
+        _ => panic!("expected group layer")
+    };
+    let layer_group_3 = match layer_group_2.layer_type {
+        LayerType::GroupLayer(ref group_layer) => &group_layer.layers[0],
+        _ => panic!("expected group layer")
+    };
+    let layer_tile_3 = match layer_group_3.layer_type {
+        LayerType::GroupLayer(ref group_layer) => &group_layer.layers[0],
+        _ => panic!("expected group layer")
+    };
+    match layer_tile_3.layer_type {
+        LayerType::TileLayer(ref tile_layer) => {},
+        _ => panic!("expected tile layer")
+    };
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value1".to_string())),
+        layer_tile_1.properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value2".to_string())),
+        layer_tile_2.properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value3".to_string())),
+        layer_tile_3.properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value4".to_string())),
+        layer_group_1.properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value5".to_string())),
+        layer_group_2.properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value6".to_string())),
+        layer_group_3.properties.get("key")
+    );
+    assert_eq!(3, r.layers.len());
+}

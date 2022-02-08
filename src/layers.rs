@@ -291,6 +291,10 @@ impl GroupLayer {
                 layers.push(Layer::new(parser, attrs, LayerTag::ObjectLayer, infinite, path_relative_to)?);
                 Ok(())
             },
+            "group" => |attrs| {
+                layers.push(Layer::new(parser, attrs, LayerTag::GroupLayer, infinite, path_relative_to)?);
+                Ok(())
+            },
         });
         Ok((
             GroupLayer { layers },
