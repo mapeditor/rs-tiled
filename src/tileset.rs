@@ -37,6 +37,10 @@ pub struct Tileset {
 
     /// The custom properties of the tileset.
     pub properties: Properties,
+
+    /// Where this tileset was loaded from.
+    /// If fully embedded, this will return `None`.
+    pub source: Option<PathBuf>,
 }
 
 pub(crate) enum EmbeddedParseResultType {
@@ -59,22 +63,28 @@ struct TilesetProperties {
     tile_width: u32,
     tile_height: u32,
     /// The path all non-absolute paths are relative to.
-    path_relative_to: PathBuf,
+    path_relative_to: Option<PathBuf>,
+    source: Option<PathBuf>,
 }
 
 impl Tileset {
     /// Parse a buffer hopefully containing the contents of a Tiled tileset.
+    pub fn parse<R: Read>(reader: R) -> Result<Self, TiledError> {
+        Tileset::new_external(reader, None)
+    }
+
+    /// Parse a buffer hopefully containing the contents of a Tiled tileset.
     pub fn parse_with_path<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self, TiledError> {
-        Tileset::new_external(reader, path.as_ref())
+        Tileset::new_external(reader, Some(path.as_ref()))
+    }
+
+    pub fn get_tile(&self, id: u32) -> Option<&Tile> {
+        self.tiles.get(&id)
     }
 }
 
 impl Tileset {
-    pub fn get_tile(&self, id: u32) -> Option<&Tile> {
-        self.tiles.get(&id)
-    }
-
-    pub(crate) fn new_external<R: Read>(file: R, path: &Path) -> Result<Self, TiledError> {
+    pub(crate) fn new_external<R: Read>(file: R, path: Option<&Path>) -> Result<Self, TiledError> {
         let mut tileset_parser = EventReader::new(file);
         loop {
             match tileset_parser
@@ -107,9 +117,10 @@ impl Tileset {
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
     ) -> Result<EmbeddedParseResult, TiledError> {
-        Tileset::parse_xml_embedded(parser, &attrs, map_path).or_else(|err| {
+        let path_relative_to = map_path.parent();
+        Tileset::parse_xml_embedded(parser, &attrs, path_relative_to).or_else(|err| {
             if matches!(err, TiledError::MalformedAttributes(_)) {
-                Tileset::parse_xml_reference(&attrs, map_path)
+                Tileset::parse_xml_reference(&attrs, path_relative_to)
             } else {
                 Err(err)
             }
@@ -120,7 +131,7 @@ impl Tileset {
     fn parse_xml_embedded(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
-        map_path: &Path,
+        path_relative_to: Option<&Path>,
     ) -> Result<EmbeddedParseResult, TiledError> {
         let ((spacing, margin, columns), (tilecount, first_gid, name, tile_width, tile_height)) = get_attrs!(
            attrs,
@@ -139,19 +150,18 @@ impl Tileset {
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
-        let dir_containing_map = map_path.parent().ok_or(TiledError::PathIsNotFile)?;
-
         Self::finish_parsing_xml(
             parser,
             TilesetProperties {
                 spacing,
                 margin,
                 name,
-                path_relative_to: dir_containing_map.to_owned(),
+                path_relative_to: path_relative_to.map(Path::to_owned),
                 columns,
                 tilecount,
                 tile_height,
                 tile_width,
+                source: None,
             },
         )
         .map(|tileset| EmbeddedParseResult {
@@ -160,10 +170,9 @@ impl Tileset {
         })
     }
 
-    /// Returns both the tileset and its first gid in the corresponding map.
     fn parse_xml_reference(
         attrs: &Vec<OwnedAttribute>,
-        map_path: &Path,
+        path_relative_to: Option<&Path>,
     ) -> Result<EmbeddedParseResult, TiledError> {
         let ((), (first_gid, source)) = get_attrs!(
             attrs,
@@ -175,8 +184,11 @@ impl Tileset {
             TiledError::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
         );
 
-        let dir_containing_map = map_path.parent().ok_or(TiledError::PathIsNotFile)?;
-        let tileset_path = dir_containing_map.join(source);
+        let tileset_path = path_relative_to
+            .ok_or(TiledError::SourceRequired {
+                object_to_parse: "Tileset".to_string(),
+            })?
+            .join(source);
 
         Ok(EmbeddedParseResult {
             first_gid,
@@ -187,7 +199,7 @@ impl Tileset {
     fn parse_external_tileset(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
-        path: &Path,
+        path: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
         let ((spacing, margin, columns), (tilecount, name, tile_width, tile_height)) = get_attrs!(
             attrs,
@@ -205,10 +217,7 @@ impl Tileset {
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
-        let path_relative_to = path
-            .parent()
-            .ok_or(TiledError::PathIsNotFile)
-            .map(Path::to_owned)?;
+        let source_path = path.and_then(|p| p.parent().map(Path::to_owned));
 
         Self::finish_parsing_xml(
             parser,
@@ -216,11 +225,12 @@ impl Tileset {
                 spacing,
                 margin,
                 name,
-                path_relative_to,
+                path_relative_to: source_path,
                 columns,
                 tilecount,
                 tile_height,
                 tile_width,
+                source: path.map(Path::to_owned),
             },
         )
     }
@@ -235,7 +245,7 @@ impl Tileset {
 
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, &prop.path_relative_to)?);
+                image = Some(Image::new(parser, attrs, prop.path_relative_to.as_ref().ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_string()})?)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -243,7 +253,7 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                let (id, tile) = Tile::new(parser, attrs, &prop.path_relative_to)?;
+                let (id, tile) = Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?;
                 tiles.insert(id, tile);
                 Ok(())
             },
@@ -276,6 +286,7 @@ impl Tileset {
             image,
             tiles,
             properties,
+            source: prop.source,
         })
     }
 

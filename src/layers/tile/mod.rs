@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use xml::attribute::OwnedAttribute;
 
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTileset, MapTilesetGid, MapWrapper, Properties, TileId, TiledError,
+    Gid, MapTilesetGid, MapWrapper, Properties, TileId, TiledError, Tileset,
 };
 
 mod finite;
@@ -113,8 +113,8 @@ impl TileLayerData {
     }
 }
 
-pub struct LayerTile<'map> {
-    pub tileset: &'map MapTileset,
+pub struct LayerTile {
+    pub tileset: Rc<Tileset>,
     pub id: TileId,
     pub flip_h: bool,
     pub flip_v: bool,
@@ -124,10 +124,10 @@ pub struct LayerTile<'map> {
 pub type TileLayer<'map> = MapWrapper<'map, TileLayerData>;
 
 impl<'map> TileLayer<'map> {
-    pub fn get_tile(&self, x: usize, y: usize) -> Option<LayerTile<'map>> {
+    pub fn get_tile(&self, x: usize, y: usize) -> Option<LayerTile> {
         self.data().get_tile(x, y).and_then(|data| {
             Some(LayerTile {
-                tileset: &self.map().tilesets()[data.tileset_index],
+                tileset: self.map().tilesets()[data.tileset_index].clone(),
                 id: data.id,
                 flip_h: data.flip_h,
                 flip_v: data.flip_v,

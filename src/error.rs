@@ -18,6 +18,11 @@ pub enum TiledError {
     Base64DecodingError(base64::DecodeError),
     XmlDecodingError(xml::reader::Error),
     PrematureEnd(String),
+    /// Tried to parse external data of an object without a file location,
+    /// e.g. by using Map::parse_reader.
+    SourceRequired {
+        object_to_parse: String,
+    },
     /// The path given is invalid because it isn't contained in any folder.
     PathIsNotFile,
     CouldNotOpenFile {
@@ -37,6 +42,11 @@ impl fmt::Display for TiledError {
             TiledError::Base64DecodingError(e) => write!(fmt, "{}", e),
             TiledError::XmlDecodingError(e) => write!(fmt, "{}", e),
             TiledError::PrematureEnd(e) => write!(fmt, "{}", e),
+            TiledError::SourceRequired {
+                ref object_to_parse,
+            } => {
+                write!(fmt, "Tried to parse external {} without a file location, e.g. by using Map::parse_reader.", object_to_parse)
+            }
             TiledError::PathIsNotFile => {
                 write!(
                     fmt,

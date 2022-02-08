@@ -8,32 +8,12 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag, XmlEventResult},
-    EmbeddedParseResultType, Layer, ResourceCache, ResourcePathBuf,
+    EmbeddedParseResultType, Layer, ResourceCache,
 };
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum MapTileset {
-    External {
-        path: ResourcePathBuf,
-        tileset: Rc<Tileset>,
-    },
-    Embedded {
-        tileset: Tileset,
-    },
-}
-
-impl MapTileset {
-    pub fn tileset(&self) -> &Tileset {
-        match self {
-            MapTileset::External { tileset, .. } => &*tileset,
-            MapTileset::Embedded { tileset } => &tileset,
-        }
-    }
-}
 
 pub(crate) struct MapTilesetGid {
     pub first_gid: Gid,
-    pub tileset: MapTileset,
+    pub tileset: Rc<Tileset>,
 }
 
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
@@ -51,7 +31,7 @@ pub struct Map {
     /// Tile height, in pixels.
     pub tile_height: u32,
     /// The tilesets present on this map, ordered ascendingly by their first [`Gid`].
-    tilesets: Vec<MapTileset>,
+    tilesets: Vec<Rc<Tileset>>,
     /// The layers present in this map.
     layers: Vec<LayerData>,
     /// The custom properties of this map.
@@ -118,7 +98,7 @@ impl Map {
 
 impl Map {
     /// Get a reference to the map's tilesets.
-    pub fn tilesets(&self) -> &[MapTileset] {
+    pub fn tilesets(&self) -> &[Rc<Tileset>] {
         self.tilesets.as_ref()
     }
 
@@ -230,11 +210,11 @@ impl Map {
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                        let tileset = tileset_cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, &tileset_path))?;
-                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: MapTileset::External{ path: tileset_path.clone(), tileset}});
+                        let tileset = tileset_cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, Some(&tileset_path)))?;
+                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
-                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: MapTileset::Embedded {tileset}});
+                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: Rc::new(tileset)});
                     },
                 };
                 Ok(())

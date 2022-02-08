@@ -185,7 +185,6 @@ impl<'map> Object<'map> {
         self.map()
             .tilesets()
             .get(tileset_idx_tile_id.0 as usize)?
-            .tileset()
             .get_tile(tileset_idx_tile_id.1)
     }
 }
