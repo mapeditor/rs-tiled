@@ -6,7 +6,7 @@ use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTilesetGid, MapWrapper, Tile,
+    LayerTile, LayerTileData, MapTilesetGid, MapWrapper,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -21,7 +21,7 @@ pub enum ObjectShape {
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectData {
     pub id: u32,
-    tileset_idx_tile_id: Option<(u32, u32)>,
+    tile: Option<LayerTileData>,
     pub name: String,
     pub obj_type: String,
     pub width: f32,
@@ -42,7 +42,7 @@ impl ObjectData {
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
     ) -> Result<ObjectData, TiledError> {
-        let ((id, gid, n, t, w, h, v, r), (x, y)) = get_attrs!(
+        let ((id, bits, n, t, w, h, v, r), (x, y)) = get_attrs!(
             attrs,
             optionals: [
                 ("id", id, |v:String| v.parse().ok()),
@@ -65,11 +65,7 @@ impl ObjectData {
         let h = h.unwrap_or(0f32);
         let r = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
-        let gid = Gid(gid.unwrap_or(0u32));
-        let tileset_idx_tile_id = tilesets
-            .and_then(|tilesets| crate::util::get_tileset_for_gid(tilesets, gid))
-            .map(|(tileset_idx, tileset)| (tileset_idx as u32, gid.0 - tileset.first_gid.0));
-
+        let tile = bits.and_then(|bits| LayerTileData::from_bits(bits, tilesets?));
         let n = n.unwrap_or(String::new());
         let t = t.unwrap_or(String::new());
         let mut shape = None;
@@ -108,7 +104,7 @@ impl ObjectData {
 
         Ok(ObjectData {
             id,
-            tileset_idx_tile_id,
+            tile,
             name: n.clone(),
             obj_type: t.clone(),
             width: w,
@@ -180,11 +176,9 @@ pub type Object<'map> = MapWrapper<'map, ObjectData>;
 
 impl<'map> Object<'map> {
     /// Returns the tile that the object is using as image, if any.
-    pub fn get_tile<'res: 'map>(&self) -> Option<&'map Tile> {
-        let tileset_idx_tile_id = self.data().tileset_idx_tile_id?;
-        self.map()
-            .tilesets()
-            .get(tileset_idx_tile_id.0 as usize)?
-            .get_tile(tileset_idx_tile_id.1)
+    pub fn get_tile<'res: 'map>(&self) -> Option<LayerTile<'map>> {
+        self.data()
+            .tile
+            .map(|tile| LayerTile::from_data(&tile, self.map()))
     }
 }

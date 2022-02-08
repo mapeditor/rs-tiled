@@ -1,11 +1,11 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use xml::attribute::OwnedAttribute;
 
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, MapTilesetGid, MapWrapper, Properties, TileId, TiledError, Tileset,
+    Gid, Map, MapTilesetGid, MapWrapper, Properties, TileId, TiledError, Tileset,
 };
 
 mod finite;
@@ -19,9 +19,9 @@ pub use infinite::*;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct LayerTileData {
     /// The index of the tileset this tile's in, relative to the tile's map.
-    tileset_index: usize,
+    pub(crate) tileset_index: usize,
     /// The local ID of the tile in the tileset it's in.
-    id: TileId,
+    pub(crate) id: TileId,
     pub flip_h: bool,
     pub flip_v: bool,
     pub flip_d: bool,
@@ -122,18 +122,24 @@ pub struct LayerTile<'map> {
     pub flip_d: bool,
 }
 
+impl<'map> LayerTile<'map> {
+    pub(crate) fn from_data(data: &LayerTileData, map: &'map Map) -> Self {
+        Self {
+            tileset: &*map.tilesets()[data.tileset_index],
+            id: data.id,
+            flip_h: data.flip_h,
+            flip_v: data.flip_v,
+            flip_d: data.flip_d,
+        }
+    }
+}
+
 pub type TileLayer<'map> = MapWrapper<'map, TileLayerData>;
 
 impl<'map> TileLayer<'map> {
     pub fn get_tile(&self, x: usize, y: usize) -> Option<LayerTile> {
-        self.data().get_tile(x, y).and_then(|data| {
-            Some(LayerTile {
-                tileset: &*self.map().tilesets()[data.tileset_index],
-                id: data.id,
-                flip_h: data.flip_h,
-                flip_v: data.flip_v,
-                flip_d: data.flip_d,
-            })
-        })
+        self.data()
+            .get_tile(x, y)
+            .and_then(|data| Some(LayerTile::from_data(data, self.map())))
     }
 }
