@@ -48,7 +48,7 @@ pub enum LayerType {
     TileLayer(TileLayer),
     ObjectLayer(ObjectLayer),
     ImageLayer(ImageLayer),
-    // TODO: Support group layers
+    GroupLayer(GroupLayer),
 }
 
 #[derive(Clone, Copy)]
@@ -56,6 +56,7 @@ pub(crate) enum LayerTag {
     TileLayer,
     ObjectLayer,
     ImageLayer,
+    GroupLayer,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -110,6 +111,10 @@ impl Layer {
             LayerTag::ImageLayer => {
                 let (ty, properties) = ImageLayer::new(parser, path_relative_to)?;
                 (LayerType::ImageLayer(ty), properties)
+            },
+            LayerTag::GroupLayer => {
+                let (ty, properties) = GroupLayer::new(parser, infinite, path_relative_to)?;
+                (LayerType::GroupLayer(ty), properties)
             }
         };
 
@@ -251,6 +256,44 @@ impl ObjectLayer {
                 objects: objects,
                 colour: c,
             },
+            properties,
+        ))
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct GroupLayer {
+    pub layers: Vec<Layer>,
+}
+
+impl GroupLayer {
+    pub(crate) fn new<R: Read>(
+        parser: &mut EventReader<R>,
+        infinite: bool,
+        path_relative_to: Option<&Path>,
+    ) -> Result<(GroupLayer, Properties), TiledError> {
+        let mut properties = HashMap::new();
+        let mut layers = Vec::new();
+        parse_tag!(parser, "group", {
+            "properties" => |_| {
+                properties = parse_properties(parser)?;
+                Ok(())
+            },
+            "layer" => |attrs| {
+                layers.push(Layer::new(parser, attrs, LayerTag::TileLayer, infinite, path_relative_to)?);
+                Ok(())
+            },
+            "imagelayer" => |attrs| {
+                layers.push(Layer::new(parser, attrs, LayerTag::ImageLayer, infinite, path_relative_to)?);
+                Ok(())
+            },
+            "objectgroup" => |attrs| {
+                layers.push(Layer::new(parser, attrs, LayerTag::ObjectLayer, infinite, path_relative_to)?);
+                Ok(())
+            },
+        });
+        Ok((
+            GroupLayer { layers },
             properties,
         ))
     }

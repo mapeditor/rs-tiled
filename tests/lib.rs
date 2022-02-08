@@ -154,8 +154,12 @@ fn test_layer_property() {
 #[test]
 fn test_object_group_property() {
     let r = Map::parse_file("assets/tiled_object_groups.tmx").unwrap();
+    let sub_layer = match r.layers[1].layer_type {
+        LayerType::GroupLayer(ref layer) => &layer.layers[0],
+        _ => { panic!("Layer was expected to be a group layer"); }
+    };
     let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) =
-        r.layers[1].properties.get("an object group property")
+        sub_layer.properties.get("an object group property")
     {
         *v
     } else {

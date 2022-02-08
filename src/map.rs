@@ -122,6 +122,10 @@ impl Map {
                 layers.push(Layer::new(parser, attrs, LayerTag::ObjectLayer, infinite, source_path)?);
                 Ok(())
             },
+            "group" => |attrs| {
+                layers.push(Layer::new(parser, attrs, LayerTag::GroupLayer, infinite, source_path)?);
+                Ok(())
+            },
         });
         Ok(Map {
             version: v,
