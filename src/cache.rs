@@ -11,10 +11,6 @@ pub type ResourcePathBuf = PathBuf;
 
 pub trait ResourceCache {
     fn get_tileset(&self, path: impl AsRef<ResourcePath>) -> Option<Rc<Tileset>>;
-    fn get_or_insert_tileset(&mut self, path: ResourcePathBuf, tileset: Tileset) -> Rc<Tileset>;
-    fn get_or_insert_tileset_with<F>(&mut self, path: ResourcePathBuf, f: F) -> Rc<Tileset>
-    where
-        F: FnOnce() -> Tileset;
     fn get_or_try_insert_tileset_with<F, E>(
         &mut self,
         path: ResourcePathBuf,
@@ -39,23 +35,6 @@ impl DefaultResourceCache {
 impl ResourceCache for DefaultResourceCache {
     fn get_tileset(&self, path: impl AsRef<ResourcePath>) -> Option<Rc<Tileset>> {
         self.tilesets.get(path.as_ref()).map(Clone::clone)
-    }
-
-    fn get_or_insert_tileset(&mut self, path: ResourcePathBuf, tileset: Tileset) -> Rc<Tileset> {
-        self.tilesets
-            .entry(path)
-            .or_insert(Rc::new(tileset))
-            .clone()
-    }
-
-    fn get_or_insert_tileset_with<F>(&mut self, path: ResourcePathBuf, f: F) -> Rc<Tileset>
-    where
-        F: FnOnce() -> Tileset,
-    {
-        self.tilesets
-            .entry(path)
-            .or_insert_with(|| Rc::new(f()))
-            .clone()
     }
 
     fn get_or_try_insert_tileset_with<F, E>(
