@@ -114,8 +114,8 @@ impl TileLayerData {
     }
 }
 
-pub struct LayerTile {
-    pub tileset: Rc<Tileset>,
+pub struct LayerTile<'map> {
+    pub tileset: &'map Tileset,
     pub id: TileId,
     pub flip_h: bool,
     pub flip_v: bool,
@@ -128,7 +128,7 @@ impl<'map> TileLayer<'map> {
     pub fn get_tile(&self, x: usize, y: usize) -> Option<LayerTile> {
         self.data().get_tile(x, y).and_then(|data| {
             Some(LayerTile {
-                tileset: self.map().tilesets()[data.tileset_index].clone(),
+                tileset: &*self.map().tilesets()[data.tileset_index],
                 id: data.id,
                 flip_h: data.flip_h,
                 flip_v: data.flip_v,
