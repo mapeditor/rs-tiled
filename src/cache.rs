@@ -55,10 +55,9 @@ impl ResourceCache for DefaultResourceCache {
     where
         F: FnOnce() -> Result<Tileset, E>,
     {
-        if !self.tilesets.contains_key(&path) {
-            Ok(self.tilesets.entry(path).or_insert(f()?))
-        } else {
-            Ok(self.tilesets.get(&path).unwrap())
-        }
+        Ok(match self.tilesets.entry(path) {
+            std::collections::hash_map::Entry::Occupied(o) => o.into_mut(),
+            std::collections::hash_map::Entry::Vacant(v) => v.insert(f()?),
+        })
     }
 }
