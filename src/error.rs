@@ -8,6 +8,7 @@ pub enum ParseTileError {
 
 /// Errors which occured when parsing the file
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum TiledError {
     /// A attribute was missing, had the wrong type of wasn't formated
     /// correctly.
