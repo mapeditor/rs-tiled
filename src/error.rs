@@ -36,6 +36,11 @@ pub enum TiledError {
         encoding: Option<String>,
         compression: Option<String>,
     },
+    /// There was an error parsing the value of a [`PropertyValue`].
+    /// 
+    /// [`PropertyValue`]: crate::PropertyValue
+    InvalidPropertyValue,
+    UnknownPropertyType{name: String},
     Other(String),
 }
 
@@ -75,6 +80,9 @@ impl fmt::Display for TiledError {
                     encoding.as_deref().unwrap_or("no"),
                     compression.as_deref().unwrap_or("no")
                 ),
+            TiledError::InvalidPropertyValue => write!(fmt, "Found invalid property value"),
+            TiledError::UnknownPropertyType { name } =>
+                write!(fmt, "Found unknown property value type '{}'", name),
         }
     }
 }
