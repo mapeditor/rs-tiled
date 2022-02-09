@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 use tiled::{
-    FilesystemResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, ObjectLayer,
-    ResourceCache, TileLayer, TileLayerData,
+    Color, FilesystemResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, Map,
+    ObjectLayer, PropertyValue, ResourceCache, TileLayer, TileLayerData,
 };
-use tiled::{Map, PropertyValue};
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
     match layer.layer_type() {
@@ -313,4 +312,29 @@ fn test_object_property() {
         0
     };
     assert_eq!(3, prop_value);
+}
+
+#[test]
+fn test_tint_color() {
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_image_layers.tmx", &mut cache).unwrap();
+    assert_eq!(
+        r.get_layer(0).unwrap().data().tint_color,
+        Some(Color {
+            alpha: 0x12,
+            red: 0x34,
+            green: 0x56,
+            blue: 0x78
+        })
+    );
+    assert_eq!(
+        r.get_layer(1).unwrap().data().tint_color,
+        Some(Color {
+            alpha: 0xFF,
+            red: 0x12,
+            green: 0x34,
+            blue: 0x56
+        })
+    );
 }

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `Tileset::source` for obtaining where the tileset actually came from.
 - `Tileset::columns`.
+- `Color::alpha`.
 - `Layer::id`, `Layer::width`, `Layer::height`, `Layer::parallax_x` and `Layer::parallax_y`.
 - Support for 'object'-type properties.
 - Support for multiline string properties.
@@ -39,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed library warnings.
 - Bumped `zstd` to `0.9`.
 - Fixed markdown formatting in the `CONTRIBUTORS` file.
+
+### Fixed
+- `Color` parsing.
+
 
 ## [0.9.5] - 2021-05-02
 ### Added
