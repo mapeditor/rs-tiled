@@ -20,11 +20,12 @@ pub trait ResourceCache {
         F: FnOnce() -> Result<Tileset, E>;
 }
 
-pub struct DefaultResourceCache {
+/// A cache that identifies resources by their path in the user's filesystem.
+pub struct FilesystemResourceCache {
     tilesets: HashMap<ResourcePathBuf, Rc<Tileset>>,
 }
 
-impl DefaultResourceCache {
+impl FilesystemResourceCache {
     pub fn new() -> Self {
         Self {
             tilesets: HashMap::new(),
@@ -32,7 +33,7 @@ impl DefaultResourceCache {
     }
 }
 
-impl ResourceCache for DefaultResourceCache {
+impl ResourceCache for FilesystemResourceCache {
     fn get_tileset(&self, path: impl AsRef<ResourcePath>) -> Option<Rc<Tileset>> {
         self.tilesets.get(path.as_ref()).map(Clone::clone)
     }

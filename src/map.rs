@@ -55,7 +55,7 @@ impl Map {
     pub fn parse_reader<R: Read>(
         reader: R,
         path: impl AsRef<Path>,
-        tileset_cache: &mut impl ResourceCache,
+        cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
         let mut parser = EventReader::new(reader);
         loop {
@@ -68,7 +68,7 @@ impl Map {
                             &mut parser.into_iter(),
                             attributes,
                             path.as_ref(),
-                            tileset_cache,
+                            cache,
                         );
                     }
                 }
@@ -88,11 +88,11 @@ impl Map {
     /// The tileset cache is used to store and refer to any tilesets found along the way.
     pub fn parse_file(
         path: impl AsRef<Path>,
-        tileset_cache: &mut impl ResourceCache,
+        cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
         let reader = File::open(path.as_ref())
             .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
-        Self::parse_reader(reader, path.as_ref(), tileset_cache)
+        Self::parse_reader(reader, path.as_ref(), cache)
     }
 }
 

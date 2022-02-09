@@ -111,6 +111,7 @@ impl TileLayerData {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct LayerTile<'map> {
     tileset: &'map Tileset,
     id: TileId,
