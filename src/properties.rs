@@ -19,11 +19,7 @@ impl FromStr for Color {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Color, Self::Err> {
-        let s = if s.starts_with("#") {
-            &s[1..]
-        } else {
-            return Err(());
-        };
+        let s = if s.starts_with("#") { &s[1..] } else { s };
         match s.len() {
             6 => {
                 let r = u8::from_str_radix(&s[0..2], 16);
@@ -128,7 +124,7 @@ pub(crate) fn parse_properties<R: Read>(
                 TiledError::MalformedAttributes("property must have a name and a value".to_string())
             );
             let t = t.unwrap_or("string".into());
-            
+
             let v = match v_attr {
                 Some(val) => val,
                 None => {
