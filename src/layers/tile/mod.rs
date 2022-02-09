@@ -113,8 +113,8 @@ impl TileLayerData {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LayerTile<'map> {
-    tileset: &'map Tileset,
-    id: TileId,
+    pub tileset: &'map Tileset,
+    pub id: TileId,
     pub flip_h: bool,
     pub flip_v: bool,
     pub flip_d: bool,
@@ -134,16 +134,6 @@ impl<'map> LayerTile<'map> {
     /// Get a reference to the layer tile's referenced tile, if it exists.
     pub fn get_tile(&self) -> Option<&'map Tile> {
         self.tileset.get_tile(self.id)
-    }
-
-    /// Get a reference to the layer tile's tileset.
-    pub fn tileset(&self) -> &Tileset {
-        self.tileset
-    }
-
-    /// Get a reference to the layer tile's local id within its tileset.
-    pub fn id(&self) -> u32 {
-        self.id
     }
 }
 

@@ -22,7 +22,7 @@ fn main() {
                     "Finite tile layer with width = {} and height = {}; ID of tile @ (0,0): {}",
                     data.width(),
                     data.height(),
-                    layer.get_tile(0, 0).unwrap().id()
+                    layer.get_tile(0, 0).unwrap().id
                 ),
                 tiled::TileLayerData::Infinite(data) => {
                     // This is prone to change! Infinite layers will be refactored before 0.10.0
