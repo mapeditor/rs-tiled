@@ -1,38 +1,61 @@
 use std::{collections::HashMap, io::Read, str::FromStr};
 
-use xml::{EventReader, attribute::OwnedAttribute, reader::XmlEvent};
+use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
-    error::{ParseTileError, TiledError},
+    error::TiledError,
     util::{get_attrs, parse_tag},
 };
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct Color {
+    pub alpha: u8,
     pub red: u8,
     pub green: u8,
     pub blue: u8,
 }
 
 impl FromStr for Color {
-    type Err = ParseTileError;
+    type Err = ();
 
-    fn from_str(s: &str) -> Result<Color, ParseTileError> {
-        let s = if s.starts_with("#") { &s[1..] } else { s };
-        if s.len() != 6 {
-            return Err(ParseTileError::ColorError);
+    fn from_str(s: &str) -> Result<Color, Self::Err> {
+        let s = if s.starts_with("#") {
+            &s[1..]
+        } else {
+            return Err(());
+        };
+        match s.len() {
+            6 => {
+                let r = u8::from_str_radix(&s[0..2], 16);
+                let g = u8::from_str_radix(&s[2..4], 16);
+                let b = u8::from_str_radix(&s[4..6], 16);
+                match (r, g, b) {
+                    (Ok(red), Ok(green), Ok(blue)) => Ok(Color {
+                        alpha: 0xFF,
+                        red,
+                        green,
+                        blue,
+                    }),
+                    _ => Err(()),
+                }
+            }
+            8 => {
+                let a = u8::from_str_radix(&s[0..2], 16);
+                let r = u8::from_str_radix(&s[2..4], 16);
+                let g = u8::from_str_radix(&s[4..6], 16);
+                let b = u8::from_str_radix(&s[6..8], 16);
+                match (a, r, g, b) {
+                    (Ok(alpha), Ok(red), Ok(green), Ok(blue)) => Ok(Color {
+                        alpha,
+                        red,
+                        green,
+                        blue,
+                    }),
+                    _ => Err(()),
+                }
+            }
+            _ => Err(()),
         }
-        let r = u8::from_str_radix(&s[0..2], 16);
-        let g = u8::from_str_radix(&s[2..4], 16);
-        let b = u8::from_str_radix(&s[4..6], 16);
-        if r.is_ok() && g.is_ok() && b.is_ok() {
-            return Ok(Color {
-                red: r.unwrap(),
-                green: g.unwrap(),
-                blue: b.unwrap(),
-            });
-        }
-        Err(ParseTileError::ColorError)
     }
 }
 
