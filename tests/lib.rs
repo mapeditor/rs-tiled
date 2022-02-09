@@ -61,10 +61,10 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
         assert_eq!(data.height(), 100);
     }
 
-    assert_eq!(layer.get_tile(0, 0).unwrap().id, 34);
-    assert_eq!(layer.get_tile(0, 1).unwrap().id, 16);
+    assert_eq!(layer.get_tile(0, 0).unwrap().id(), 34);
+    assert_eq!(layer.get_tile(0, 1).unwrap().id(), 16);
     assert!(layer.get_tile(0, 2).is_none());
-    assert_eq!(layer.get_tile(1, 2).unwrap().id, 16);
+    assert_eq!(layer.get_tile(1, 2).unwrap().id(), 16);
     assert!((0..99).map(|x| layer.get_tile(x, 99)).all(|t| t.is_none()));
 }
 
@@ -237,9 +237,9 @@ fn test_flipped() {
     let t2 = layer.get_tile(1, 0).unwrap();
     let t3 = layer.get_tile(0, 1).unwrap();
     let t4 = layer.get_tile(1, 1).unwrap();
-    assert_eq!(t1.id, t2.id);
-    assert_eq!(t2.id, t3.id);
-    assert_eq!(t3.id, t4.id);
+    assert_eq!(t1.id(), t2.id());
+    assert_eq!(t2.id(), t3.id());
+    assert_eq!(t3.id(), t4.id());
     assert!(t1.flip_d);
     assert!(t1.flip_h);
     assert!(t1.flip_v);
@@ -266,7 +266,7 @@ fn test_ldk_export() {
         assert_eq!(data.height(), 8);
     }
     assert!(layer.get_tile(0, 0).is_none());
-    assert_eq!(layer.get_tile(0, 1).unwrap().id, 0);
+    assert_eq!(layer.get_tile(0, 1).unwrap().id(), 0);
 }
 
 #[test]

@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, Map, MapTilesetGid, MapWrapper, Properties, TileId, TiledError, Tileset,
+    Gid, Map, MapTilesetGid, MapWrapper, Properties, Tile, TileId, TiledError, Tileset,
 };
 
 mod finite;
@@ -35,10 +35,7 @@ impl LayerTileData {
         | Self::FLIPPED_VERTICALLY_FLAG
         | Self::FLIPPED_DIAGONALLY_FLAG;
 
-    /// Creates a new, **unfinished** [`LayerTileData`]. Unfinished layer tiles have the following
-    /// properties:
-    /// - `tileset_index` is set to an unspecified value.
-    /// - `id` is actually the tile's GID.
+    /// Creates a new [`LayerTileData`] from a [`GID`] plus its flipping bits.
     pub(crate) fn from_bits(bits: u32, tilesets: &[MapTilesetGid]) -> Option<Self> {
         let flags = bits & Self::ALL_FLIP_FLAGS;
         let gid = Gid(bits & !Self::ALL_FLIP_FLAGS);
@@ -115,8 +112,8 @@ impl TileLayerData {
 }
 
 pub struct LayerTile<'map> {
-    pub tileset: &'map Tileset,
-    pub id: TileId,
+    tileset: &'map Tileset,
+    id: TileId,
     pub flip_h: bool,
     pub flip_v: bool,
     pub flip_d: bool,
@@ -131,6 +128,21 @@ impl<'map> LayerTile<'map> {
             flip_v: data.flip_v,
             flip_d: data.flip_d,
         }
+    }
+
+    /// Get a reference to the layer tile's referenced tile, if it exists.
+    pub fn get_tile(&self) -> Option<&'map Tile> {
+        self.tileset.get_tile(self.id)
+    }
+
+    /// Get a reference to the layer tile's tileset.
+    pub fn tileset(&self) -> &Tileset {
+        self.tileset
+    }
+
+    /// Get a reference to the layer tile's local id within its tileset.
+    pub fn id(&self) -> u32 {
+        self.id
     }
 }
 
