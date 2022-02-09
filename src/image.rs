@@ -1,9 +1,6 @@
-use std::{
-    io::Read,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{error::TiledError, properties::Color, util::*};
 
@@ -24,8 +21,8 @@ pub struct Image {
 }
 
 impl Image {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: impl AsRef<Path>,
     ) -> Result<Image, TiledError> {

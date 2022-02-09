@@ -1,33 +1,34 @@
-use std::{collections::HashMap, io::Read, path::Path};
+use std::{collections::HashMap, path::Path};
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     animation::Frame,
     error::TiledError,
     image::Image,
-    layers::ObjectLayer,
+    layers::ObjectLayerData,
     properties::{parse_properties, Properties},
-    util::{get_attrs, parse_animation, parse_tag},
+    util::{get_attrs, parse_animation, parse_tag, XmlEventResult},
 };
 
-#[derive(Debug, PartialEq, Clone)]
+pub type TileId = u32;
+
+#[derive(Debug, PartialEq, Clone, Default)]
 pub struct Tile {
-    pub id: u32,
     pub image: Option<Image>,
     pub properties: Properties,
-    pub collision: Option<ObjectLayer>,
+    pub collision: Option<ObjectLayerData>,
     pub animation: Option<Vec<Frame>>,
     pub tile_type: Option<String>,
     pub probability: f32,
 }
 
 impl Tile {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: Option<&Path>,
-    ) -> Result<Tile, TiledError> {
+    ) -> Result<(TileId, Tile), TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
             optionals: [
@@ -46,7 +47,7 @@ impl Tile {
         let mut animation = None;
         parse_tag!(parser, "tile", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse: "Image".to_owned()})?)?);
+                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse:"Image".to_owned()})?)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -54,7 +55,7 @@ impl Tile {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectLayer::new(parser, attrs)?.0);
+                objectgroup = Some(ObjectLayerData::new(parser, attrs, None)?.0);
                 Ok(())
             },
             "animation" => |_| {
@@ -62,14 +63,16 @@ impl Tile {
                 Ok(())
             },
         });
-        Ok(Tile {
+        Ok((
             id,
-            image,
-            properties,
-            collision: objectgroup,
-            animation,
-            tile_type,
-            probability: probability.unwrap_or(1.0),
-        })
+            Tile {
+                image,
+                properties,
+                collision: objectgroup,
+                animation,
+                tile_type,
+                probability: probability.unwrap_or(1.0),
+            },
+        ))
     }
 }
