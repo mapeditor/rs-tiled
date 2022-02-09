@@ -90,8 +90,7 @@ impl Map {
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
-        let reader = File::open(path.as_ref())
-            .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
+        let reader = File::open(path.as_ref()).map_err(|err| TiledError::IoError(err))?;
         Self::parse_reader(reader, path.as_ref(), cache)
     }
 }

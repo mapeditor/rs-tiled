@@ -80,11 +80,11 @@ fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec
 fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     use libflate::zlib::Decoder;
     let mut zd =
-        Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::DecompressingError(e))?;
+        Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::IoError(e))?;
     let mut data = Vec::new();
     match zd.read_to_end(&mut data) {
         Ok(_v) => {}
-        Err(e) => return Err(TiledError::DecompressingError(e)),
+        Err(e) => return Err(TiledError::IoError(e)),
     }
     Ok(data)
 }
@@ -92,11 +92,11 @@ fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
 fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     use libflate::gzip::Decoder;
     let mut zd =
-        Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::DecompressingError(e))?;
+        Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::IoError(e))?;
 
     let mut data = Vec::new();
     zd.read_to_end(&mut data)
-        .map_err(|e| TiledError::DecompressingError(e))?;
+        .map_err(|e| TiledError::IoError(e))?;
     Ok(data)
 }
 
@@ -105,11 +105,11 @@ fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
     use zstd::stream::read::Decoder;
 
     let buff = Cursor::new(&data);
-    let mut zd = Decoder::with_buffer(buff).map_err(|e| TiledError::DecompressingError(e))?;
+    let mut zd = Decoder::with_buffer(buff).map_err(|e| TiledError::IoError(e))?;
 
     let mut data = Vec::new();
     zd.read_to_end(&mut data)
-        .map_err(|e| TiledError::DecompressingError(e))?;
+        .map_err(|e| TiledError::IoError(e))?;
     Ok(data)
 }
 
