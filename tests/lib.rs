@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::{fs::File, path::PathBuf};
-use tiled::{LayerData, Map, PropertyValue, TiledError, Tileset};
+use tiled::{Color, LayerData, Map, PropertyValue, TiledError, Tileset};
 use tiled::{LayerType, ObjectLayer, TileLayer};
 
 fn as_tile_layer(layer: &LayerType) -> &TileLayer {
@@ -255,4 +255,27 @@ fn test_object_property() {
         0
     };
     assert_eq!(3, prop_value);
+}
+
+#[test]
+fn test_tint_color() {
+    let r = Map::parse_file("assets/tiled_image_layers.tmx").unwrap();
+    assert_eq!(
+        r.layers[0].tint_color,
+        Some(Color {
+            alpha: 0x12,
+            red: 0x34,
+            green: 0x56,
+            blue: 0x78
+        })
+    );
+    assert_eq!(
+        r.layers[1].tint_color,
+        Some(Color {
+            alpha: 0xFF,
+            red: 0x12,
+            green: 0x34,
+            blue: 0x56
+        })
+    );
 }

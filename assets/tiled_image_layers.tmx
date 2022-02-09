@@ -3,8 +3,8 @@
  <tileset firstgid="1" name="tilesheet" tilewidth="32" tileheight="32" tilecount="84" columns="14">
   <image source="tilesheet.png" width="448" height="192"/>
  </tileset>
- <imagelayer id="1" name="Image Layer 1"/>
- <imagelayer id="2" name="Image Layer 2">
+ <imagelayer id="1" name="Image Layer 1" tintcolor="#12345678"/>
+ <imagelayer id="2" name="Image Layer 2" tintcolor="#123456">
   <image source="tilesheet.png" width="448" height="192"/>
  </imagelayer>
 </map>
