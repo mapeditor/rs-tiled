@@ -68,6 +68,7 @@ pub struct Layer {
     pub parallax_x: f32,
     pub parallax_y: f32,
     pub opacity: f32,
+    pub tint_color: Option<Color>,
     pub properties: Properties,
     pub layer_type: LayerType,
 }
@@ -80,10 +81,14 @@ impl Layer {
         infinite: bool,
         path_relative_to: Option<&Path>,
     ) -> Result<Self, TiledError> {
-        let ((opacity, visible, offset_x, offset_y, parallax_x, parallax_y, name, id), ()) = get_attrs!(
+        let (
+            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id),
+            (),
+        ) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
+                ("tintcolor", tint_color, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("offsetx", offset_x, |v:String| v.parse().ok()),
                 ("offsety", offset_y, |v:String| v.parse().ok()),
@@ -120,6 +125,7 @@ impl Layer {
             parallax_x: parallax_x.unwrap_or(1.0),
             parallax_y: parallax_y.unwrap_or(1.0),
             opacity: opacity.unwrap_or(1.0),
+            tint_color,
             name: name.unwrap_or_default(),
             id: id.unwrap_or(0),
             properties,
