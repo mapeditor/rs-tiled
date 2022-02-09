@@ -10,18 +10,24 @@ pub(crate) fn parse_data_line(
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
-    match (encoding, compression) {
+    match (encoding.as_deref(), compression.as_deref()) {
         (None, None) => {
-            return Err(TiledError::Other(
-                "XML format is currently not supported".to_string(),
-            ))
+            return Err(TiledError::InvalidEncodingFormat {
+                encoding,
+                compression,
+            })
         }
-        (Some(e), None) => match e.as_ref() {
-            "base64" => return parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets)),
-            "csv" => return decode_csv(parser, tilesets),
-            e => return Err(TiledError::Other(format!("Unknown encoding format {}", e))),
-        },
-        (Some(e), Some(c)) => match (e.as_ref(), c.as_ref()) {
+        (Some("base64"), None) => {
+            return parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets))
+        }
+        (Some("csv"), None) => return decode_csv(parser, tilesets),
+        (Some(_), None) => {
+            return Err(TiledError::InvalidEncodingFormat {
+                encoding,
+                compression,
+            })
+        }
+        (Some(e), Some(c)) => match (e, c) {
             ("base64", "zlib") => {
                 return parse_base64(parser)
                     .and_then(decode_zlib)
@@ -38,14 +44,19 @@ pub(crate) fn parse_data_line(
                     .and_then(decode_zstd)
                     .map(|v| convert_to_tiles(&v, tilesets))
             }
-            (e, c) => {
-                return Err(TiledError::Other(format!(
-                    "Unknown combination of {} encoding and {} compression",
-                    e, c
-                )))
+            _ => {
+                return Err(TiledError::InvalidEncodingFormat {
+                    encoding,
+                    compression,
+                })
             }
         },
-        _ => return Err(TiledError::Other("Missing encoding format".to_string())),
+        _ => {
+            return Err(TiledError::InvalidEncodingFormat {
+                encoding,
+                compression,
+            })
+        }
     };
 }
 

@@ -32,6 +32,11 @@ pub enum TiledError {
     },
     /// There was an invalid tile in the map parsed.
     InvalidTileFound,
+    /// Unknown encoding or compression format or invalid combination of both (for tile layers)
+    InvalidEncodingFormat {
+        encoding: Option<String>,
+        compression: Option<String>,
+    },
     Other(String),
 }
 
@@ -64,6 +69,13 @@ impl fmt::Display for TiledError {
             }
             TiledError::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
             TiledError::Other(s) => write!(fmt, "{}", s),
+            TiledError::InvalidEncodingFormat { encoding, compression } => 
+                write!(
+                    fmt,
+                    "Unknown encoding or compression format or invalid combination of both (for tile layers): {} encoding with {} compression",
+                    encoding.as_deref().unwrap_or("no"),
+                    compression.as_deref().unwrap_or("no")
+                ),
         }
     }
 }
