@@ -41,7 +41,6 @@ pub enum TiledError {
     /// [`PropertyValue`]: crate::PropertyValue
     InvalidPropertyValue,
     UnknownPropertyType{name: String},
-    Other(String),
 }
 
 impl fmt::Display for TiledError {
@@ -72,7 +71,6 @@ impl fmt::Display for TiledError {
                 )
             }
             TiledError::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
-            TiledError::Other(s) => write!(fmt, "{}", s),
             TiledError::InvalidEncodingFormat { encoding, compression } => 
                 write!(
                     fmt,
