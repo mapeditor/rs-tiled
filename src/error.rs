@@ -34,6 +34,9 @@ pub enum TiledError {
     /// 
     /// [`PropertyValue`]: crate::PropertyValue
     InvalidPropertyValue,
+    /// Found an unknown property value type while parsing a [`PropertyValue`].
+    /// 
+    /// [`PropertyValue`]: crate::PropertyValue
     UnknownPropertyType{name: String},
 }
 
@@ -79,7 +82,6 @@ impl fmt::Display for TiledError {
     }
 }
 
-// This is a skeleton implementation, which should probably be extended in the future.
 impl std::error::Error for TiledError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
