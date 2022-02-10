@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, rc::Rc, str
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
-    error::{ParseTileError, TiledError},
+    error::TiledError,
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
@@ -90,8 +90,10 @@ impl Map {
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
-        let reader = File::open(path.as_ref())
-            .map_err(|_| TiledError::Other(format!("Map file not found: {:?}", path.as_ref())))?;
+        let reader = File::open(path.as_ref()).map_err(|err| TiledError::CouldNotOpenFile {
+            path: path.as_ref().to_owned(),
+            err,
+        })?;
         Self::parse_reader(reader, path.as_ref(), cache)
     }
 }
@@ -268,15 +270,15 @@ pub enum Orientation {
 }
 
 impl FromStr for Orientation {
-    type Err = ParseTileError;
+    type Err = ();
 
-    fn from_str(s: &str) -> Result<Orientation, ParseTileError> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
             "isometric" => Ok(Orientation::Isometric),
             "staggered" => Ok(Orientation::Staggered),
             "hexagonal" => Ok(Orientation::Hexagonal),
-            _ => Err(ParseTileError::OrientationError),
+            _ => Err(()),
         }
     }
 }

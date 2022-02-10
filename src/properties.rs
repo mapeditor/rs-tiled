@@ -74,32 +74,39 @@ impl PropertyValue {
         match property_type.as_str() {
             "bool" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::BoolValue(val)),
-                Err(err) => Err(TiledError::Other(err.to_string())),
+                Err(err) => Err(TiledError::InvalidPropertyValue {
+                    description: err.to_string(),
+                }),
             },
             "float" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::FloatValue(val)),
-                Err(err) => Err(TiledError::Other(err.to_string())),
+                Err(err) => Err(TiledError::InvalidPropertyValue {
+                    description: err.to_string(),
+                }),
             },
             "int" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::IntValue(val)),
-                Err(err) => Err(TiledError::Other(err.to_string())),
+                Err(err) => Err(TiledError::InvalidPropertyValue {
+                    description: err.to_string(),
+                }),
             },
             "color" if value.len() > 1 => match u32::from_str_radix(&value[1..], 16) {
                 Ok(color) => Ok(PropertyValue::ColorValue(color)),
-                Err(_) => Err(TiledError::Other(format!(
-                    "Improperly formatted color property"
-                ))),
+                Err(err) => Err(TiledError::InvalidPropertyValue {
+                    description: err.to_string(),
+                }),
             },
             "string" => Ok(PropertyValue::StringValue(value)),
             "object" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::ObjectValue(val)),
-                Err(err) => Err(TiledError::Other(err.to_string())),
+                Err(err) => Err(TiledError::InvalidPropertyValue {
+                    description: err.to_string(),
+                }),
             },
             "file" => Ok(PropertyValue::FileValue(value)),
-            _ => Err(TiledError::Other(format!(
-                "Unknown property type \"{}\"",
-                property_type
-            ))),
+            _ => Err(TiledError::UnknownPropertyType {
+                name: property_type,
+            }),
         }
     }
 }

@@ -1,13 +1,8 @@
 use std::{fmt, path::PathBuf};
 
-#[derive(Debug, Copy, Clone)]
-pub enum ParseTileError {
-    ColorError,
-    OrientationError,
-}
-
 /// Errors which occured when parsing the file
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum TiledError {
     /// A attribute was missing, had the wrong type of wasn't formated
     /// correctly.
@@ -31,7 +26,19 @@ pub enum TiledError {
     },
     /// There was an invalid tile in the map parsed.
     InvalidTileFound,
-    Other(String),
+    /// Unknown encoding or compression format or invalid combination of both (for tile layers)
+    InvalidEncodingFormat {
+        encoding: Option<String>,
+        compression: Option<String>,
+    },
+    /// There was an error parsing the value of a [`PropertyValue`].
+    /// 
+    /// [`PropertyValue`]: crate::PropertyValue
+    InvalidPropertyValue{description: String},
+    /// Found an unknown property value type while parsing a [`PropertyValue`].
+    /// 
+    /// [`PropertyValue`]: crate::PropertyValue
+    UnknownPropertyType{name: String},
 }
 
 impl fmt::Display for TiledError {
@@ -62,12 +69,26 @@ impl fmt::Display for TiledError {
                 )
             }
             TiledError::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
-            TiledError::Other(s) => write!(fmt, "{}", s),
+            TiledError::InvalidEncodingFormat { encoding: None, compression: None } => 
+                write!(
+                    fmt,
+                    "Deprecated combination of encoding and compression"
+                ),
+            TiledError::InvalidEncodingFormat { encoding, compression } => 
+                write!(
+                    fmt,
+                    "Unknown encoding or compression format or invalid combination of both (for tile layers): {} encoding with {} compression",
+                    encoding.as_deref().unwrap_or("no"),
+                    compression.as_deref().unwrap_or("no")
+                ),
+            TiledError::InvalidPropertyValue{description} =>
+                write!(fmt, "Invalid property value: {}", description),
+            TiledError::UnknownPropertyType { name } =>
+                write!(fmt, "Unknown property value type '{}'", name),
         }
     }
 }
 
-// This is a skeleton implementation, which should probably be extended in the future.
 impl std::error::Error for TiledError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
