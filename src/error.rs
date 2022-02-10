@@ -7,8 +7,9 @@ pub enum TiledError {
     /// A attribute was missing, had the wrong type of wasn't formated
     /// correctly.
     MalformedAttributes(String),
-    /// An error occured when using I/O functionality (e.g. decompression or file reading)
-    IoError(std::io::Error),
+    /// An error occured when decompressing using the
+    /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
+    DecompressingError(std::io::Error),
     Base64DecodingError(base64::DecodeError),
     XmlDecodingError(xml::reader::Error),
     PrematureEnd(String),
@@ -44,7 +45,7 @@ impl fmt::Display for TiledError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
             TiledError::MalformedAttributes(s) => write!(fmt, "{}", s),
-            TiledError::IoError(e) => write!(fmt, "{}", e),
+            TiledError::DecompressingError(e) => write!(fmt, "{}", e),
             TiledError::Base64DecodingError(e) => write!(fmt, "{}", e),
             TiledError::XmlDecodingError(e) => write!(fmt, "{}", e),
             TiledError::PrematureEnd(e) => write!(fmt, "{}", e),
@@ -85,7 +86,7 @@ impl fmt::Display for TiledError {
 impl std::error::Error for TiledError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            TiledError::IoError(e) => Some(e as &dyn std::error::Error),
+            TiledError::DecompressingError(e) => Some(e as &dyn std::error::Error),
             TiledError::Base64DecodingError(e) => Some(e as &dyn std::error::Error),
             TiledError::XmlDecodingError(e) => Some(e as &dyn std::error::Error),
             TiledError::CouldNotOpenFile { err, .. } => Some(err as &dyn std::error::Error),

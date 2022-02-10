@@ -90,7 +90,10 @@ impl Map {
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
-        let reader = File::open(path.as_ref()).map_err(|err| TiledError::IoError(err))?;
+        let reader = File::open(path.as_ref()).map_err(|err| TiledError::CouldNotOpenFile {
+            path: path.as_ref().to_owned(),
+            err,
+        })?;
         Self::parse_reader(reader, path.as_ref(), cache)
     }
 }
