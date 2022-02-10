@@ -15,6 +15,8 @@ tiled = "0.9.5"
 
 to the dependencies section of your Cargo.toml.
 
+The minimum supported TMX version is 0.13.
+
 ### Example
 
 ```rust
