@@ -1,4 +1,5 @@
 mod animation;
+mod cache;
 mod error;
 mod image;
 mod layers;
@@ -10,6 +11,7 @@ mod tileset;
 mod util;
 
 pub use animation::*;
+pub use cache::*;
 pub use error::*;
 pub use image::*;
 pub use layers::*;

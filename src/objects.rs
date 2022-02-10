@@ -1,73 +1,13 @@
-use std::{collections::HashMap, io::Read};
+use std::collections::HashMap;
 
-use xml::{attribute::OwnedAttribute, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::TiledError,
-    properties::{parse_properties, Color, Properties},
-    util::{get_attrs, parse_tag},
+    properties::{parse_properties, Properties},
+    util::{get_attrs, parse_tag, XmlEventResult},
+    LayerTile, LayerTileData, MapTilesetGid, MapWrapper,
 };
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct ObjectGroup {
-    pub name: String,
-    pub opacity: f32,
-    pub visible: bool,
-    pub objects: Vec<Object>,
-    pub colour: Option<Color>,
-    /**
-     * Layer index is not preset for tile collision boxes
-     */
-    pub layer_index: Option<u32>,
-    pub properties: Properties,
-    /// The ID of the layer, as shown in the editor.
-    /// Layer ID stays the same even if layers are reordered or modified in the editor.
-    pub id: u32,
-}
-
-impl ObjectGroup {
-    pub(crate) fn new<R: Read>(
-        parser: &mut EventReader<R>,
-        attrs: Vec<OwnedAttribute>,
-        layer_index: Option<u32>,
-    ) -> Result<ObjectGroup, TiledError> {
-        let ((o, v, c, n, id), ()) = get_attrs!(
-            attrs,
-            optionals: [
-                ("opacity", opacity, |v:String| v.parse().ok()),
-                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                ("color", colour, |v:String| v.parse().ok()),
-                ("name", name, |v:String| Some(v)),
-                ("id", id, |v:String| v.parse().ok()),
-            ],
-            required: [],
-            // this error should never happen since there are no required attrs
-            TiledError::MalformedAttributes("object group parsing error".to_string())
-        );
-        let mut objects = Vec::new();
-        let mut properties = HashMap::new();
-        parse_tag!(parser, "objectgroup", {
-            "object" => |attrs| {
-                objects.push(Object::new(parser, attrs)?);
-                Ok(())
-            },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
-                Ok(())
-            },
-        });
-        Ok(ObjectGroup {
-            name: n.unwrap_or(String::new()),
-            opacity: o.unwrap_or(1.0),
-            visible: v.unwrap_or(true),
-            objects: objects,
-            colour: c,
-            layer_index,
-            properties,
-            id: id.unwrap_or(0),
-        })
-    }
-}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectShape {
@@ -79,9 +19,9 @@ pub enum ObjectShape {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Object {
+pub struct ObjectData {
     pub id: u32,
-    pub gid: u32,
+    tile: Option<LayerTileData>,
     pub name: String,
     pub obj_type: String,
     pub width: f32,
@@ -94,12 +34,15 @@ pub struct Object {
     pub properties: Properties,
 }
 
-impl Object {
-    fn new<R: Read>(
-        parser: &mut EventReader<R>,
+impl ObjectData {
+    /// If it is known that the object has no tile images in it (i.e. collision data)
+    /// then we can pass in [`None`] as the tilesets
+    pub(crate) fn new(
+        parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-    ) -> Result<Object, TiledError> {
-        let ((id, gid, n, t, w, h, v, r), (x, y)) = get_attrs!(
+        tilesets: Option<&[MapTilesetGid]>,
+    ) -> Result<ObjectData, TiledError> {
+        let ((id, bits, n, t, w, h, v, r), (x, y)) = get_attrs!(
             attrs,
             optionals: [
                 ("id", id, |v:String| v.parse().ok()),
@@ -122,7 +65,7 @@ impl Object {
         let h = h.unwrap_or(0f32);
         let r = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
-        let gid = gid.unwrap_or(0u32);
+        let tile = bits.and_then(|bits| LayerTileData::from_bits(bits, tilesets?));
         let n = n.unwrap_or(String::new());
         let t = t.unwrap_or(String::new());
         let mut shape = None;
@@ -137,15 +80,15 @@ impl Object {
                 Ok(())
             },
             "polyline" => |attrs| {
-                shape = Some(Object::new_polyline(attrs)?);
+                shape = Some(ObjectData::new_polyline(attrs)?);
                 Ok(())
             },
             "polygon" => |attrs| {
-                shape = Some(Object::new_polygon(attrs)?);
+                shape = Some(ObjectData::new_polygon(attrs)?);
                 Ok(())
             },
             "point" => |_| {
-                shape = Some(Object::new_point(x, y)?);
+                shape = Some(ObjectData::new_point(x, y)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -159,22 +102,24 @@ impl Object {
             height: h,
         });
 
-        Ok(Object {
-            id: id,
-            gid: gid,
+        Ok(ObjectData {
+            id,
+            tile,
             name: n.clone(),
             obj_type: t.clone(),
             width: w,
             height: h,
-            x: x,
-            y: y,
+            x,
+            y,
             rotation: r,
             visible: v,
-            shape: shape,
-            properties: properties,
+            shape,
+            properties,
         })
     }
+}
 
+impl ObjectData {
     fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, TiledError> {
         let ((), s) = get_attrs!(
             attrs,
@@ -184,7 +129,7 @@ impl Object {
             ],
             TiledError::MalformedAttributes("A polyline must have points".to_string())
         );
-        let points = Object::parse_points(s)?;
+        let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polyline { points: points })
     }
 
@@ -197,7 +142,7 @@ impl Object {
             ],
             TiledError::MalformedAttributes("A polygon must have points".to_string())
         );
-        let points = Object::parse_points(s)?;
+        let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polygon { points: points })
     }
 
@@ -224,5 +169,16 @@ impl Object {
             points.push((x.unwrap(), y.unwrap()));
         }
         Ok(points)
+    }
+}
+
+pub type Object<'map> = MapWrapper<'map, ObjectData>;
+
+impl<'map> Object<'map> {
+    /// Returns the tile that the object is using as image, if any.
+    pub fn get_tile<'res: 'map>(&self) -> Option<LayerTile<'map>> {
+        self.data()
+            .tile
+            .map(|tile| LayerTile::from_data(&tile, self.map()))
     }
 }
