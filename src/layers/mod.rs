@@ -53,7 +53,6 @@ impl LayerData {
         map_path: &Path,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self, TiledError> {
-        println!("Attrs are {:?}", attrs);
         let (
             (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id),
             (),

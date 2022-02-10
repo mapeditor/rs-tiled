@@ -190,7 +190,6 @@ impl Map {
                 Ok(())
             },
             "layer" => |attrs| {
-                println!("Tile layer 1");
                 layers.push(LayerData::new(
                     parser,
                     attrs,
@@ -224,7 +223,6 @@ impl Map {
                 Ok(())
             },
             "group" => |attrs| {
-                println!("Group layer 1");
                 layers.push(LayerData::new(
                     parser,
                     attrs,
