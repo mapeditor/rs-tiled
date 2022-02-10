@@ -11,12 +11,6 @@ pub(crate) fn parse_data_line(
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding.as_deref(), compression.as_deref()) {
-        (None, None) => {
-            return Err(TiledError::InvalidEncodingFormat {
-                encoding,
-                compression,
-            })
-        }
         (Some("base64"), None) => {
             return parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets))
         }

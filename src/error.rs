@@ -34,7 +34,7 @@ pub enum TiledError {
     /// There was an error parsing the value of a [`PropertyValue`].
     /// 
     /// [`PropertyValue`]: crate::PropertyValue
-    InvalidPropertyValue,
+    InvalidPropertyValue{description: String},
     /// Found an unknown property value type while parsing a [`PropertyValue`].
     /// 
     /// [`PropertyValue`]: crate::PropertyValue
@@ -69,6 +69,11 @@ impl fmt::Display for TiledError {
                 )
             }
             TiledError::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
+            TiledError::InvalidEncodingFormat { encoding: None, compression: None } => 
+                write!(
+                    fmt,
+                    "Deprecated combination of encoding and compression"
+                ),
             TiledError::InvalidEncodingFormat { encoding, compression } => 
                 write!(
                     fmt,
@@ -76,9 +81,10 @@ impl fmt::Display for TiledError {
                     encoding.as_deref().unwrap_or("no"),
                     compression.as_deref().unwrap_or("no")
                 ),
-            TiledError::InvalidPropertyValue => write!(fmt, "Found invalid property value"),
+            TiledError::InvalidPropertyValue{description} =>
+                write!(fmt, "Invalid property value: {}", description),
             TiledError::UnknownPropertyType { name } =>
-                write!(fmt, "Found unknown property value type '{}'", name),
+                write!(fmt, "Unknown property value type '{}'", name),
         }
     }
 }
