@@ -16,7 +16,6 @@ pub struct GroupLayerData {
 }
 
 impl GroupLayerData {
-
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         infinite: bool,

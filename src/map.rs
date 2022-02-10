@@ -141,34 +141,6 @@ impl<'map> ExactSizeIterator for MapLayerIter<'map> {
     }
 }
 
-/// An iterator that iterates over all the layers in a map, obtained via [`Map::layers`].
-pub struct LayerIter<'map> {
-    map: &'map Map,
-    index: usize,
-}
-
-impl<'map> LayerIter<'map> {
-    fn new(map: &'map Map) -> Self {
-        Self { map, index: 0 }
-    }
-}
-
-impl<'map> Iterator for LayerIter<'map> {
-    type Item = Layer<'map>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let layer_data = self.map.layers.get(self.index)?;
-        self.index += 1;
-        Some(Layer::new(self.map, layer_data))
-    }
-}
-
-impl<'map> ExactSizeIterator for LayerIter<'map> {
-    fn len(&self) -> usize {
-        self.map.layers.len() - self.index
-    }
-}
-
 impl Map {
     fn parse_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
