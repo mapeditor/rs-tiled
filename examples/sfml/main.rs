@@ -13,7 +13,7 @@ use sfml::{
     window::{ContextSettings, Key, Style},
 };
 use std::{env, path::PathBuf, time::Duration};
-use tiled::{LayerData, LayerTile, Map};
+use tiled::{FilesystemResourceCache, Map, TileLayer};
 use tilesheet::Tilesheet;
 
 /// A path to the map to display.
@@ -36,17 +36,16 @@ impl Level {
     /// Create a new level from a Tiled map.
     pub fn from_map(map: Map) -> Self {
         let tilesheet = {
-            let tileset = map.tilesets[0].clone();
+            let tileset = map.tilesets()[0].clone();
             Tilesheet::from_tileset(tileset)
         };
         let tile_size = map.tile_width as f32;
 
         let layers = map
-            .layers
-            .iter()
-            .map(|layer| match &layer.tiles {
-                LayerData::Finite(x) => generate_mesh(&x, &tilesheet, layer.width as usize),
-                _ => panic!("Infinite maps not supported"),
+            .layers()
+            .filter_map(|layer| match &layer.layer_type() {
+                tiled::LayerType::TileLayer(l) => Some(generate_mesh(l, &tilesheet)),
+                _ => None,
             })
             .collect();
 
@@ -59,14 +58,18 @@ impl Level {
 }
 
 /// Generates a vertex mesh from a tile layer for rendering.
-fn generate_mesh(tiles: &[LayerTile], tilesheet: &Tilesheet, width: usize) -> QuadMesh {
-    let height = tiles.len() / width;
+fn generate_mesh(layer: &TileLayer, tilesheet: &Tilesheet) -> QuadMesh {
+    let finite = match layer.data() {
+        tiled::TileLayerData::Finite(f) => f,
+        tiled::TileLayerData::Infinite(_) => panic!("Infinite maps not supported"),
+    };
+    let (width, height) = (finite.width() as usize, finite.height() as usize);
     let mut mesh = QuadMesh::with_capacity(width * height);
     for x in 0..width {
         for y in 0..height {
-            let tile = tiles[x + y * width];
-            if tile.gid != 0 {
-                let uv = tilesheet.tile_rect(tile.gid);
+            // TODO: `FiniteTileLayer` for getting tiles directly from finite tile layers?
+            if let Some(tile) = layer.get_tile(x, y) {
+                let uv = tilesheet.tile_rect(tile.id);
                 mesh.add_quad(Vector2f::new(x as f32, y as f32), 1., uv);
             }
         }
@@ -90,12 +93,15 @@ impl Drawable for Level {
 }
 
 fn main() {
+    let mut cache = FilesystemResourceCache::new();
+
     let map = Map::parse_file(
         PathBuf::from(
             env::var("CARGO_MANIFEST_DIR")
                 .expect("To run the example, use `cargo run --example sfml`"),
         )
         .join(MAP_PATH),
+        &mut cache,
     )
     .unwrap();
     let level = Level::from_map(map);

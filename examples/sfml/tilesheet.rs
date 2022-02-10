@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use sfml::{
     graphics::{FloatRect, Texture},
     SfBox,
@@ -7,12 +9,12 @@ use tiled::Tileset;
 /// A container for a tileset and the texture it references.
 pub struct Tilesheet {
     texture: SfBox<Texture>,
-    tileset: Tileset,
+    tileset: Rc<Tileset>,
 }
 
 impl Tilesheet {
     /// Create a tilesheet from a Tiled tileset, loading its texture along the way.
-    pub fn from_tileset<'p>(tileset: Tileset) -> Self {
+    pub fn from_tileset<'p>(tileset: Rc<Tileset>) -> Self {
         let tileset_image = tileset.image.as_ref().unwrap();
 
         let texture = {
@@ -30,9 +32,7 @@ impl Tilesheet {
         &self.texture
     }
 
-    pub fn tile_rect(&self, gid: u32) -> FloatRect {
-        let id = gid - self.tileset.first_gid;
-
+    pub fn tile_rect(&self, id: u32) -> FloatRect {
         let tile_width = self.tileset.tile_width;
         let tile_height = self.tileset.tile_height;
         let spacing = self.tileset.spacing;
