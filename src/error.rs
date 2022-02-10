@@ -1,11 +1,5 @@
 use std::{fmt, path::PathBuf};
 
-#[derive(Debug, Copy, Clone)]
-pub enum ParseTileError {
-    ColorError,
-    OrientationError,
-}
-
 /// Errors which occured when parsing the file
 #[derive(Debug)]
 #[non_exhaustive]

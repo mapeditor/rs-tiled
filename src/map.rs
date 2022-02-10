@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, rc::Rc, str
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
-    error::{ParseTileError, TiledError},
+    error::TiledError,
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
@@ -256,15 +256,15 @@ pub enum Orientation {
 }
 
 impl FromStr for Orientation {
-    type Err = ParseTileError;
+    type Err = ();
 
-    fn from_str(s: &str) -> Result<Orientation, ParseTileError> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
             "isometric" => Ok(Orientation::Isometric),
             "staggered" => Ok(Orientation::Staggered),
             "hexagonal" => Ok(Orientation::Hexagonal),
-            _ => Err(ParseTileError::OrientationError),
+            _ => Err(()),
         }
     }
 }
