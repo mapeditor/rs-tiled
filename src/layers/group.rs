@@ -22,7 +22,7 @@ impl GroupLayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
-    ) -> Result<(GroupLayerData, Properties), TiledError> {
+    ) -> Result<(Self, Properties), TiledError> {
         let mut properties = HashMap::new();
         let mut layers = Vec::new();
         parse_tag!(parser, "group", {
@@ -76,7 +76,7 @@ impl GroupLayerData {
             },
         });
         Ok((
-            GroupLayerData { layers },
+            Self { layers },
             properties,
         ))
     }
