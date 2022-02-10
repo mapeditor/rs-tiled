@@ -30,11 +30,9 @@ fn main() {
                     println!("Infinite tile layer with {} chunks", data.chunks.len())
                 }
             },
-
             tiled::LayerType::ObjectLayer(layer) => {
                 println!("Object layer with {} objects", layer.data().objects.len())
             },
-
             tiled::LayerType::ImageLayer(layer) => {
                 println!(
                     "Image layer with {}",
@@ -45,7 +43,6 @@ fn main() {
                     }
                 )
             },
-
             tiled::LayerType::GroupLayer(layer) => {
                 println!(
                     "Group layer with {} sublayers",

@@ -321,6 +321,7 @@ fn test_object_property() {
     assert_eq!(3, prop_value);
 }
 
+#[test]
 fn test_tint_color() {
     let mut cache = FilesystemResourceCache::new();
 

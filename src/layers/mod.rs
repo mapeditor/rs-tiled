@@ -26,7 +26,7 @@ pub(crate) enum LayerTag {
     TileLayer,
     ObjectLayer,
     ImageLayer,
-    GroupLayer
+    GroupLayer,
 }
 
 #[derive(Clone, PartialEq, Debug)]
