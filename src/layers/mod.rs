@@ -10,13 +10,15 @@ mod object;
 pub use object::*;
 mod tile;
 pub use tile::*;
+mod group;
+pub use group::*;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayerDataType {
     TileLayer(TileLayerData),
     ObjectLayer(ObjectLayerData),
     ImageLayer(ImageLayerData),
-    // TODO: Support group layers
+    GroupLayer(GroupLayerData),
 }
 
 #[derive(Clone, Copy)]
@@ -24,6 +26,7 @@ pub(crate) enum LayerTag {
     TileLayer,
     ObjectLayer,
     ImageLayer,
+    GroupLayer,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -85,6 +88,10 @@ impl LayerData {
                 let (ty, properties) = ImageLayerData::new(parser, map_path)?;
                 (LayerDataType::ImageLayer(ty), properties)
             }
+            LayerTag::GroupLayer => {
+                let (ty, properties) = GroupLayerData::new(parser, infinite, map_path, tilesets)?;
+                (LayerDataType::GroupLayer(ty), properties)
+            }
         };
 
         Ok(Self {
@@ -116,7 +123,7 @@ pub enum LayerType<'map> {
     TileLayer(TileLayer<'map>),
     ObjectLayer(ObjectLayer<'map>),
     ImageLayer(ImageLayer<'map>),
-    // TODO: Support group layers
+    GroupLayer(GroupLayer<'map>),
 }
 
 impl<'map> LayerType<'map> {
@@ -125,6 +132,7 @@ impl<'map> LayerType<'map> {
             LayerDataType::TileLayer(data) => Self::TileLayer(TileLayer::new(map, data)),
             LayerDataType::ObjectLayer(data) => Self::ObjectLayer(ObjectLayer::new(map, data)),
             LayerDataType::ImageLayer(data) => Self::ImageLayer(ImageLayer::new(map, data)),
+            LayerDataType::GroupLayer(data) => Self::GroupLayer(GroupLayer::new(map, data)),
         }
     }
 }

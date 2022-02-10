@@ -103,8 +103,8 @@ impl Map {
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
-    pub fn layers(&self) -> LayerIter {
-        LayerIter::new(self)
+    pub fn layers(&self) -> MapLayerIter {
+        MapLayerIter::new(self)
     }
 
     /// Returns the layer that has the specified index, if it exists.
@@ -114,18 +114,18 @@ impl Map {
 }
 
 /// An iterator that iterates over all the layers in a map, obtained via [`Map::layers`].
-pub struct LayerIter<'map> {
+pub struct MapLayerIter<'map> {
     map: &'map Map,
     index: usize,
 }
 
-impl<'map> LayerIter<'map> {
+impl<'map> MapLayerIter<'map> {
     fn new(map: &'map Map) -> Self {
         Self { map, index: 0 }
     }
 }
 
-impl<'map> Iterator for LayerIter<'map> {
+impl<'map> Iterator for MapLayerIter<'map> {
     type Item = Layer<'map>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -135,7 +135,7 @@ impl<'map> Iterator for LayerIter<'map> {
     }
 }
 
-impl<'map> ExactSizeIterator for LayerIter<'map> {
+impl<'map> ExactSizeIterator for MapLayerIter<'map> {
     fn len(&self) -> usize {
         self.map.layers.len() - self.index
     }
@@ -216,6 +216,17 @@ impl Map {
                     parser,
                     attrs,
                     LayerTag::ObjectLayer,
+                    infinite,
+                    map_path,
+                    &tilesets,
+                )?);
+                Ok(())
+            },
+            "group" => |attrs| {
+                layers.push(LayerData::new(
+                    parser,
+                    attrs,
+                    LayerTag::GroupLayer,
                     infinite,
                     map_path,
                     &tilesets,

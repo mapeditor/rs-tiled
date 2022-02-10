@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
     Color, FilesystemResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, Map,
-    ObjectLayer, PropertyValue, ResourceCache, TileLayer, TileLayerData,
+    ObjectLayer, PropertyValue, ResourceCache, TileLayer, TileLayerData, GroupLayer,
 };
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
@@ -22,6 +22,13 @@ fn as_object_layer<'map>(layer: Layer<'map>) -> ObjectLayer<'map> {
     match layer.layer_type() {
         LayerType::ObjectLayer(x) => x,
         _ => panic!("Not an object layer"),
+    }
+}
+
+fn as_group_layer<'map>(layer: Layer<'map>) -> GroupLayer<'map> {
+    match layer.layer_type() {
+        LayerType::GroupLayer(x) => x,
+        _ => panic!("Not a group layer"),
     }
 }
 
@@ -196,10 +203,10 @@ fn test_object_group_property() {
     let mut cache = FilesystemResourceCache::new();
 
     let r = Map::parse_file("assets/tiled_object_groups.tmx", &mut cache).unwrap();
-    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) = r
-        .layers()
-        .nth(1)
-        .unwrap()
+    let group_layer = r.get_layer(1).unwrap();
+    let group_layer = as_group_layer(group_layer);
+    let sub_layer = group_layer.get_layer(0).unwrap();
+    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) = sub_layer
         .data()
         .properties
         .get("an object group property")
@@ -336,5 +343,52 @@ fn test_tint_color() {
             green: 0x34,
             blue: 0x56
         })
+    );
+}
+
+#[test]
+fn test_group_layers() {
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_group_layers.tmx", &mut cache).unwrap();
+
+    // Depth = 0
+    let layer_tile_1 = r.get_layer(0).unwrap();
+    let layer_group_1 = r.get_layer(1).unwrap();
+    let layer_group_2 = r.get_layer(2).unwrap();
+
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value1".to_string())),
+        layer_tile_1.data().properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value4".to_string())),
+        layer_group_1.data().properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value5".to_string())),
+        layer_group_2.data().properties.get("key")
+    );
+
+    // Depth = 1
+    let layer_group_1 = as_group_layer(layer_group_1);
+    let layer_tile_2 = layer_group_1.get_layer(0).unwrap();
+    let layer_group_2 = as_group_layer(layer_group_2);
+    let layer_group_3 = layer_group_2.get_layer(0).unwrap();
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value2".to_string())),
+        layer_tile_2.data().properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value6".to_string())),
+        layer_group_3.data().properties.get("key")
+    );
+
+    // Depth = 2
+    let layer_group_3 = as_group_layer(layer_group_3);
+    let layer_tile_3 = layer_group_3.get_layer(0).unwrap();
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value3".to_string())),
+        layer_tile_3.data().properties.get("key")
     );
 }
