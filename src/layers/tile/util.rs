@@ -11,47 +11,25 @@ pub(crate) fn parse_data_line(
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding.as_deref(), compression.as_deref()) {
-        (Some("base64"), None) => {
-            return parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets))
-        }
-        (Some("csv"), None) => return decode_csv(parser, tilesets),
-        (Some(_), None) => {
-            return Err(TiledError::InvalidEncodingFormat {
-                encoding,
-                compression,
-            })
-        }
-        (Some(e), Some(c)) => match (e, c) {
-            ("base64", "zlib") => {
-                return parse_base64(parser)
-                    .and_then(decode_zlib)
-                    .map(|v| convert_to_tiles(&v, tilesets))
-            }
-            ("base64", "gzip") => {
-                return parse_base64(parser)
-                    .and_then(decode_gzip)
-                    .map(|v| convert_to_tiles(&v, tilesets))
-            }
-            #[cfg(feature = "zstd")]
-            ("base64", "zstd") => {
-                return parse_base64(parser)
-                    .and_then(decode_zstd)
-                    .map(|v| convert_to_tiles(&v, tilesets))
-            }
-            _ => {
-                return Err(TiledError::InvalidEncodingFormat {
-                    encoding,
-                    compression,
-                })
-            }
-        },
-        _ => {
-            return Err(TiledError::InvalidEncodingFormat {
-                encoding,
-                compression,
-            })
-        }
-    };
+        (Some("csv"), None) => decode_csv(parser, tilesets),
+
+        (Some("base64"), None) => parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets)),
+        (Some("base64"), Some("zlib")) => parse_base64(parser)
+            .and_then(decode_zlib)
+            .map(|v| convert_to_tiles(&v, tilesets)),
+        (Some("base64"), Some("gzip")) => parse_base64(parser)
+            .and_then(decode_gzip)
+            .map(|v| convert_to_tiles(&v, tilesets)),
+        #[cfg(feature = "zstd")]
+        (Some("base64"), Some("zstd")) => parse_base64(parser)
+            .and_then(decode_zstd)
+            .map(|v| convert_to_tiles(&v, tilesets)),
+
+        _ => Err(TiledError::InvalidEncodingFormat {
+            encoding,
+            compression,
+        }),
+    }
 }
 
 fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<u8>, TiledError> {
