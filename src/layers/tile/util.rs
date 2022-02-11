@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::{convert::TryInto, io::Read};
 
 use xml::reader::XmlEvent;
 
@@ -87,13 +87,10 @@ fn decode_csv(
     Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
-fn convert_to_tiles(all: &Vec<u8>, tilesets: &[MapTilesetGid]) -> Vec<Option<LayerTileData>> {
-    all.chunks_exact(4)
+fn convert_to_tiles(data: &[u8], tilesets: &[MapTilesetGid]) -> Vec<Option<LayerTileData>> {
+    data.chunks_exact(4)
         .map(|chunk| {
-            let bits = chunk[0] as u32
-                + ((chunk[1] as u32) << 8)
-                + ((chunk[2] as u32) << 16)
-                + ((chunk[3] as u32) << 24);
+            let bits = u32::from_le_bytes(chunk.try_into().unwrap());
             LayerTileData::from_bits(bits, tilesets)
         })
         .collect()
