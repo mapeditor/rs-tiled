@@ -6,7 +6,7 @@ use sfml::{
 pub struct QuadMesh(Vec<Vertex>);
 
 impl QuadMesh {
-    /// Create a new mesh with capacity for the given amount of vertices.
+    /// Create a new mesh with capacity for the given amount of quads.
     pub fn with_capacity(quads: usize) -> Self {
         Self(Vec::with_capacity(quads * 4))
     }
