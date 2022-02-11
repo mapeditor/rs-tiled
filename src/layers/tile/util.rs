@@ -1,4 +1,4 @@
-use std::io::{BufReader, Read};
+use std::io::Read;
 
 use xml::reader::XmlEvent;
 
@@ -15,14 +15,17 @@ pub(crate) fn parse_data_line(
 
         (Some("base64"), None) => parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets)),
         (Some("base64"), Some("zlib")) => parse_base64(parser)
-            .and_then(decode_zlib)
+            .map(|data| std::io::Cursor::new(data))
+            .and_then(|reader| process_decoder(libflate::zlib::Decoder::new(reader)))
             .map(|v| convert_to_tiles(&v, tilesets)),
         (Some("base64"), Some("gzip")) => parse_base64(parser)
-            .and_then(decode_gzip)
+            .map(|data| std::io::Cursor::new(data))
+            .and_then(|reader| process_decoder(libflate::gzip::Decoder::new(reader)))
             .map(|v| convert_to_tiles(&v, tilesets)),
         #[cfg(feature = "zstd")]
         (Some("base64"), Some("zstd")) => parse_base64(parser)
-            .and_then(decode_zstd)
+            .map(|data| std::io::Cursor::new(data))
+            .and_then(|reader| process_decoder(zstd::stream::read::Decoder::with_buffer(reader)))
             .map(|v| convert_to_tiles(&v, tilesets)),
 
         _ => Err(TiledError::InvalidEncodingFormat {
@@ -49,40 +52,14 @@ fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec
     Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
-fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    use libflate::zlib::Decoder;
-    let mut zd =
-        Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::DecompressingError(e))?;
-    let mut data = Vec::new();
-    match zd.read_to_end(&mut data) {
-        Ok(_v) => {}
-        Err(e) => return Err(TiledError::DecompressingError(e)),
-    }
-    Ok(data)
-}
-
-fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    use libflate::gzip::Decoder;
-    let mut zd =
-        Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::DecompressingError(e))?;
-
-    let mut data = Vec::new();
-    zd.read_to_end(&mut data)
-        .map_err(|e| TiledError::DecompressingError(e))?;
-    Ok(data)
-}
-
-fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    use std::io::Cursor;
-    use zstd::stream::read::Decoder;
-
-    let buff = Cursor::new(&data);
-    let mut zd = Decoder::with_buffer(buff).map_err(|e| TiledError::DecompressingError(e))?;
-
-    let mut data = Vec::new();
-    zd.read_to_end(&mut data)
-        .map_err(|e| TiledError::DecompressingError(e))?;
-    Ok(data)
+fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>, TiledError> {
+    decoder
+        .and_then(|mut decoder| {
+            let mut data = Vec::new();
+            decoder.read_to_end(&mut data)?;
+            Ok(data)
+        })
+        .map_err(|e| TiledError::DecompressingError(e))
 }
 
 fn decode_csv(
@@ -111,13 +88,13 @@ fn decode_csv(
 }
 
 fn convert_to_tiles(all: &Vec<u8>, tilesets: &[MapTilesetGid]) -> Vec<Option<LayerTileData>> {
-    let mut data = Vec::new();
-    for chunk in all.chunks_exact(4) {
-        let n = chunk[0] as u32
-            + ((chunk[1] as u32) << 8)
-            + ((chunk[2] as u32) << 16)
-            + ((chunk[3] as u32) << 24);
-        data.push(LayerTileData::from_bits(n, tilesets));
-    }
-    data
+    all.chunks_exact(4)
+        .map(|chunk| {
+            let bits = chunk[0] as u32
+                + ((chunk[1] as u32) << 8)
+                + ((chunk[2] as u32) << 16)
+                + ((chunk[3] as u32) << 24);
+            LayerTileData::from_bits(bits, tilesets)
+        })
+        .collect()
 }
