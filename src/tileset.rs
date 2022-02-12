@@ -133,17 +133,17 @@ impl Tileset {
         attrs: &Vec<OwnedAttribute>,
         path_relative_to: Option<&Path>,
     ) -> Result<EmbeddedParseResult, TiledError> {
-        let ((spacing, margin, columns), (tilecount, first_gid, name, tile_width, tile_height)) = get_attrs!(
+        let ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height)) = get_attrs!(
            attrs,
            optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
                 ("columns", columns, |v:String| v.parse().ok()),
+                ("name", name, |v| Some(v)),
             ],
            required: [
                 ("tilecount", tilecount, |v:String| v.parse().ok()),
                 ("firstgid", first_gid, |v:String| v.parse().ok().map(|n| Gid(n))),
-                ("name", name, |v| Some(v)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
             ],
@@ -155,7 +155,7 @@ impl Tileset {
             TilesetProperties {
                 spacing,
                 margin,
-                name,
+                name: name.unwrap_or_default(),
                 path_relative_to: path_relative_to.map(Path::to_owned),
                 columns,
                 tilecount,
@@ -201,16 +201,16 @@ impl Tileset {
         attrs: &Vec<OwnedAttribute>,
         path: Option<&Path>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, columns), (tilecount, name, tile_width, tile_height)) = get_attrs!(
+        let ((spacing, margin, columns, name), (tilecount, tile_width, tile_height)) = get_attrs!(
             attrs,
             optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
                 ("columns", columns, |v:String| v.parse().ok()),
+                ("name", name, |v| Some(v)),
             ],
             required: [
                 ("tilecount", tilecount, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
             ],
@@ -224,7 +224,7 @@ impl Tileset {
             TilesetProperties {
                 spacing,
                 margin,
-                name,
+                name: name.unwrap_or_default(),
                 path_relative_to: source_path,
                 columns,
                 tilecount,
