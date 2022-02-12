@@ -91,7 +91,7 @@ impl Chunk {
     pub const WIDTH: u32 = 16;
     pub const HEIGHT: u32 = 16;
 
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             tiles: vec![None; Self::WIDTH as usize * Self::HEIGHT as usize],
         }
