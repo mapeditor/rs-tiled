@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, rc::Rc, str::FromStr};
+use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, sync::Arc, str::FromStr};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
@@ -13,7 +13,7 @@ use crate::{
 
 pub(crate) struct MapTilesetGid {
     pub first_gid: Gid,
-    pub tileset: Rc<Tileset>,
+    pub tileset: Arc<Tileset>,
 }
 
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
@@ -31,7 +31,7 @@ pub struct Map {
     /// Tile height, in pixels.
     pub tile_height: u32,
     /// The tilesets present on this map.
-    tilesets: Vec<Rc<Tileset>>,
+    tilesets: Vec<Arc<Tileset>>,
     /// The layers present in this map.
     layers: Vec<LayerData>,
     /// The custom properties of this map.
@@ -100,7 +100,7 @@ impl Map {
 
 impl Map {
     /// Get a reference to the map's tilesets.
-    pub fn tilesets(&self) -> &[Rc<Tileset>] {
+    pub fn tilesets(&self) -> &[Arc<Tileset>] {
         self.tilesets.as_ref()
     }
 
@@ -186,7 +186,7 @@ impl Map {
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
-                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: Rc::new(tileset)});
+                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: Arc::new(tileset)});
                     },
                 };
                 Ok(())
