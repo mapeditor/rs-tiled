@@ -2,7 +2,9 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::TiledError, properties::Properties, util::*, Map, MapTilesetGid, MapWrapper, Color};
+use crate::{
+    error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid, MapWrapper,
+};
 
 mod image;
 pub use image::*;
@@ -14,7 +16,7 @@ mod group;
 pub use group::*;
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum LayerDataType {
+pub(crate) enum LayerDataType {
     TileLayer(TileLayerData),
     ObjectLayer(ObjectLayerData),
     ImageLayer(ImageLayerData),
@@ -41,7 +43,7 @@ pub struct LayerData {
     pub opacity: f32,
     pub tint_color: Option<Color>,
     pub properties: Properties,
-    pub layer_type: LayerDataType,
+    pub(crate) layer_type: LayerDataType,
 }
 
 impl LayerData {

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
-    Color, FilesystemResourceCache, FiniteTileLayerData, Layer, LayerDataType, LayerType, Map,
-    ObjectLayer, PropertyValue, ResourceCache, TileLayer, TileLayerData, GroupLayer,
+    Color, FilesystemResourceCache, FiniteTileLayer, GroupLayer, Layer, LayerType, Map,
+    ObjectLayer, PropertyValue, ResourceCache, TileLayer,
 };
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
@@ -11,10 +11,10 @@ fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
     }
 }
 
-fn as_finite(data: &TileLayerData) -> &FiniteTileLayerData {
+fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
     match data {
-        TileLayerData::Finite(data) => data,
-        TileLayerData::Infinite(_) => panic!("Not a finite tile layer"),
+        TileLayer::Finite(data) => data,
+        TileLayer::Infinite(_) => panic!("Not a finite tile layer"),
     }
 }
 
@@ -60,9 +60,9 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     compare_everything_but_tileset_sources(&z, &c);
     compare_everything_but_tileset_sources(&z, &zstd);
 
-    let layer = as_tile_layer(c.get_layer(0).unwrap());
+    let layer = as_finite(as_tile_layer(c.get_layer(0).unwrap()));
     {
-        let data = as_finite(layer.data());
+        let data = layer.data();
         assert_eq!(data.width(), 100);
         assert_eq!(data.height(), 100);
     }
@@ -115,15 +115,10 @@ fn test_infinite_tileset() {
 
     let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx", &mut cache).unwrap();
 
-    if let TileLayerData::Infinite(inf) = &as_tile_layer(r.get_layer(0).unwrap()).data() {
-        let chunks = &inf.chunks;
-        assert_eq!(chunks.len(), 4);
-
-        assert_eq!(chunks[&(0, 0)].width, 32);
-        assert_eq!(chunks[&(0, 0)].height, 32);
-        assert_eq!(chunks[&(-32, 0)].width, 32);
-        assert_eq!(chunks[&(0, 32)].height, 32);
-        assert_eq!(chunks[&(-32, 32)].height, 32);
+    if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(0).unwrap()) {
+        assert_eq!(inf.get_tile(2, 10).unwrap().id, 5);
+        assert_eq!(inf.get_tile(5, 36).unwrap().id, 73);
+        assert_eq!(inf.get_tile(15, 15).unwrap().id, 22);
     } else {
         assert!(false, "It is wrongly recognised as a finite map");
     }
@@ -135,9 +130,9 @@ fn test_image_layers() {
 
     let r = Map::parse_file("assets/tiled_image_layers.tmx", &mut cache).unwrap();
     assert_eq!(r.layers().len(), 2);
-    let mut image_layers = r.layers().map(|layer| layer.data()).map(|layer| {
-        if let LayerDataType::ImageLayer(img) = &layer.layer_type {
-            (img, layer)
+    let mut image_layers = r.layers().map(|layer| {
+        if let LayerType::ImageLayer(img) = &layer.layer_type() {
+            (img.data(), layer.data())
         } else {
             panic!("Found layer that isn't an image layer")
         }
@@ -206,10 +201,8 @@ fn test_object_group_property() {
     let group_layer = r.get_layer(1).unwrap();
     let group_layer = as_group_layer(group_layer);
     let sub_layer = group_layer.get_layer(0).unwrap();
-    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) = sub_layer
-        .data()
-        .properties
-        .get("an object group property")
+    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) =
+        sub_layer.data().properties.get("an object group property")
     {
         *v
     } else {
@@ -265,9 +258,9 @@ fn test_ldk_export() {
     let mut cache = FilesystemResourceCache::new();
 
     let r = Map::parse_file("assets/ldk_tiled_export.tmx", &mut cache).unwrap();
-    let layer = as_tile_layer(r.get_layer(0).unwrap());
+    let layer = as_finite(as_tile_layer(r.get_layer(0).unwrap()));
     {
-        let data = as_finite(layer.data());
+        let data = layer.data();
         assert_eq!(data.width(), 8);
         assert_eq!(data.height(), 8);
     }
