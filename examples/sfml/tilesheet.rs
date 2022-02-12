@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use sfml::{
     graphics::{FloatRect, Texture},
@@ -9,12 +9,12 @@ use tiled::Tileset;
 /// A container for a tileset and the texture it references.
 pub struct Tilesheet {
     texture: SfBox<Texture>,
-    tileset: Rc<Tileset>,
+    tileset: Arc<Tileset>,
 }
 
 impl Tilesheet {
     /// Create a tilesheet from a Tiled tileset, loading its texture along the way.
-    pub fn from_tileset<'p>(tileset: Rc<Tileset>) -> Self {
+    pub fn from_tileset<'p>(tileset: Arc<Tileset>) -> Self {
         let tileset_image = tileset.image.as_ref().unwrap();
 
         let texture = {
