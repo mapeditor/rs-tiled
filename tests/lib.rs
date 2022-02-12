@@ -115,10 +115,33 @@ fn test_infinite_tileset() {
 
     let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx", &mut cache).unwrap();
 
-    if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(0).unwrap()) {
+    if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(1).unwrap()) {
         assert_eq!(inf.get_tile(2, 10).unwrap().id, 5);
         assert_eq!(inf.get_tile(5, 36).unwrap().id, 73);
         assert_eq!(inf.get_tile(15, 15).unwrap().id, 22);
+    } else {
+        assert!(false, "It is wrongly recognised as a finite map");
+    }
+    if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(0).unwrap()) {
+        // NW corner
+        assert_eq!(inf.get_tile(-16, 0).unwrap().id, 17);
+        assert!(inf.get_tile(-17, 0).is_none());
+        assert!(inf.get_tile(-16, -1).is_none());
+
+        // SW corner
+        assert_eq!(inf.get_tile(-16, 47).unwrap().id, 17);
+        assert!(inf.get_tile(-17, 47).is_none());
+        assert!(inf.get_tile(-16, 48).is_none());
+
+        // NE corner
+        assert_eq!(inf.get_tile(31, 0).unwrap().id, 17);
+        assert!(inf.get_tile(31, -1).is_none());
+        assert!(inf.get_tile(32, 0).is_none());
+
+        // SE corner
+        assert_eq!(inf.get_tile(31, 47).unwrap().id, 17);
+        assert!(inf.get_tile(32, 47).is_none());
+        assert!(inf.get_tile(31, 48).is_none());
     } else {
         assert!(false, "It is wrongly recognised as a finite map");
     }
