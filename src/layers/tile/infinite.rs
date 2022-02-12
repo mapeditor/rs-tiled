@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    util::{get_attrs, parse_tag, XmlEventResult},
+    util::{floor_div, get_attrs, parse_tag, XmlEventResult},
     LayerTile, LayerTileData, MapTilesetGid, MapWrapper, TiledError,
 };
 
@@ -42,7 +42,7 @@ impl InfiniteTileLayerData {
                 let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets)?;
                 let first_pos = chunk.first_tile_pos;
                 for x in first_pos.0..first_pos.0 + chunk.width as i32 {
-                    for y in first_pos.1..first_pos.1 + chunk.height as i32{
+                    for y in first_pos.1..first_pos.1 + chunk.height as i32 {
                         let chunk_pos = tile_to_chunk_pos(x, y);
                         let relative_pos = (x - chunk_pos.0 * Chunk::WIDTH as i32, y - chunk_pos.1 * Chunk::HEIGHT as i32);
                         let chunk_index = (relative_pos.0 + relative_pos.1 * Chunk::WIDTH as i32) as usize;
@@ -72,17 +72,6 @@ impl InfiniteTileLayerData {
                 chunk.tiles.get(chunk_index).map(Option::as_ref)
             })
             .flatten()
-    }
-}
-
-fn floor_div(a: i32, b: i32) -> i32 {
-    let d = a / b;
-    let r = a % b;
-
-    if r == 0 {
-        d
-    } else {
-        d - ((a < 0) ^ (b < 0)) as i32
     }
 }
 
@@ -134,7 +123,7 @@ impl InternalChunk {
                 ("width", width, |v: String| v.parse().ok()),
                 ("height", height, |v: String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("layer must have a name".to_string())
+            TiledError::MalformedAttributes("chunk must have x, y, width & height attributes".to_string())
         );
 
         let tiles = parse_data_line(encoding, compression, parser, tilesets)?;

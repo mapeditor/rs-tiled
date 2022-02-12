@@ -84,3 +84,14 @@ pub(crate) fn get_tileset_for_gid(
         .rev()
         .find(|(_idx, ts)| ts.first_gid <= gid)
 }
+
+pub fn floor_div(a: i32, b: i32) -> i32 {
+    let d = a / b;
+    let r = a % b;
+
+    if r == 0 {
+        d
+    } else {
+        d - ((a < 0) ^ (b < 0)) as i32
+    }
+}
