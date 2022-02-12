@@ -255,7 +255,7 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                let (id, tile) = Tile::new(parser, attrs, Some(&prop.root_path))?;
+                let (id, tile) = Tile::new(parser, attrs, &prop.root_path)?;
                 tiles.insert(id, tile);
                 Ok(())
             },
