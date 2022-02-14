@@ -83,7 +83,7 @@ fn tile_to_chunk_pos(x: i32, y: i32) -> (i32, i32) {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Chunk {
-    tiles: [Option<LayerTileData>; Self::TILE_COUNT],
+    tiles: Box<[Option<LayerTileData>; Self::TILE_COUNT]>,
 }
 
 impl Chunk {
@@ -93,7 +93,7 @@ impl Chunk {
 
     pub(crate) fn new() -> Self {
         Self {
-            tiles: [None; Self::TILE_COUNT],
+            tiles: Box::new([None; Self::TILE_COUNT]),
         }
     }
 }
