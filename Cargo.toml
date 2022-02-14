@@ -23,8 +23,15 @@ path = "src/lib.rs"
 name = "example"
 path = "examples/main.rs"
 
+[[example]]
+name = "ggez"
+path = "examples/ggez/main.rs"
+
 [dependencies]
 base64  = "0.10"
 xml-rs  = "0.8"
 libflate = "0.1.18"
 zstd = { version = "0.9", optional = true }
+
+[dev-dependencies.ggez]
+version = "0.7"
