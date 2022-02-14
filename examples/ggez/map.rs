@@ -66,8 +66,9 @@ impl MapHandler {
 
     pub fn draw(&mut self, ctx: &mut Context, draw_param: DrawParam, parallax_pan: (f32, f32)) -> GameResult {
 
+        // could be cached for more performance
         let layer_batches: Vec<Vec<SpriteBatch>> = self.generate_map_render(ctx, parallax_pan);
-        
+
         // draw tile layers
 
         // for each layer
