@@ -21,7 +21,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Install dependencies
-      run: sudo apt-get install -y libsfml-dev libcsfml-dev
+      run: sudo apt-get install -y libsfml-dev libcsfml-dev libasound2-dev libudev-dev
 
     - name: Build library
       run: cargo build --lib --verbose
