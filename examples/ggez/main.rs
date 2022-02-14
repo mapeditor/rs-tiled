@@ -80,7 +80,7 @@ impl event::EventHandler<ggez::GameError> for Game {
         // draw fps
 
         let fps = ggez::timer::fps(ctx);
-        let text = graphics::Text::new(format!("{fps:.0} fps"));
+        let text = graphics::Text::new(format!("{:.0} fps", fps));
 
         graphics::draw(
             ctx,
