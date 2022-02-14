@@ -40,13 +40,12 @@ impl InfiniteTileLayerData {
         parse_tag!(parser, "data", {
             "chunk" => |attrs| {
                 let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets)?;
-                let first_pos = chunk.first_tile_pos;
-                for x in first_pos.0..first_pos.0 + chunk.width as i32 {
-                    for y in first_pos.1..first_pos.1 + chunk.height as i32 {
+                for x in chunk.x..chunk.x + chunk.width as i32 {
+                    for y in chunk.y..chunk.y + chunk.height as i32 {
                         let chunk_pos = tile_to_chunk_pos(x, y);
                         let relative_pos = (x - chunk_pos.0 * Chunk::WIDTH as i32, y - chunk_pos.1 * Chunk::HEIGHT as i32);
                         let chunk_index = (relative_pos.0 + relative_pos.1 * Chunk::WIDTH as i32) as usize;
-                        let internal_pos = (x - first_pos.0, y - first_pos.1);
+                        let internal_pos = (x - chunk.x, y - chunk.y);
                         let internal_index = (internal_pos.0 + internal_pos.1 * chunk.width as i32) as usize;
 
                         chunks.entry(chunk_pos).or_insert_with(Chunk::new).tiles[chunk_index] = chunk.tiles[internal_index];
@@ -84,23 +83,29 @@ fn tile_to_chunk_pos(x: i32, y: i32) -> (i32, i32) {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Chunk {
-    tiles: Vec<Option<LayerTileData>>,
+    tiles: [Option<LayerTileData>; Self::TILE_COUNT],
 }
 
 impl Chunk {
     pub const WIDTH: u32 = 16;
     pub const HEIGHT: u32 = 16;
+    pub const TILE_COUNT: usize = Self::WIDTH as usize * Self::HEIGHT as usize;
 
     pub(crate) fn new() -> Self {
         Self {
-            tiles: vec![None; Self::WIDTH as usize * Self::HEIGHT as usize],
+            tiles: [None; Self::TILE_COUNT],
         }
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 struct InternalChunk {
-    first_tile_pos: (i32, i32),
+    /// The X coordinate of the top-left-most tile in the chunk.
+    /// Corresponds to the `x` attribute in the TMX format.
+    x: i32,
+    /// The Y coordinate of the top-left-most tile in the chunk.
+    /// Corresponds to the `y` attribute in the TMX format.
+    y: i32,
     width: u32,
     height: u32,
     tiles: Vec<Option<LayerTileData>>,
@@ -129,7 +134,8 @@ impl InternalChunk {
         let tiles = parse_data_line(encoding, compression, parser, tilesets)?;
 
         Ok(InternalChunk {
-            first_tile_pos: (x, y),
+            x,
+            y,
             width,
             height,
             tiles,
