@@ -3,12 +3,12 @@ use std::{collections::HashMap, path::Path};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    animation::Frame,
+    animation::{Frame, parse_animation},
     error::TiledError,
     image::Image,
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
-    util::{get_attrs, parse_animation, parse_tag, XmlEventResult},
+    util::{get_attrs, parse_tag, XmlEventResult},
 };
 
 pub type TileId = u32;

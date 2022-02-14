@@ -55,21 +55,7 @@ macro_rules! parse_tag {
 pub(crate) use get_attrs;
 pub(crate) use parse_tag;
 
-use crate::{animation::Frame, error::TiledError, Gid, MapTilesetGid};
-
-// TODO: Move to animation module
-pub(crate) fn parse_animation(
-    parser: &mut impl Iterator<Item = XmlEventResult>,
-) -> Result<Vec<Frame>, TiledError> {
-    let mut animation = Vec::new();
-    parse_tag!(parser, "animation", {
-        "frame" => |attrs| {
-            animation.push(Frame::new(attrs)?);
-            Ok(())
-        },
-    });
-    Ok(animation)
-}
+use crate::{Gid, MapTilesetGid};
 
 pub(crate) type XmlEventResult = xml::reader::Result<xml::reader::XmlEvent>;
 

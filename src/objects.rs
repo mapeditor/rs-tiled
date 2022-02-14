@@ -42,11 +42,12 @@ impl ObjectData {
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
     ) -> Result<ObjectData, TiledError> {
-        let ((id, bits, n, t, w, h, v, r), (x, y)) = get_attrs!(
+        let ((id, tile, n, t, w, h, v, r), (x, y)) = get_attrs!(
             attrs,
             optionals: [
                 ("id", id, |v:String| v.parse().ok()),
-                ("gid", gid, |v:String| v.parse().ok()),
+                ("gid", tile, |v:String| v.parse().ok()
+                                            .and_then(|bits| LayerTileData::from_bits(bits, tilesets?))),
                 ("name", name, |v:String| v.parse().ok()),
                 ("type", obj_type, |v:String| v.parse().ok()),
                 ("width", width, |v:String| v.parse().ok()),
@@ -60,22 +61,21 @@ impl ObjectData {
             ],
             TiledError::MalformedAttributes("objects must have an x and a y number".to_string())
         );
-        let v = v.unwrap_or(true);
-        let w = w.unwrap_or(0f32);
-        let h = h.unwrap_or(0f32);
-        let r = r.unwrap_or(0f32);
+        let visible = v.unwrap_or(true);
+        let width = w.unwrap_or(0f32);
+        let height = h.unwrap_or(0f32);
+        let rotation = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
-        let tile = bits.and_then(|bits| LayerTileData::from_bits(bits, tilesets?));
-        let n = n.unwrap_or(String::new());
-        let t = t.unwrap_or(String::new());
+        let name = n.unwrap_or_else(|| String::new());
+        let obj_type = t.unwrap_or_else(|| String::new());
         let mut shape = None;
         let mut properties = HashMap::new();
 
         parse_tag!(parser, "object", {
             "ellipse" => |_| {
                 shape = Some(ObjectShape::Ellipse {
-                    width: w,
-                    height: h,
+                    width,
+                    height,
                 });
                 Ok(())
             },
@@ -88,7 +88,7 @@ impl ObjectData {
                 Ok(())
             },
             "point" => |_| {
-                shape = Some(ObjectData::new_point(x, y)?);
+                shape = Some(ObjectShape::Point(x, y));
                 Ok(())
             },
             "properties" => |_| {
@@ -97,22 +97,19 @@ impl ObjectData {
             },
         });
 
-        let shape = shape.unwrap_or(ObjectShape::Rect {
-            width: w,
-            height: h,
-        });
+        let shape = shape.unwrap_or(ObjectShape::Rect { width, height });
 
         Ok(ObjectData {
             id,
             tile,
-            name: n.clone(),
-            obj_type: t.clone(),
-            width: w,
-            height: h,
+            name,
+            obj_type,
+            width,
+            height,
             x,
             y,
-            rotation: r,
-            visible: v,
+            rotation,
+            visible,
             shape,
             properties,
         })
@@ -130,7 +127,7 @@ impl ObjectData {
             TiledError::MalformedAttributes("A polyline must have points".to_string())
         );
         let points = ObjectData::parse_points(s)?;
-        Ok(ObjectShape::Polyline { points: points })
+        Ok(ObjectShape::Polyline { points })
     }
 
     fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, TiledError> {
@@ -146,29 +143,27 @@ impl ObjectData {
         Ok(ObjectShape::Polygon { points: points })
     }
 
-    fn new_point(x: f32, y: f32) -> Result<ObjectShape, TiledError> {
-        Ok(ObjectShape::Point(x, y))
-    }
-
     fn parse_points(s: String) -> Result<Vec<(f32, f32)>, TiledError> {
         let pairs = s.split(' ');
-        let mut points = Vec::new();
-        for v in pairs.map(|p| p.split(',')) {
-            let v: Vec<&str> = v.collect();
-            if v.len() != 2 {
-                return Err(TiledError::MalformedAttributes(
-                    "one of a polyline's points does not have an x and y coordinate".to_string(),
-                ));
-            }
-            let (x, y) = (v[0].parse().ok(), v[1].parse().ok());
-            if x.is_none() || y.is_none() {
-                return Err(TiledError::MalformedAttributes(
-                    "one of polyline's points does not have i32eger coordinates".to_string(),
-                ));
-            }
-            points.push((x.unwrap(), y.unwrap()));
-        }
-        Ok(points)
+        pairs
+            .map(|point| point.split(','))
+            .map(|components| {
+                let v: Vec<&str> = components.collect();
+                if v.len() != 2 {
+                    return Err(TiledError::MalformedAttributes(
+                        "one of a polyline's points does not have an x and y coordinate"
+                            .to_string(),
+                    ));
+                }
+                let (x, y) = (v[0].parse().ok(), v[1].parse().ok());
+                match (x, y) {
+                    (Some(x), Some(y)) => Ok((x, y)),
+                    _ => Err(TiledError::MalformedAttributes(
+                        "one of polyline's points does not have i32eger coordinates".to_string(),
+                    )),
+                }
+            })
+            .collect()
     }
 }
 
@@ -176,7 +171,7 @@ pub type Object<'map> = MapWrapper<'map, ObjectData>;
 
 impl<'map> Object<'map> {
     /// Returns the tile that the object is using as image, if any.
-    pub fn get_tile<'res: 'map>(&self) -> Option<LayerTile<'map>> {
+    pub fn get_tile(&self) -> Option<LayerTile<'map>> {
         self.data()
             .tile
             .map(|tile| LayerTile::from_data(&tile, self.map()))
