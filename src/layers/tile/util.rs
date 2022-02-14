@@ -15,17 +15,14 @@ pub(crate) fn parse_data_line(
 
         (Some("base64"), None) => parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets)),
         (Some("base64"), Some("zlib")) => parse_base64(parser)
-            .map(|data| std::io::Cursor::new(data))
-            .and_then(|reader| process_decoder(libflate::zlib::Decoder::new(reader)))
+            .and_then(|data| process_decoder(libflate::zlib::Decoder::new(&data[..])))
             .map(|v| convert_to_tiles(&v, tilesets)),
         (Some("base64"), Some("gzip")) => parse_base64(parser)
-            .map(|data| std::io::Cursor::new(data))
-            .and_then(|reader| process_decoder(libflate::gzip::Decoder::new(reader)))
+            .and_then(|data| process_decoder(libflate::gzip::Decoder::new(&data[..])))
             .map(|v| convert_to_tiles(&v, tilesets)),
         #[cfg(feature = "zstd")]
         (Some("base64"), Some("zstd")) => parse_base64(parser)
-            .map(|data| std::io::Cursor::new(data))
-            .and_then(|reader| process_decoder(zstd::stream::read::Decoder::with_buffer(reader)))
+            .and_then(|data| process_decoder(zstd::stream::read::Decoder::with_buffer(&data[..])))
             .map(|v| convert_to_tiles(&v, tilesets)),
 
         _ => Err(TiledError::InvalidEncodingFormat {
@@ -41,10 +38,8 @@ fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec
             XmlEvent::Characters(s) => {
                 return base64::decode(s.trim().as_bytes()).map_err(TiledError::Base64DecodingError)
             }
-            XmlEvent::EndElement { name, .. } => {
-                if name.local_name == "data" {
-                    return Ok(Vec::new());
-                }
+            XmlEvent::EndElement { name, .. } if name.local_name == "data" => {
+                return Ok(Vec::new());
             }
             _ => {}
         }
@@ -76,10 +71,8 @@ fn decode_csv(
                     .collect();
                 return Ok(tiles);
             }
-            XmlEvent::EndElement { name, .. } => {
-                if name.local_name == "data" {
-                    return Ok(Vec::new());
-                }
+            XmlEvent::EndElement { name, .. } if name.local_name == "data" => {
+                return Ok(Vec::new());
             }
             _ => {}
         }

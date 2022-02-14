@@ -74,8 +74,8 @@ impl ObjectData {
         parse_tag!(parser, "object", {
             "ellipse" => |_| {
                 shape = Some(ObjectShape::Ellipse {
-                    width: width,
-                    height: height,
+                    width,
+                    height,
                 });
                 Ok(())
             },
