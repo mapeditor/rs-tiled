@@ -13,7 +13,7 @@ use sfml::{
     window::{ContextSettings, Key, Style},
 };
 use std::{env, path::PathBuf, time::Duration};
-use tiled::{FilesystemResourceCache, Map, TileLayer};
+use tiled::{FilesystemResourceCache, FiniteTileLayer, Map};
 use tilesheet::Tilesheet;
 
 /// A path to the map to display.
@@ -44,7 +44,13 @@ impl Level {
         let layers = map
             .layers()
             .filter_map(|layer| match &layer.layer_type() {
-                tiled::LayerType::TileLayer(l) => Some(generate_mesh(l, &tilesheet)),
+                tiled::LayerType::TileLayer(l) => Some(generate_mesh(
+                    match l {
+                        tiled::TileLayer::Finite(f) => f,
+                        tiled::TileLayer::Infinite(_) => panic!("Infinite maps not supported"),
+                    },
+                    &tilesheet,
+                )),
                 _ => None,
             })
             .collect();
@@ -58,15 +64,14 @@ impl Level {
 }
 
 /// Generates a vertex mesh from a tile layer for rendering.
-fn generate_mesh(layer: &TileLayer, tilesheet: &Tilesheet) -> QuadMesh {
-    let finite = match layer.data() {
-        tiled::TileLayerData::Finite(f) => f,
-        tiled::TileLayerData::Infinite(_) => panic!("Infinite maps not supported"),
-    };
-    let (width, height) = (finite.width() as usize, finite.height() as usize);
+fn generate_mesh(layer: &FiniteTileLayer, tilesheet: &Tilesheet) -> QuadMesh {
+    let (width, height) = (
+        layer.data().width() as usize,
+        layer.data().height() as usize,
+    );
     let mut mesh = QuadMesh::with_capacity(width * height);
-    for x in 0..width {
-        for y in 0..height {
+    for x in 0..width as i32 {
+        for y in 0..height as i32 {
             // TODO: `FiniteTileLayer` for getting tiles directly from finite tile layers?
             if let Some(tile) = layer.get_tile(x, y) {
                 let uv = tilesheet.tile_rect(tile.id);

@@ -2,7 +2,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, XmlEventResult},
-    LayerTileData, MapTilesetGid, TiledError,
+    LayerTile, LayerTileData, MapTilesetGid, MapWrapper, TiledError,
 };
 
 use super::util::parse_data_line;
@@ -51,9 +51,9 @@ impl FiniteTileLayerData {
         })
     }
 
-    pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileData> {
-        if x < self.width as usize && y < self.height as usize {
-            self.tiles[x + y * self.width as usize].as_ref()
+    pub(crate) fn get_tile(&self, x: i32, y: i32) -> Option<&LayerTileData> {
+        if x < self.width as i32 && y < self.height as i32 && x >= 0 && y >= 0 {
+            self.tiles[x as usize + y as usize * self.width as usize].as_ref()
         } else {
             None
         }
@@ -67,5 +67,15 @@ impl FiniteTileLayerData {
     /// Get the tile layer's height in tiles.
     pub fn height(&self) -> u32 {
         self.height
+    }
+}
+
+pub type FiniteTileLayer<'map> = MapWrapper<'map, FiniteTileLayerData>;
+
+impl<'map> FiniteTileLayer<'map> {
+    pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
+        self.data()
+            .get_tile(x, y)
+            .and_then(|data| Some(LayerTile::from_data(data, self.map())))
     }
 }

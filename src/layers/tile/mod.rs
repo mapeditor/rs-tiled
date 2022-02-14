@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, Map, MapTilesetGid, MapWrapper, Properties, Tile, TileId, TiledError, Tileset,
+    Gid, Map, MapTilesetGid, Properties, Tile, TileId, TiledError, Tileset,
 };
 
 mod finite;
@@ -61,7 +61,7 @@ impl LayerTileData {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum TileLayerData {
+pub(crate) enum TileLayerData {
     Finite(FiniteTileLayerData),
     Infinite(InfiniteTileLayerData),
 }
@@ -102,13 +102,6 @@ impl TileLayerData {
 
         Ok((result, properties))
     }
-
-    pub(crate) fn get_tile(&self, x: usize, y: usize) -> Option<&LayerTileData> {
-        match &self {
-            Self::Finite(finite) => finite.get_tile(x, y),
-            Self::Infinite(_) => todo!("Getting tiles from infinite layers"),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -137,12 +130,23 @@ impl<'map> LayerTile<'map> {
     }
 }
 
-pub type TileLayer<'map> = MapWrapper<'map, TileLayerData>;
+pub enum TileLayer<'map> {
+    Finite(FiniteTileLayer<'map>),
+    Infinite(InfiniteTileLayer<'map>),
+}
 
 impl<'map> TileLayer<'map> {
-    pub fn get_tile(&self, x: usize, y: usize) -> Option<LayerTile> {
-        self.data()
-            .get_tile(x, y)
-            .and_then(|data| Some(LayerTile::from_data(data, self.map())))
+    pub(crate) fn new(map: &'map Map, data: &'map TileLayerData) -> Self {
+        match data {
+            TileLayerData::Finite(data) => Self::Finite(FiniteTileLayer::new(map, data)),
+            TileLayerData::Infinite(data) => Self::Infinite(InfiniteTileLayer::new(map, data)),
+        }
+    }
+
+    pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
+        match self {
+            TileLayer::Finite(finite) => finite.get_tile(x, y),
+            TileLayer::Infinite(infinite) => infinite.get_tile(x, y),
+        }
     }
 }
