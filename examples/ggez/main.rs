@@ -1,7 +1,7 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use ggez::{event::{self, MouseButton}, Context, GameResult, graphics::{self, spritebatch::SpriteBatch, DrawParam}, input};
-use tiled::{Map, LayerData};
+use tiled::{Map, LayerData, FilesystemResourceCache, TileLayer, Tileset};
 
 fn main() -> GameResult {
     let cb = ggez::ContextBuilder::new("tiled + ggez", "tiled")
@@ -20,7 +20,7 @@ fn main() -> GameResult {
 
 struct Game {
     map: Map,
-    tileset_image_cache: HashMap<u32, graphics::Image>,
+    tileset_image_cache: HashMap<String, graphics::Image>,
     pan: (f32, f32),
     scale: f32,
     animate: bool,
@@ -31,11 +31,12 @@ impl Game {
         graphics::set_default_filter(ctx, graphics::FilterMode::Nearest);
 
         // load the map
-        let map = Map::parse_file("assets/tiled_base64_external.tmx").unwrap();
+        let mut cache = FilesystemResourceCache::new();
+        let map = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
 
         // load images for the map's tilesets
         let mut tileset_image_cache = HashMap::new();
-        for ts in &map.tilesets {
+        for ts in map.tilesets().iter() {
             if let Some(image) = &ts.image {
                 // image path comes in as "assets/tilesheet.png"
                 // but ggez needs it like "/assets/tilesheet.png" or it will complain
@@ -48,7 +49,7 @@ impl Game {
                 img.set_filter(graphics::FilterMode::Nearest);
 
                 tileset_image_cache.insert(
-                    ts.first_gid.clone(),
+                    ts.name.clone(),
                     img,
                 );
             }
@@ -66,63 +67,68 @@ impl Game {
     fn generate_map_render(&mut self, ctx: &Context) -> Vec<Vec<SpriteBatch>> {
         let mut layer_batches: Vec<Vec<SpriteBatch>> = Vec::new();
 
-        let tile_layers = self.map.layers.iter().filter_map(|l| {
-            match &l.layer_type {
-                tiled::LayerType::TileLayer(tl) => Some((l, tl)),
+        let tile_layers = self.map.layers().filter_map(|l| {
+            match l.layer_type() {
+                tiled::LayerType::TileLayer(tl) => Some((l.data(), tl)),
                 _ => None,
             }
         });
 
         for (i, (layer, tl)) in tile_layers.enumerate() {
-            match &tl.tiles {
-                LayerData::Finite(d) => {
+            match &tl {
+                TileLayer::Finite(d) => {
                     // create a sprite batch for each tileset
                     // this needs to be done per layer otherwise the depth will be wrong when using tilesets on multiple layers
                     let mut ts_batches = HashMap::new();
                     let mut ts_sizes = HashMap::new();
-                    for ts in &self.map.tilesets {
-                        if let Some(img) = self.tileset_image_cache.get(&ts.first_gid) {
+                    for ts in self.map.tilesets().iter() {
+                        if let Some(img) = self.tileset_image_cache.get(&ts.name) {
                             // img.clone() here is cheap (see docs for `ggez::graphics::Image`)
                             let batch = SpriteBatch::new(img.clone());
-                            ts_batches.insert(ts.first_gid, batch);
-                            ts_sizes.insert(ts.first_gid, (img.width(), img.height()));
+                            ts_batches.insert(ts.name.clone(), batch);
+                            ts_sizes.insert(ts.name.clone(), (img.width(), img.height()));
                         }
                     }
+                    
+                    let width = d.data().width();
+                    let height = d.data().height();
 
-                    for (pos, tile) in d.iter().enumerate() {
-                        let (x, y) = (pos % self.map.width as usize, pos / self.map.width as usize);
-                        let rect = get_tile_rect(&self.map, tile.gid);
-                        if let Some(rect) = rect {
-                            if let Some(ts) = self.map.tileset_by_gid(tile.gid) {
-                                if let Some(ts_size) = ts_sizes.get(&ts.first_gid) {
-                                    let mut dx = x as f32 * self.map.tile_width as f32 + self.pan.0 * (layer.parallax_x - 1.0);
-                                    let mut dy = y as f32 * self.map.tile_height as f32 + self.pan.1 * (layer.parallax_y - 1.0);
+                    for x in 0..width as i32 {
+                        for y in 0..height as i32 {
+                            if let Some(tile) = d.get_tile(x, y) {
+                                let rect = get_tile_rect(tile.tileset, tile.id);
+                                if let Some(rect) = rect {
+                                    let ts = tile.tileset;
+                                    if let Some(ts_size) = ts_sizes.get(&ts.name) {
+                                        let mut dx = x as f32 * self.map.tile_width as f32 + self.pan.0 * (layer.parallax_x - 1.0);
+                                        let mut dy = y as f32 * self.map.tile_height as f32 + self.pan.1 * (layer.parallax_y - 1.0);
 
-                                    if self.animate {
-                                        dx += (ggez::timer::time_since_start(ctx).as_secs_f32() - x as f32 * 0.3 + i as f32 * 0.25).sin() * 20.0;
-                                        dy += (ggez::timer::time_since_start(ctx).as_secs_f32() * 1.25 + y as f32 * 0.3 + i as f32 * 0.25).cos() * 20.0;
+                                        if self.animate {
+                                            dx += (ggez::timer::time_since_start(ctx).as_secs_f32() - x as f32 * 0.3 + i as f32 * 0.25).sin() * 20.0;
+                                            dy += (ggez::timer::time_since_start(ctx).as_secs_f32() * 1.25 + y as f32 * 0.3 + i as f32 * 0.25).cos() * 20.0;
+                                        }
+
+                                        let b = ts_batches.get_mut(&ts.name).unwrap();
+                                        b.add(
+                                            DrawParam::default()
+                                                .src(ggez::graphics::Rect::new(
+                                                    rect.0 as f32 / (*ts_size).0 as f32,
+                                                    rect.1 as f32 / (*ts_size).1 as f32,
+                                                    rect.2 as f32 / (*ts_size).0 as f32,
+                                                    rect.3 as f32 / (*ts_size).1 as f32,
+                                                ))
+                                                .dest([
+                                                    dx,
+                                                    dy,
+                                                ])
+                                                .color(ggez::graphics::Color::from_rgba(
+                                                    0xFF,
+                                                    0xFF,
+                                                    0xFF,
+                                                    (layer.opacity * 255.0) as u8,
+                                                )),
+                                        );
                                     }
-
-                                    let b = ts_batches.get_mut(&ts.first_gid).unwrap();
-                                    b.add(
-                                        DrawParam::default()
-                                            .src(ggez::graphics::Rect::new(
-                                                rect.0 as f32 / (*ts_size).0 as f32,
-                                                rect.1 as f32 / (*ts_size).1 as f32,
-                                                rect.2 as f32 / (*ts_size).0 as f32,
-                                                rect.3 as f32 / (*ts_size).1 as f32,
-                                            ))
-                                            .dest([
-                                                dx,
-                                                dy,
-                                            ])
-                                            .color(ggez::graphics::Color::from_rgba(
-                                                0xFF,
-                                                0xFF,
-                                                0xFF,
-                                                (layer.opacity * 255.0) as u8,
-                                            )),
-                                    );
                                 }
                             }
                         }
@@ -130,7 +136,7 @@ impl Game {
 
                     layer_batches.push(ts_batches.into_values().collect());
                 }
-                LayerData::Infinite(_) => {
+                TileLayer::Infinite(_) => {
                     unimplemented!()
                 }
             }
@@ -139,7 +145,7 @@ impl Game {
         layer_batches
     }
 
-    fn draw_object(object: &tiled::Object, ctx: &mut Context, draw_param: DrawParam) -> GameResult {
+    fn draw_object(object: &tiled::ObjectData, ctx: &mut Context, draw_param: DrawParam) -> GameResult {
         match &object.shape {
             tiled::ObjectShape::Rect { width, height } => {
                 let bounds = graphics::Rect::new(object.x, object.y, *width, *height);
@@ -227,10 +233,10 @@ impl event::EventHandler<ggez::GameError> for Game {
             }
         }
 
-        for l in &self.map.layers {
-            match &l.layer_type {
+        for l in self.map.layers() {
+            match &l.layer_type() {
                 tiled::LayerType::ObjectLayer(ol) => {
-                    for o in &ol.objects {
+                    for o in &ol.data().objects {
                         Self::draw_object(o, ctx, draw_param.clone())?;
                     }
                 }
@@ -293,15 +299,12 @@ impl event::EventHandler<ggez::GameError> for Game {
     }
 }
 
-fn get_tile_rect(map: &Map, gid: u32) -> Option<(u32, u32, u32, u32)> {
-    let ts = map.tileset_by_gid(gid)?;
-    let id = gid - ts.first_gid;
+fn get_tile_rect(tileset: &Tileset, id: u32) -> Option<(u32, u32, u32, u32)> {
+    let ts_x = id % tileset.columns;
+    let ts_y = id / tileset.columns;
 
-    let ts_x = id % ts.columns;
-    let ts_y = id / ts.columns;
+    let x = tileset.margin + (tileset.tile_width + tileset.spacing) * ts_x;
+    let y = tileset.margin + (tileset.tile_height + tileset.spacing) * ts_y;
 
-    let x = ts.margin + (ts.tile_width + ts.spacing) * ts_x;
-    let y = ts.margin + (ts.tile_height + ts.spacing) * ts_y;
-
-    Some((x, y, ts.tile_width, ts.tile_height))
+    Some((x, y, tileset.tile_width, tileset.tile_height))
 }
