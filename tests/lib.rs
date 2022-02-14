@@ -1,92 +1,147 @@
-use std::path::Path;
-use std::{fs::File, path::PathBuf};
-use tiled::{LayerData, Map, PropertyValue, TiledError, Tileset};
-use tiled::{LayerType, ObjectLayer, TileLayer};
+use std::path::PathBuf;
+use tiled::{
+    Color, FilesystemResourceCache, FiniteTileLayer, GroupLayer, Layer, LayerType, Map,
+    ObjectLayer, PropertyValue, ResourceCache, TileLayer,
+};
 
-fn as_tile_layer(layer: &LayerType) -> &TileLayer {
-    match layer {
+fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
+    match layer.layer_type() {
         LayerType::TileLayer(x) => x,
         _ => panic!("Not a tile layer"),
     }
 }
 
-fn as_object_layer(layer: &LayerType) -> &ObjectLayer {
-    match layer {
+fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
+    match data {
+        TileLayer::Finite(data) => data,
+        TileLayer::Infinite(_) => panic!("Not a finite tile layer"),
+    }
+}
+
+fn as_object_layer<'map>(layer: Layer<'map>) -> ObjectLayer<'map> {
+    match layer.layer_type() {
         LayerType::ObjectLayer(x) => x,
         _ => panic!("Not an object layer"),
     }
 }
 
-fn parse_map_without_source(p: impl AsRef<Path>) -> Result<Map, TiledError> {
-    let file = File::open(p).unwrap();
-    return Map::parse_reader(file, None);
+fn as_group_layer<'map>(layer: Layer<'map>) -> GroupLayer<'map> {
+    match layer.layer_type() {
+        LayerType::GroupLayer(x) => x,
+        _ => panic!("Not a group layer"),
+    }
+}
+
+fn compare_everything_but_tileset_sources(r: &Map, e: &Map) {
+    assert_eq!(r.version, e.version);
+    assert_eq!(r.orientation, e.orientation);
+    assert_eq!(r.width, e.width);
+    assert_eq!(r.height, e.height);
+    assert_eq!(r.tile_width, e.tile_width);
+    assert_eq!(r.tile_height, e.tile_height);
+    assert_eq!(r.properties, e.properties);
+    assert_eq!(r.background_color, e.background_color);
+    assert_eq!(r.infinite, e.infinite);
+    r.layers()
+        .zip(e.layers())
+        .for_each(|(r, e)| assert_eq!(r.data(), e.data()));
 }
 
 #[test]
 fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
-    let z = Map::parse_file("assets/tiled_base64_zlib.tmx").unwrap();
-    let g = Map::parse_file("assets/tiled_base64_gzip.tmx").unwrap();
-    let r = Map::parse_file("assets/tiled_base64.tmx").unwrap();
-    let zstd = Map::parse_file("assets/tiled_base64_zstandard.tmx").unwrap();
-    let c = Map::parse_file("assets/tiled_csv.tmx").unwrap();
-    assert_eq!(z, g);
-    assert_eq!(z, r);
-    assert_eq!(z, c);
-    assert_eq!(z, zstd);
+    let mut cache = FilesystemResourceCache::new();
+    let z = Map::parse_file("assets/tiled_base64_zlib.tmx", &mut cache).unwrap();
+    let g = Map::parse_file("assets/tiled_base64_gzip.tmx", &mut cache).unwrap();
+    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
+    let zstd = Map::parse_file("assets/tiled_base64_zstandard.tmx", &mut cache).unwrap();
+    let c = Map::parse_file("assets/tiled_csv.tmx", &mut cache).unwrap();
+    compare_everything_but_tileset_sources(&z, &g);
+    compare_everything_but_tileset_sources(&z, &r);
+    compare_everything_but_tileset_sources(&z, &c);
+    compare_everything_but_tileset_sources(&z, &zstd);
 
-    if let LayerData::Finite(tiles) = &as_tile_layer(&c.layers[0].layer_type).tiles {
-        assert_eq!(tiles.len(), 100 * 100);
-        assert_eq!(tiles[0].gid, 35);
-        assert_eq!(tiles[100].gid, 17);
-        assert_eq!(tiles[200].gid, 0);
-        assert_eq!(tiles[200 + 1].gid, 17);
-        assert!(tiles[9900..9999].iter().map(|t| t.gid).all(|g| g == 0));
-    } else {
-        panic!("It is wrongly recognised as an infinite map");
+    let layer = as_finite(as_tile_layer(c.get_layer(0).unwrap()));
+    {
+        let data = layer.data();
+        assert_eq!(data.width(), 100);
+        assert_eq!(data.height(), 100);
     }
+
+    assert_eq!(layer.get_tile(0, 0).unwrap().id, 34);
+    assert_eq!(layer.get_tile(0, 1).unwrap().id, 16);
+    assert!(layer.get_tile(0, 2).is_none());
+    assert_eq!(layer.get_tile(1, 2).unwrap().id, 16);
+    assert!((0..99).map(|x| layer.get_tile(x, 99)).all(|t| t.is_none()));
 }
 
 #[test]
 fn test_external_tileset() {
-    let r = Map::parse_file("assets/tiled_base64.tmx").unwrap();
-    let mut e = Map::parse_file("assets/tiled_base64_external.tmx").unwrap();
-    e.tilesets[0].source = None;
-    assert_eq!(r, e);
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
+    let e = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
+    compare_everything_but_tileset_sources(&r, &e);
 }
 
 #[test]
 fn test_sources() {
-    let e = Map::parse_file("assets/tiled_base64_external.tmx").unwrap();
+    let mut cache = FilesystemResourceCache::new();
+
+    let e = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
     assert_eq!(
-        e.tilesets[0].source,
-        Some(PathBuf::from("assets/tilesheet.tsx"))
+        e.tilesets()[0],
+        cache.get_tileset("assets/tilesheet.tsx").unwrap()
     );
     assert_eq!(
-        e.tilesets[0].image.as_ref().unwrap().source,
+        e.tilesets()[0].image.as_ref().unwrap().source,
         PathBuf::from("assets/tilesheet.png")
     );
 }
 
 #[test]
 fn test_just_tileset() {
-    let r = Map::parse_file("assets/tiled_base64_external.tmx").unwrap();
-    let path = "assets/tilesheet.tsx";
-    let t = Tileset::parse_with_path(File::open(path).unwrap(), 1, path).unwrap();
-    assert_eq!(r.tilesets[0], t);
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
+    assert_eq!(
+        r.tilesets()[0],
+        cache.get_tileset("assets/tilesheet.tsx").unwrap()
+    );
 }
 
 #[test]
 fn test_infinite_tileset() {
-    let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx").unwrap();
+    let mut cache = FilesystemResourceCache::new();
 
-    if let LayerData::Infinite(chunks) = &as_tile_layer(&r.layers[0].layer_type).tiles {
-        assert_eq!(chunks.len(), 4);
+    let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx", &mut cache).unwrap();
 
-        assert_eq!(chunks[&(0, 0)].width, 32);
-        assert_eq!(chunks[&(0, 0)].height, 32);
-        assert_eq!(chunks[&(-32, 0)].width, 32);
-        assert_eq!(chunks[&(0, 32)].height, 32);
-        assert_eq!(chunks[&(-32, 32)].height, 32);
+    if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(1).unwrap()) {
+        assert_eq!(inf.get_tile(2, 10).unwrap().id, 5);
+        assert_eq!(inf.get_tile(5, 36).unwrap().id, 73);
+        assert_eq!(inf.get_tile(15, 15).unwrap().id, 22);
+    } else {
+        assert!(false, "It is wrongly recognised as a finite map");
+    }
+    if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(0).unwrap()) {
+        // NW corner
+        assert_eq!(inf.get_tile(-16, 0).unwrap().id, 17);
+        assert!(inf.get_tile(-17, 0).is_none());
+        assert!(inf.get_tile(-16, -1).is_none());
+
+        // SW corner
+        assert_eq!(inf.get_tile(-16, 47).unwrap().id, 17);
+        assert!(inf.get_tile(-17, 47).is_none());
+        assert!(inf.get_tile(-16, 48).is_none());
+
+        // NE corner
+        assert_eq!(inf.get_tile(31, 0).unwrap().id, 17);
+        assert!(inf.get_tile(31, -1).is_none());
+        assert!(inf.get_tile(32, 0).is_none());
+
+        // SE corner
+        assert_eq!(inf.get_tile(31, 47).unwrap().id, 17);
+        assert!(inf.get_tile(32, 47).is_none());
+        assert!(inf.get_tile(31, 48).is_none());
     } else {
         assert!(false, "It is wrongly recognised as a finite map");
     }
@@ -94,11 +149,13 @@ fn test_infinite_tileset() {
 
 #[test]
 fn test_image_layers() {
-    let r = Map::parse_file("assets/tiled_image_layers.tmx").unwrap();
-    assert_eq!(r.layers.len(), 2);
-    let mut image_layers = r.layers.iter().map(|x| {
-        if let LayerType::ImageLayer(img) = &x.layer_type {
-            (img, x)
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_image_layers.tmx", &mut cache).unwrap();
+    assert_eq!(r.layers().len(), 2);
+    let mut image_layers = r.layers().map(|layer| {
+        if let LayerType::ImageLayer(img) = &layer.layer_type() {
+            (img.data(), layer.data())
         } else {
             panic!("Found layer that isn't an image layer")
         }
@@ -128,9 +185,14 @@ fn test_image_layers() {
 
 #[test]
 fn test_tile_property() {
-    let r = Map::parse_file("assets/tiled_base64.tmx").unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
-        r.tilesets[0].tiles[0].properties.get("a tile property")
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
+    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
+        .get_tile(1)
+        .unwrap()
+        .properties
+        .get("a tile property")
     {
         v.clone()
     } else {
@@ -141,21 +203,29 @@ fn test_tile_property() {
 
 #[test]
 fn test_layer_property() {
-    let r = Map::parse_file(&Path::new("assets/tiled_base64.tmx")).unwrap();
-    let prop_value: String =
-        if let Some(&PropertyValue::StringValue(ref v)) = r.layers[0].properties.get("prop3") {
-            v.clone()
-        } else {
-            String::new()
-        };
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
+    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
+        r.get_layer(0).unwrap().data().properties.get("prop3")
+    {
+        v.clone()
+    } else {
+        String::new()
+    };
     assert_eq!("Line 1\r\nLine 2\r\nLine 3,\r\n  etc\r\n   ", prop_value);
 }
 
 #[test]
 fn test_object_group_property() {
-    let r = Map::parse_file("assets/tiled_object_groups.tmx").unwrap();
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_object_groups.tmx", &mut cache).unwrap();
+    let group_layer = r.get_layer(1).unwrap();
+    let group_layer = as_group_layer(group_layer);
+    let sub_layer = group_layer.get_layer(0).unwrap();
     let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) =
-        r.layers[1].properties.get("an object group property")
+        sub_layer.data().properties.get("an object group property")
     {
         *v
     } else {
@@ -165,9 +235,11 @@ fn test_object_group_property() {
 }
 #[test]
 fn test_tileset_property() {
-    let r = Map::parse_file("assets/tiled_base64.tmx").unwrap();
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
-        r.tilesets[0].properties.get("tileset property")
+        r.tilesets()[0].properties.get("tileset property")
     {
         v.clone()
     } else {
@@ -177,65 +249,70 @@ fn test_tileset_property() {
 }
 
 #[test]
-fn test_flipped_gid() {
-    let r = Map::parse_file("assets/tiled_flipped.tmx").unwrap();
+fn test_flipped() {
+    let mut cache = FilesystemResourceCache::new();
 
-    if let LayerData::Finite(tiles) = &as_tile_layer(&r.layers[0].layer_type).tiles {
-        let t1 = tiles[0];
-        let t2 = tiles[1];
-        let t3 = tiles[2];
-        let t4 = tiles[3];
-        assert_eq!(t1.gid, t2.gid);
-        assert_eq!(t2.gid, t3.gid);
-        assert_eq!(t3.gid, t4.gid);
-        assert!(t1.flip_d);
-        assert!(t1.flip_h);
-        assert!(t1.flip_v);
-        assert!(!t2.flip_d);
-        assert!(!t2.flip_h);
-        assert!(t2.flip_v);
-        assert!(!t3.flip_d);
-        assert!(t3.flip_h);
-        assert!(!t3.flip_v);
-        assert!(t4.flip_d);
-        assert!(!t4.flip_h);
-        assert!(!t4.flip_v);
-    } else {
-        assert!(false, "It is wrongly recognised as an infinite map");
-    }
+    let r = Map::parse_file("assets/tiled_flipped.tmx", &mut cache).unwrap();
+    let layer = as_tile_layer(r.get_layer(0).unwrap());
+
+    let t1 = layer.get_tile(0, 0).unwrap();
+    let t2 = layer.get_tile(1, 0).unwrap();
+    let t3 = layer.get_tile(0, 1).unwrap();
+    let t4 = layer.get_tile(1, 1).unwrap();
+    assert_eq!(t1.id, t2.id);
+    assert_eq!(t2.id, t3.id);
+    assert_eq!(t3.id, t4.id);
+    assert!(t1.flip_d);
+    assert!(t1.flip_h);
+    assert!(t1.flip_v);
+    assert!(!t2.flip_d);
+    assert!(!t2.flip_h);
+    assert!(t2.flip_v);
+    assert!(!t3.flip_d);
+    assert!(t3.flip_h);
+    assert!(!t3.flip_v);
+    assert!(t4.flip_d);
+    assert!(!t4.flip_h);
+    assert!(!t4.flip_v);
 }
 
 #[test]
 fn test_ldk_export() {
-    let r = Map::parse_file("assets/ldk_tiled_export.tmx").unwrap();
-    if let LayerData::Finite(tiles) = &as_tile_layer(&r.layers[0].layer_type).tiles {
-        assert_eq!(tiles.len(), 8 * 8);
-        assert_eq!(tiles[0].gid, 0);
-        assert_eq!(tiles[8].gid, 1);
-    } else {
-        assert!(false, "It is wrongly recognised as an infinite map");
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/ldk_tiled_export.tmx", &mut cache).unwrap();
+    let layer = as_finite(as_tile_layer(r.get_layer(0).unwrap()));
+    {
+        let data = layer.data();
+        assert_eq!(data.width(), 8);
+        assert_eq!(data.height(), 8);
     }
+    assert!(layer.get_tile(0, 0).is_none());
+    assert_eq!(layer.get_tile(0, 1).unwrap().id, 0);
 }
 
 #[test]
 fn test_parallax_layers() {
-    let r = Map::parse_file("assets/tiled_parallax.tmx").unwrap();
-    for (i, layer) in r.layers.iter().enumerate() {
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_parallax.tmx", &mut cache).unwrap();
+    for (i, layer) in r.layers().enumerate() {
+        let data = layer.data();
         match i {
             0 => {
-                assert_eq!(layer.name, "Background");
-                assert_eq!(layer.parallax_x, 0.5);
-                assert_eq!(layer.parallax_y, 0.75);
+                assert_eq!(data.name, "Background");
+                assert_eq!(data.parallax_x, 0.5);
+                assert_eq!(data.parallax_y, 0.75);
             }
             1 => {
-                assert_eq!(layer.name, "Middle");
-                assert_eq!(layer.parallax_x, 1.0);
-                assert_eq!(layer.parallax_y, 1.0);
+                assert_eq!(data.name, "Middle");
+                assert_eq!(data.parallax_x, 1.0);
+                assert_eq!(data.parallax_y, 1.0);
             }
             2 => {
-                assert_eq!(layer.name, "Foreground");
-                assert_eq!(layer.parallax_x, 2.0);
-                assert_eq!(layer.parallax_y, 2.0);
+                assert_eq!(data.name, "Foreground");
+                assert_eq!(data.parallax_x, 2.0);
+                assert_eq!(data.parallax_y, 2.0);
             }
             _ => panic!("unexpected layer"),
         }
@@ -244,9 +321,12 @@ fn test_parallax_layers() {
 
 #[test]
 fn test_object_property() {
-    let r = parse_map_without_source(&Path::new("assets/tiled_object_property.tmx")).unwrap();
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_object_property.tmx", &mut cache).unwrap();
+    let layer = r.get_layer(1).unwrap();
     let prop_value = if let Some(PropertyValue::ObjectValue(v)) =
-        as_object_layer(&r.layers[1].layer_type).objects[0]
+        as_object_layer(layer).data().objects[0]
             .properties
             .get("object property")
     {
@@ -255,4 +335,76 @@ fn test_object_property() {
         0
     };
     assert_eq!(3, prop_value);
+}
+
+#[test]
+fn test_tint_color() {
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_image_layers.tmx", &mut cache).unwrap();
+    assert_eq!(
+        r.get_layer(0).unwrap().data().tint_color,
+        Some(Color {
+            alpha: 0x12,
+            red: 0x34,
+            green: 0x56,
+            blue: 0x78
+        })
+    );
+    assert_eq!(
+        r.get_layer(1).unwrap().data().tint_color,
+        Some(Color {
+            alpha: 0xFF,
+            red: 0x12,
+            green: 0x34,
+            blue: 0x56
+        })
+    );
+}
+
+#[test]
+fn test_group_layers() {
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_group_layers.tmx", &mut cache).unwrap();
+
+    // Depth = 0
+    let layer_tile_1 = r.get_layer(0).unwrap();
+    let layer_group_1 = r.get_layer(1).unwrap();
+    let layer_group_2 = r.get_layer(2).unwrap();
+
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value1".to_string())),
+        layer_tile_1.data().properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value4".to_string())),
+        layer_group_1.data().properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value5".to_string())),
+        layer_group_2.data().properties.get("key")
+    );
+
+    // Depth = 1
+    let layer_group_1 = as_group_layer(layer_group_1);
+    let layer_tile_2 = layer_group_1.get_layer(0).unwrap();
+    let layer_group_2 = as_group_layer(layer_group_2);
+    let layer_group_3 = layer_group_2.get_layer(0).unwrap();
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value2".to_string())),
+        layer_tile_2.data().properties.get("key")
+    );
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value6".to_string())),
+        layer_group_3.data().properties.get("key")
+    );
+
+    // Depth = 2
+    let layer_group_3 = as_group_layer(layer_group_3);
+    let layer_tile_3 = layer_group_3.get_layer(0).unwrap();
+    assert_eq!(
+        Some(&PropertyValue::StringValue("value3".to_string())),
+        layer_tile_3.data().properties.get("key")
+    );
 }

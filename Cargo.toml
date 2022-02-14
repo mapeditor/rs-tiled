@@ -2,15 +2,14 @@
 
 name = "tiled"
 version = "0.9.5"
-description = "A rust crate for loading in maps created by the Tiled editor"
-repository = "https://github.com/mattyhall/rs-tiled.git"
-# documentation = "http://rust-ci.org/mattyhall/rs-tiled/doc/tiled/"
+description = "A rust crate for loading maps created by the Tiled editor"
+categories = ["game-development"]
+keywords = ["gamedev", "tiled", "tmx", "map"]
+repository = "https://github.com/mapeditor/rs-tiled"
 readme = "README.md"
 license = "MIT"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
 edition = "2018"
-
-keywords = ["tiled", "tmx", "map"]
 
 [features]
 default = ["zstd"]
@@ -20,18 +19,22 @@ name = "tiled"
 path = "src/lib.rs"
 
 [[example]]
-name = "example"
-path = "examples/main.rs"
+name = "sfml"
+path = "examples/sfml/main.rs"
 
 [[example]]
 name = "ggez"
 path = "examples/ggez/main.rs"
 
 [dependencies]
-base64  = "0.10"
-xml-rs  = "0.8"
-libflate = "0.1.18"
-zstd = { version = "0.9", optional = true }
+base64 = "0.13.0"
+xml-rs = "0.8.4"
+libflate = "1.1.2"
+zstd = { version = "0.10.0", optional = true }
+
+[dev-dependencies.sfml]
+version = "0.16"
+features = ["graphics"]
 
 [dev-dependencies.ggez]
 version = "0.7"

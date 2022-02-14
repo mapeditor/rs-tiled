@@ -29,8 +29,8 @@ macro_rules! get_attrs {
 /// that child. Closes the tag.
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
-        loop {
-            match $parser.next().map_err(TiledError::XmlDecodingError)? {
+        while let Some(next) = $parser.next() {
+            match next.map_err(TiledError::XmlDecodingError)? {
                 xml::reader::XmlEvent::StartElement {name, attributes, ..} => {
                     if false {}
                     $(else if name.local_name == $open_tag {
@@ -52,207 +52,32 @@ macro_rules! parse_tag {
     }
 }
 
-use std::{
-    collections::HashMap,
-    io::{BufReader, Read},
-};
-
 pub(crate) use get_attrs;
 pub(crate) use parse_tag;
-use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
-use crate::{
-    animation::Frame,
-    error::TiledError,
-    layers::{Chunk, LayerData, LayerTile},
-};
+use crate::{Gid, MapTilesetGid};
 
-pub(crate) fn parse_animation<R: Read>(
-    parser: &mut EventReader<R>,
-) -> Result<Vec<Frame>, TiledError> {
-    let mut animation = Vec::new();
-    parse_tag!(parser, "animation", {
-        "frame" => |attrs| {
-            animation.push(Frame::new(attrs)?);
-            Ok(())
-        },
-    });
-    Ok(animation)
+pub(crate) type XmlEventResult = xml::reader::Result<xml::reader::XmlEvent>;
+
+/// Returns both the tileset and its index
+pub(crate) fn get_tileset_for_gid(
+    tilesets: &[MapTilesetGid],
+    gid: Gid,
+) -> Option<(usize, &MapTilesetGid)> {
+    tilesets
+        .iter()
+        .enumerate()
+        .rev()
+        .find(|(_idx, ts)| ts.first_gid <= gid)
 }
 
-pub(crate) fn parse_infinite_data<R: Read>(
-    parser: &mut EventReader<R>,
-    attrs: Vec<OwnedAttribute>,
-) -> Result<LayerData, TiledError> {
-    let ((e, c), ()) = get_attrs!(
-        attrs,
-        optionals: [
-            ("encoding", encoding, |v| Some(v)),
-            ("compression", compression, |v| Some(v)),
-        ],
-        required: [],
-        TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
-    );
+pub fn floor_div(a: i32, b: i32) -> i32 {
+    let d = a / b;
+    let r = a % b;
 
-    let mut chunks = HashMap::<(i32, i32), Chunk>::new();
-    parse_tag!(parser, "data", {
-        "chunk" => |attrs| {
-            let chunk = Chunk::new(parser, attrs, e.clone(), c.clone())?;
-            chunks.insert((chunk.x, chunk.y), chunk);
-            Ok(())
-        }
-    });
-
-    Ok(LayerData::Infinite(chunks))
-}
-
-pub(crate) fn parse_data<R: Read>(
-    parser: &mut EventReader<R>,
-    attrs: Vec<OwnedAttribute>,
-) -> Result<LayerData, TiledError> {
-    let ((e, c), ()) = get_attrs!(
-        attrs,
-        optionals: [
-            ("encoding", encoding, |v| Some(v)),
-            ("compression", compression, |v| Some(v)),
-        ],
-        required: [],
-        TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
-    );
-
-    let tiles = parse_data_line(e, c, parser)?;
-
-    Ok(LayerData::Finite(tiles))
-}
-
-pub(crate) fn parse_data_line<R: Read>(
-    encoding: Option<String>,
-    compression: Option<String>,
-    parser: &mut EventReader<R>,
-) -> Result<Vec<LayerTile>, TiledError> {
-    match (encoding, compression) {
-        (None, None) => {
-            return Err(TiledError::Other(
-                "XML format is currently not supported".to_string(),
-            ))
-        }
-        (Some(e), None) => match e.as_ref() {
-            "base64" => return parse_base64(parser).map(|v| convert_to_tiles(&v)),
-            "csv" => return decode_csv(parser),
-            e => return Err(TiledError::Other(format!("Unknown encoding format {}", e))),
-        },
-        (Some(e), Some(c)) => match (e.as_ref(), c.as_ref()) {
-            ("base64", "zlib") => {
-                return parse_base64(parser)
-                    .and_then(decode_zlib)
-                    .map(|v| convert_to_tiles(&v))
-            }
-            ("base64", "gzip") => {
-                return parse_base64(parser)
-                    .and_then(decode_gzip)
-                    .map(|v| convert_to_tiles(&v))
-            }
-            #[cfg(feature = "zstd")]
-            ("base64", "zstd") => {
-                return parse_base64(parser)
-                    .and_then(decode_zstd)
-                    .map(|v| convert_to_tiles(&v))
-            }
-            (e, c) => {
-                return Err(TiledError::Other(format!(
-                    "Unknown combination of {} encoding and {} compression",
-                    e, c
-                )))
-            }
-        },
-        _ => return Err(TiledError::Other("Missing encoding format".to_string())),
-    };
-}
-
-pub(crate) fn parse_base64<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<u8>, TiledError> {
-    loop {
-        match parser.next().map_err(TiledError::XmlDecodingError)? {
-            XmlEvent::Characters(s) => {
-                return base64::decode(s.trim().as_bytes()).map_err(TiledError::Base64DecodingError)
-            }
-            XmlEvent::EndElement { name, .. } => {
-                if name.local_name == "data" {
-                    return Ok(Vec::new());
-                }
-            }
-            _ => {}
-        }
+    if r == 0 {
+        d
+    } else {
+        d - ((a < 0) ^ (b < 0)) as i32
     }
-}
-
-pub(crate) fn decode_zlib(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    use libflate::zlib::Decoder;
-    let mut zd =
-        Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::DecompressingError(e))?;
-    let mut data = Vec::new();
-    match zd.read_to_end(&mut data) {
-        Ok(_v) => {}
-        Err(e) => return Err(TiledError::DecompressingError(e)),
-    }
-    Ok(data)
-}
-
-pub(crate) fn decode_gzip(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    use libflate::gzip::Decoder;
-    let mut zd =
-        Decoder::new(BufReader::new(&data[..])).map_err(|e| TiledError::DecompressingError(e))?;
-
-    let mut data = Vec::new();
-    zd.read_to_end(&mut data)
-        .map_err(|e| TiledError::DecompressingError(e))?;
-    Ok(data)
-}
-
-#[cfg(feature = "zstd")]
-pub(crate) fn decode_zstd(data: Vec<u8>) -> Result<Vec<u8>, TiledError> {
-    use std::io::Cursor;
-    use zstd::stream::read::Decoder;
-
-    let buff = Cursor::new(&data);
-    let mut zd = Decoder::with_buffer(buff).map_err(|e| TiledError::DecompressingError(e))?;
-
-    let mut data = Vec::new();
-    zd.read_to_end(&mut data)
-        .map_err(|e| TiledError::DecompressingError(e))?;
-    Ok(data)
-}
-
-pub(crate) fn decode_csv<R: Read>(
-    parser: &mut EventReader<R>,
-) -> Result<Vec<LayerTile>, TiledError> {
-    loop {
-        match parser.next().map_err(TiledError::XmlDecodingError)? {
-            XmlEvent::Characters(s) => {
-                let tiles = s
-                    .split(',')
-                    .map(|v| v.trim().parse().unwrap())
-                    .map(LayerTile::new)
-                    .collect();
-                return Ok(tiles);
-            }
-            XmlEvent::EndElement { name, .. } => {
-                if name.local_name == "data" {
-                    return Ok(Vec::new());
-                }
-            }
-            _ => {}
-        }
-    }
-}
-
-pub(crate) fn convert_to_tiles(all: &Vec<u8>) -> Vec<LayerTile> {
-    let mut data = Vec::new();
-    for chunk in all.chunks_exact(4) {
-        let n = chunk[0] as u32
-            + ((chunk[1] as u32) << 8)
-            + ((chunk[2] as u32) << 16)
-            + ((chunk[3] as u32) << 24);
-        data.push(LayerTile::new(n));
-    }
-    data
 }

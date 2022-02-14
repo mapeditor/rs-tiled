@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.5" tiledversion="1.7.0" orientation="orthogonal" renderorder="right-down" width="8" height="8" tilewidth="32" tileheight="32" infinite="0" nextlayerid="10" nextobjectid="1">
+ <tileset firstgid="1" source="tilesheet.tsx"/>
+ <layer id="1" name="tile-1" width="8" height="8">
+  <properties>
+   <property name="key" value="value1"/>
+  </properties>
+  <data encoding="csv">
+6,7,8,0,0,0,0,0,
+20,21,22,0,0,0,0,0,
+34,35,36,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0
+</data>
+ </layer>
+ <group id="3" name="group-1">
+  <properties>
+   <property name="key" value="value4"/>
+  </properties>
+  <layer id="5" name="tile-2" width="8" height="8">
+   <properties>
+    <property name="key" value="value2"/>
+   </properties>
+   <data encoding="csv">
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,6,7,8,0,0,
+0,0,0,20,21,22,0,0,
+0,0,0,34,35,36,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0
+</data>
+  </layer>
+ </group>
+ <group id="6" name="group-2">
+  <properties>
+   <property name="key" value="value5"/>
+  </properties>
+  <group id="8" name="group-3">
+   <properties>
+    <property name="key" value="value6"/>
+   </properties>
+   <layer id="9" name="tile-3" width="8" height="8">
+    <properties>
+     <property name="key" value="value3"/>
+    </properties>
+    <data encoding="csv">
+0,0,0,48,49,50,0,0,
+0,0,0,62,63,64,0,0,
+0,0,0,76,77,78,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0
+</data>
+   </layer>
+  </group>
+ </group>
+</map>

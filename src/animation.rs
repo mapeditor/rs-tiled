@@ -1,6 +1,6 @@
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::TiledError, util::get_attrs};
+use crate::{error::TiledError, util::{get_attrs, XmlEventResult, parse_tag}};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Frame {
@@ -24,4 +24,18 @@ impl Frame {
             duration: duration,
         })
     }
+}
+
+
+pub(crate) fn parse_animation(
+    parser: &mut impl Iterator<Item = XmlEventResult>,
+) -> Result<Vec<Frame>, TiledError> {
+    let mut animation = Vec::new();
+    parse_tag!(parser, "animation", {
+        "frame" => |attrs| {
+            animation.push(Frame::new(attrs)?);
+            Ok(())
+        },
+    });
+    Ok(animation)
 }

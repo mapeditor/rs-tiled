@@ -1,13 +1,8 @@
-use std::fmt;
-
-#[derive(Debug, Copy, Clone)]
-pub enum ParseTileError {
-    ColorError,
-    OrientationError,
-}
+use std::{fmt, path::PathBuf};
 
 /// Errors which occured when parsing the file
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum TiledError {
     /// A attribute was missing, had the wrong type of wasn't formated
     /// correctly.
@@ -23,38 +18,85 @@ pub enum TiledError {
     SourceRequired {
         object_to_parse: String,
     },
-    Other(String),
+    /// The path given is invalid because it isn't contained in any folder.
+    PathIsNotFile,
+    CouldNotOpenFile {
+        path: PathBuf,
+        err: std::io::Error,
+    },
+    /// There was an invalid tile in the map parsed.
+    InvalidTileFound,
+    /// Unknown encoding or compression format or invalid combination of both (for tile layers)
+    InvalidEncodingFormat {
+        encoding: Option<String>,
+        compression: Option<String>,
+    },
+    /// There was an error parsing the value of a [`PropertyValue`].
+    /// 
+    /// [`PropertyValue`]: crate::PropertyValue
+    InvalidPropertyValue{description: String},
+    /// Found an unknown property value type while parsing a [`PropertyValue`].
+    /// 
+    /// [`PropertyValue`]: crate::PropertyValue
+    UnknownPropertyType{name: String},
 }
 
 impl fmt::Display for TiledError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        match *self {
-            TiledError::MalformedAttributes(ref s) => write!(fmt, "{}", s),
-            TiledError::DecompressingError(ref e) => write!(fmt, "{}", e),
-            TiledError::Base64DecodingError(ref e) => write!(fmt, "{}", e),
-            TiledError::XmlDecodingError(ref e) => write!(fmt, "{}", e),
-            TiledError::PrematureEnd(ref e) => write!(fmt, "{}", e),
+        match self {
+            TiledError::MalformedAttributes(s) => write!(fmt, "{}", s),
+            TiledError::DecompressingError(e) => write!(fmt, "{}", e),
+            TiledError::Base64DecodingError(e) => write!(fmt, "{}", e),
+            TiledError::XmlDecodingError(e) => write!(fmt, "{}", e),
+            TiledError::PrematureEnd(e) => write!(fmt, "{}", e),
             TiledError::SourceRequired {
                 ref object_to_parse,
             } => {
                 write!(fmt, "Tried to parse external {} without a file location, e.g. by using Map::parse_reader.", object_to_parse)
             }
-            TiledError::Other(ref s) => write!(fmt, "{}", s),
+            TiledError::PathIsNotFile => {
+                write!(
+                    fmt,
+                    "The path given is invalid because it isn't contained in any folder."
+                )
+            }
+            TiledError::CouldNotOpenFile { path, err } => {
+                write!(
+                    fmt,
+                    "Could not open '{}'. Error: {}",
+                    path.to_string_lossy(),
+                    err
+                )
+            }
+            TiledError::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
+            TiledError::InvalidEncodingFormat { encoding: None, compression: None } => 
+                write!(
+                    fmt,
+                    "Deprecated combination of encoding and compression"
+                ),
+            TiledError::InvalidEncodingFormat { encoding, compression } => 
+                write!(
+                    fmt,
+                    "Unknown encoding or compression format or invalid combination of both (for tile layers): {} encoding with {} compression",
+                    encoding.as_deref().unwrap_or("no"),
+                    compression.as_deref().unwrap_or("no")
+                ),
+            TiledError::InvalidPropertyValue{description} =>
+                write!(fmt, "Invalid property value: {}", description),
+            TiledError::UnknownPropertyType { name } =>
+                write!(fmt, "Unknown property value type '{}'", name),
         }
     }
 }
 
-// This is a skeleton implementation, which should probably be extended in the future.
 impl std::error::Error for TiledError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match *self {
-            TiledError::MalformedAttributes(_) => None,
-            TiledError::DecompressingError(ref e) => Some(e as &dyn std::error::Error),
-            TiledError::Base64DecodingError(ref e) => Some(e as &dyn std::error::Error),
-            TiledError::XmlDecodingError(ref e) => Some(e as &dyn std::error::Error),
-            TiledError::PrematureEnd(_) => None,
-            TiledError::SourceRequired { .. } => None,
-            TiledError::Other(_) => None,
+        match self {
+            TiledError::DecompressingError(e) => Some(e as &dyn std::error::Error),
+            TiledError::Base64DecodingError(e) => Some(e as &dyn std::error::Error),
+            TiledError::XmlDecodingError(e) => Some(e as &dyn std::error::Error),
+            TiledError::CouldNotOpenFile { err, .. } => Some(err as &dyn std::error::Error),
+            _ => None,
         }
     }
 }
