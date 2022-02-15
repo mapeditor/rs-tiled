@@ -107,6 +107,7 @@ impl TileLayerData {
 #[derive(Debug, Clone, PartialEq)]
 pub struct LayerTile<'map> {
     pub tileset: &'map Tileset,
+    pub tileset_index: usize,
     pub id: TileId,
     pub flip_h: bool,
     pub flip_v: bool,
@@ -117,6 +118,7 @@ impl<'map> LayerTile<'map> {
     pub(crate) fn from_data(data: &LayerTileData, map: &'map Map) -> Self {
         Self {
             tileset: &*map.tilesets()[data.tileset_index],
+            tileset_index: data.tileset_index,
             id: data.id,
             flip_h: data.flip_h,
             flip_v: data.flip_v,
