@@ -170,10 +170,65 @@ impl ObjectData {
 pub type Object<'map> = MapWrapper<'map, ObjectData>;
 
 impl<'map> Object<'map> {
+    /// Get the object's id.
+    pub fn id(&self) -> u32 {
+        self.data().id
+    }
+
     /// Returns the tile that the object is using as image, if any.
     pub fn get_tile(&self) -> Option<LayerTile<'map>> {
         self.data()
             .tile
             .map(|tile| LayerTile::from_data(&tile, self.map()))
+    }
+
+    /// Get a reference to the object's name.
+    pub fn name(&self) -> &str {
+        self.data().name.as_ref()
+    }
+
+    /// Get a reference to the object's type.
+    pub fn obj_type(&self) -> &str {
+        self.data().obj_type.as_ref()
+    }
+
+    /// Get the object's width.
+    pub fn width(&self) -> f32 {
+        self.data().width
+    }
+
+    /// Get the object's height.
+    pub fn height(&self) -> f32 {
+        self.data().height
+    }
+
+    /// Get the object's x.
+    pub fn x(&self) -> f32 {
+        self.data().x
+    }
+
+    /// Get object's y.
+    pub fn y(&self) -> f32 {
+        self.data().y
+    }
+
+    /// Get a reference to the object's rotation.
+    pub fn rotation(&self) -> f32 {
+        self.data().rotation
+    }
+
+    /// Whether the object should be visible or not.
+    pub fn visible(&self) -> bool {
+        self.data().visible
+    }
+
+    /// Get a reference to the object's shape.
+    pub fn shape(&self) -> &ObjectShape {
+        &self.data().shape
+    }
+
+    /// Get a reference to the object's properties.
+    pub fn properties(&self) -> &Properties {
+        &self.data().properties
     }
 }
