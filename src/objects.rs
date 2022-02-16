@@ -179,7 +179,8 @@ impl<'map> Object<'map> {
     pub fn get_tile(&self) -> Option<LayerTile<'map>> {
         self.data
             .tile
-            .map(|tile| LayerTile::from_data(&tile, self.map))
+            .as_ref()
+            .map(|tile| LayerTile::new(self.map, tile))
     }
 
     /// Get a reference to the object's name.
