@@ -138,12 +138,12 @@ impl<'map> Layer<'map> {
         self.data.offset_y
     }
 
-    /// Get the layer's x parallax.
+    /// Get the layer's x parallax factor.
     pub fn parallax_x(&self) -> f32 {
         self.data.parallax_x
     }
 
-    /// Get the layer's y parallax.
+    /// Get the layer's y parallax factor.
     pub fn parallax_y(&self) -> f32 {
         self.data.parallax_y
     }
