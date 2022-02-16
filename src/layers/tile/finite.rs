@@ -58,16 +58,6 @@ impl FiniteTileLayerData {
             None
         }
     }
-
-    /// Get the tile layer's width in tiles.
-    pub fn width(&self) -> u32 {
-        self.width
-    }
-
-    /// Get the tile layer's height in tiles.
-    pub fn height(&self) -> u32 {
-        self.height
-    }
 }
 
 pub type FiniteTileLayer<'map> = MapWrapper<'map, FiniteTileLayerData>;
@@ -77,5 +67,15 @@ impl<'map> FiniteTileLayer<'map> {
         self.data()
             .get_tile(x, y)
             .and_then(|data| Some(LayerTile::from_data(data, self.map())))
+    }
+
+    /// Get the tile layer's width in tiles.
+    pub fn width(&self) -> u32 {
+        self.data().width
+    }
+
+    /// Get the tile layer's height in tiles.
+    pub fn height(&self) -> u32 {
+        self.data().height
     }
 }
