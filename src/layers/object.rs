@@ -8,10 +8,11 @@ use crate::{
     Color, Map, MapTilesetGid, Object, ObjectData, Properties, TiledError,
 };
 
+/// Raw data referring to a map object layer or tile collision data.
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct ObjectLayerData {
-    objects: Vec<ObjectData>,
-    colour: Option<Color>,
+pub struct ObjectLayerData {
+    pub objects: Vec<ObjectData>,
+    pub colour: Option<Color>,
 }
 
 impl ObjectLayerData {

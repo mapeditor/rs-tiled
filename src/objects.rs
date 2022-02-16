@@ -18,20 +18,21 @@ pub enum ObjectShape {
     Point(f32, f32),
 }
 
+/// Raw data belonging to an object. Used internally and for tile collisions.
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct ObjectData {
-    id: u32,
+pub struct ObjectData {
+    pub id: u32,
     tile: Option<LayerTileData>,
-    name: String,
-    obj_type: String,
-    width: f32,
-    height: f32,
-    x: f32,
-    y: f32,
-    rotation: f32,
-    visible: bool,
-    shape: ObjectShape,
-    properties: Properties,
+    pub name: String,
+    pub obj_type: String,
+    pub width: f32,
+    pub height: f32,
+    pub x: f32,
+    pub y: f32,
+    pub rotation: f32,
+    pub visible: bool,
+    pub shape: ObjectShape,
+    pub properties: Properties,
 }
 
 impl ObjectData {

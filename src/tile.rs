@@ -17,7 +17,7 @@ pub type TileId = u32;
 pub struct Tile {
     pub image: Option<Image>,
     pub properties: Properties,
-    collision: Option<ObjectLayerData>,
+    pub collision: Option<ObjectLayerData>,
     pub animation: Option<Vec<Frame>>,
     pub tile_type: Option<String>,
     pub probability: f32,
