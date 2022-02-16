@@ -4,8 +4,8 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     parse_properties,
-    util::{get_attrs, parse_tag, XmlEventResult},
-    Gid, Map, MapTilesetGid, Properties, Tile, TileId, TiledError, Tileset,
+    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
+    Gid, Map, MapTilesetGid,  Properties, Tile, TileId, TiledError, Tileset,
 };
 
 mod finite;
@@ -18,13 +18,15 @@ pub use infinite::*;
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct LayerTileData {
-    /// The index of the tileset this tile's in, relative to the tile's map.
-    pub(crate) tileset_index: usize,
+    /// The index of the tileset this tile's in, relative to the tile's map. Guaranteed to be a
+    /// valid index of the map tileset container, but **isn't guaranteed to actually contain
+    /// this tile**.
+    tileset_index: usize,
     /// The local ID of the tile in the tileset it's in.
-    pub(crate) id: TileId,
-    pub flip_h: bool,
-    pub flip_v: bool,
-    pub flip_d: bool,
+    id: TileId,
+    flip_h: bool,
+    flip_v: bool,
+    flip_d: bool,
 }
 
 impl LayerTileData {
@@ -104,29 +106,47 @@ impl TileLayerData {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct LayerTile<'map> {
-    pub tileset: &'map Tileset,
-    pub id: TileId,
-    pub flip_h: bool,
-    pub flip_v: bool,
-    pub flip_d: bool,
-}
+map_wrapper!(LayerTile => LayerTileData);
 
 impl<'map> LayerTile<'map> {
-    pub(crate) fn from_data(data: &LayerTileData, map: &'map Map) -> Self {
-        Self {
-            tileset: &*map.tilesets()[data.tileset_index],
-            id: data.id,
-            flip_h: data.flip_h,
-            flip_v: data.flip_v,
-            flip_d: data.flip_d,
-        }
-    }
-
     /// Get a reference to the layer tile's referenced tile, if it exists.
     pub fn get_tile(&self) -> Option<&'map Tile> {
-        self.tileset.get_tile(self.id)
+        self.get_tileset().get_tile(self.data.id)
+    }
+    /// Get a reference to the layer tile's referenced tileset.
+    pub fn get_tileset(&self) -> &'map Tileset {
+        // SAFETY: `tileset_index` is guaranteed to be valid
+        &self.map.tilesets()[self.data.tileset_index]
+    }
+
+    /// Get the layer tile's tileset index. Guaranteed to be a
+    /// valid index of the map tileset container, but **isn't guaranteed to actually contain
+    /// this tile**.
+    ///
+    /// Use [`LayerTile::get_tile`] if you want to obtain the [`Tile`] that this layer tile is
+    /// referencing.
+    pub fn tileset_index(&self) -> usize {
+        self.data.tileset_index
+    }
+
+    /// Get the layer tile's local id within its parent tileset.
+    pub fn id(&self) -> u32 {
+        self.data.id
+    }
+
+    /// Whether this tile is flipped on its Y axis (horizontally).
+    pub fn flip_h(&self) -> bool {
+        self.data.flip_h
+    }
+
+    /// Whether this tile is flipped on its X axis (vertically).
+    pub fn flip_v(&self) -> bool {
+        self.data.flip_v
+    }
+
+    /// Whether this tile is flipped diagonally.
+    pub fn flip_d(&self) -> bool {
+        self.data.flip_d
     }
 }
 
