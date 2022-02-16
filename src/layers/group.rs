@@ -85,10 +85,10 @@ pub type GroupLayer<'map> = MapWrapper<'map, GroupLayerData>;
 
 impl<'map> GroupLayer<'map> {
     pub fn layers(&self) -> GroupLayerIter {
-        GroupLayerIter::new(self.map(), self.data())
+        GroupLayerIter::new(self.map, self.data)
     }
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
-        self.data().layers.get(index).map(|data| Layer::new(self.map(), data))
+        self.data.layers.get(index).map(|data| Layer::new(self.map, data))
     }
 }
 

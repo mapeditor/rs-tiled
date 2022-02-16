@@ -147,8 +147,8 @@ pub type InfiniteTileLayer<'map> = MapWrapper<'map, InfiniteTileLayerData>;
 
 impl<'map> InfiniteTileLayer<'map> {
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
-        self.data()
+        self.data
             .get_tile(x, y)
-            .and_then(|data| Some(LayerTile::from_data(data, self.map())))
+            .and_then(|data| Some(LayerTile::from_data(data, self.map)))
     }
 }

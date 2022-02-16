@@ -51,10 +51,10 @@ pub type ObjectLayer<'map> = MapWrapper<'map, ObjectLayerData>;
 
 impl<'map> ObjectLayer<'map> {
     pub fn get_object(&self, idx: usize) -> Option<Object<'map>> {
-        self.data()
+        self.data
             .objects
             .get(idx)
-            .map(|data| Object::new(self.map(), data))
+            .map(|data| Object::new(self.map, data))
     }
 
     pub fn objects(&self) -> Objects<'map> {

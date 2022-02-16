@@ -331,11 +331,6 @@ where
         Self { map, data }
     }
 
-    /// Get the wrapper's data.
-    pub fn data(&self) -> &'map DataT {
-        self.data
-    }
-
     /// Get the wrapper's map.
     pub fn map(&self) -> &'map Map {
         self.map

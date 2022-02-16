@@ -117,57 +117,57 @@ pub type Layer<'map> = MapWrapper<'map, LayerData>;
 impl<'map> Layer<'map> {
     /// Get a reference to the layer's name.
     pub fn name(&self) -> &str {
-        self.data().name.as_ref()
+        self.data.name.as_ref()
     }
 
     /// Get the layer's id.
     pub fn id(&self) -> u32 {
-        self.data().id
+        self.data.id
     }
 
     /// Whether this layer should be visible or not.
     pub fn visible(&self) -> bool {
-        self.data().visible
+        self.data.visible
     }
 
     /// Get the layer's x offset (in pixels).
     pub fn offset_x(&self) -> f32 {
-        self.data().offset_x
+        self.data.offset_x
     }
 
     /// Get the layer's y offset (in pixels).
     pub fn offset_y(&self) -> f32 {
-        self.data().offset_y
+        self.data.offset_y
     }
 
     /// Get the layer's x parallax.
     pub fn parallax_x(&self) -> f32 {
-        self.data().parallax_x
+        self.data.parallax_x
     }
 
     /// Get the layer's y parallax.
     pub fn parallax_y(&self) -> f32 {
-        self.data().parallax_y
+        self.data.parallax_y
     }
 
     /// Get the layer's opacity.
     pub fn opacity(&self) -> f32 {
-        self.data().opacity
+        self.data.opacity
     }
 
     /// Get the layer's tint color.
     pub fn tint_color(&self) -> Option<Color> {
-        self.data().tint_color
+        self.data.tint_color
     }
 
     /// Get a reference to the layer's properties.
     pub fn properties(&self) -> &Properties {
-        &self.data().properties
+        &self.data.properties
     }
 
     /// Get the layer's type.
     pub fn layer_type(&self) -> LayerType<'map> {
-        LayerType::new(self.map(), &self.data().layer_type)
+        LayerType::new(self.map, &self.data.layer_type)
     }
 }
 

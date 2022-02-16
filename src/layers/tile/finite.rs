@@ -64,18 +64,18 @@ pub type FiniteTileLayer<'map> = MapWrapper<'map, FiniteTileLayerData>;
 
 impl<'map> FiniteTileLayer<'map> {
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
-        self.data()
+        self.data
             .get_tile(x, y)
             .and_then(|data| Some(LayerTile::from_data(data, self.map())))
     }
 
     /// Get the tile layer's width in tiles.
     pub fn width(&self) -> u32 {
-        self.data().width
+        self.data.width
     }
 
     /// Get the tile layer's height in tiles.
     pub fn height(&self) -> u32 {
-        self.data().height
+        self.data.height
     }
 }
