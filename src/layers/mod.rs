@@ -30,18 +30,18 @@ pub(crate) enum LayerTag {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct LayerData {
-    pub name: String,
-    pub id: u32,
-    pub visible: bool,
-    pub offset_x: f32,
-    pub offset_y: f32,
-    pub parallax_x: f32,
-    pub parallax_y: f32,
-    pub opacity: f32,
-    pub tint_color: Option<Color>,
-    pub properties: Properties,
-    pub(crate) layer_type: LayerDataType,
+pub(crate) struct LayerData {
+    name: String,
+    id: u32,
+    visible: bool,
+    offset_x: f32,
+    offset_y: f32,
+    parallax_x: f32,
+    parallax_y: f32,
+    opacity: f32,
+    tint_color: Option<Color>,
+    properties: Properties,
+    layer_type: LayerDataType,
 }
 
 impl LayerData {

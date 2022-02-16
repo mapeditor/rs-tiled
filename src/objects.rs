@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult, map_wrapper},
+    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
     LayerTile, LayerTileData, MapTilesetGid,
 };
 
@@ -19,19 +19,19 @@ pub enum ObjectShape {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ObjectData {
-    pub id: u32,
+pub(crate) struct ObjectData {
+    id: u32,
     tile: Option<LayerTileData>,
-    pub name: String,
-    pub obj_type: String,
-    pub width: f32,
-    pub height: f32,
-    pub x: f32,
-    pub y: f32,
-    pub rotation: f32,
-    pub visible: bool,
-    pub shape: ObjectShape,
-    pub properties: Properties,
+    name: String,
+    obj_type: String,
+    width: f32,
+    height: f32,
+    x: f32,
+    y: f32,
+    rotation: f32,
+    visible: bool,
+    shape: ObjectShape,
+    properties: Properties,
 }
 
 impl ObjectData {

@@ -7,8 +7,8 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ImageLayerData {
-    pub image: Option<Image>,
+pub(crate) struct ImageLayerData {
+    image: Option<Image>,
 }
 
 impl ImageLayerData {

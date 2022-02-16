@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    animation::{Frame, parse_animation},
+    animation::{parse_animation, Frame},
     error::TiledError,
     image::Image,
     layers::ObjectLayerData,
@@ -17,7 +17,7 @@ pub type TileId = u32;
 pub struct Tile {
     pub image: Option<Image>,
     pub properties: Properties,
-    pub collision: Option<ObjectLayerData>,
+    collision: Option<ObjectLayerData>,
     pub animation: Option<Vec<Frame>>,
     pub tile_type: Option<String>,
     pub probability: f32,

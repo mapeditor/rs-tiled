@@ -10,7 +10,7 @@ use crate::{
 use super::util::parse_data_line;
 
 #[derive(PartialEq, Clone)]
-pub struct InfiniteTileLayerData {
+pub(crate) struct InfiniteTileLayerData {
     chunks: HashMap<(i32, i32), Chunk>,
 }
 

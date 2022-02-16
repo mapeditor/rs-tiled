@@ -9,9 +9,9 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ObjectLayerData {
-    pub objects: Vec<ObjectData>,
-    pub colour: Option<Color>,
+pub(crate) struct ObjectLayerData {
+    objects: Vec<ObjectData>,
+    colour: Option<Color>,
 }
 
 impl ObjectLayerData {

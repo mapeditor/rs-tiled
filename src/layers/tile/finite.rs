@@ -8,11 +8,11 @@ use crate::{
 use super::util::parse_data_line;
 
 #[derive(PartialEq, Clone, Default)]
-pub struct FiniteTileLayerData {
+pub(crate) struct FiniteTileLayerData {
     width: u32,
     height: u32,
     /// The tiles are arranged in rows.
-    pub(crate) tiles: Vec<Option<LayerTileData>>,
+    tiles: Vec<Option<LayerTileData>>,
 }
 
 impl std::fmt::Debug for FiniteTileLayerData {

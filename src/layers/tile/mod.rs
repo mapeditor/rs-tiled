@@ -21,12 +21,12 @@ pub(crate) struct LayerTileData {
     /// The index of the tileset this tile's in, relative to the tile's map. Guaranteed to be a
     /// valid index of the map tileset container, but **isn't guaranteed to actually contain
     /// this tile**.
-    pub(crate) tileset_index: usize,
+    tileset_index: usize,
     /// The local ID of the tile in the tileset it's in.
-    pub(crate) id: TileId,
-    pub flip_h: bool,
-    pub flip_v: bool,
-    pub flip_d: bool,
+    id: TileId,
+    flip_h: bool,
+    flip_v: bool,
+    flip_d: bool,
 }
 
 impl LayerTileData {
