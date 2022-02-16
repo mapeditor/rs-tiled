@@ -2,9 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{
-    error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid, MapWrapper,
-};
+use crate::{error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid};
 
 mod image;
 pub use image::*;
@@ -112,7 +110,7 @@ impl LayerData {
     }
 }
 
-pub type Layer<'map> = MapWrapper<'map, LayerData>;
+map_wrapper!(Layer => LayerData);
 
 impl<'map> Layer<'map> {
     /// Get a reference to the layer's name.

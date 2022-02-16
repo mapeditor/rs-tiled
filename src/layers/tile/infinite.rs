@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    util::{floor_div, get_attrs, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, MapWrapper, TiledError,
+    util::{floor_div, get_attrs, map_wrapper, parse_tag, XmlEventResult},
+    LayerTile, LayerTileData, MapTilesetGid,  TiledError,
 };
 
 use super::util::parse_data_line;
@@ -143,7 +143,7 @@ impl InternalChunk {
     }
 }
 
-pub type InfiniteTileLayer<'map> = MapWrapper<'map, InfiniteTileLayerData>;
+map_wrapper!(InfiniteTileLayer => InfiniteTileLayerData);
 
 impl<'map> InfiniteTileLayer<'map> {
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {

@@ -2,8 +2,8 @@ use std::{collections::HashMap, path::Path};
 
 use crate::{
     parse_properties,
-    util::{parse_tag, XmlEventResult},
-    Image, MapWrapper, Properties, TiledError,
+    util::{parse_tag, XmlEventResult, map_wrapper},
+    Image, Properties, TiledError,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -35,7 +35,7 @@ impl ImageLayerData {
     }
 }
 
-pub type ImageLayer<'map> = MapWrapper<'map, ImageLayerData>;
+map_wrapper!(ImageLayer => ImageLayerData);
 
 impl<'map> ImageLayer<'map> {
     /// Get a reference to the image layer's image.

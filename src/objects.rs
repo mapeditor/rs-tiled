@@ -5,8 +5,8 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, MapWrapper,
+    util::{get_attrs, parse_tag, XmlEventResult, map_wrapper},
+    LayerTile, LayerTileData, MapTilesetGid,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -167,7 +167,7 @@ impl ObjectData {
     }
 }
 
-pub type Object<'map> = MapWrapper<'map, ObjectData>;
+map_wrapper!(Object => ObjectData);
 
 impl<'map> Object<'map> {
     /// Get the object's id.

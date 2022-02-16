@@ -1,8 +1,8 @@
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    util::{get_attrs, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, MapWrapper, TiledError,
+    util::{get_attrs, map_wrapper, XmlEventResult},
+    LayerTile, LayerTileData, MapTilesetGid, TiledError,
 };
 
 use super::util::parse_data_line;
@@ -60,13 +60,13 @@ impl FiniteTileLayerData {
     }
 }
 
-pub type FiniteTileLayer<'map> = MapWrapper<'map, FiniteTileLayerData>;
+map_wrapper!(FiniteTileLayer => FiniteTileLayerData);
 
 impl<'map> FiniteTileLayer<'map> {
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data
             .get_tile(x, y)
-            .and_then(|data| Some(LayerTile::new( self.map(),data)))
+            .and_then(|data| Some(LayerTile::new(self.map(), data)))
     }
 
     /// Get the tile layer's width in tiles.
