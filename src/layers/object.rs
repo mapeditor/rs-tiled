@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Color, MapTilesetGid, MapWrapper, Object, ObjectData, Properties, TiledError,
+    Color, Map, MapTilesetGid, MapWrapper, Object, ObjectData, Properties, TiledError,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -55,5 +55,42 @@ impl<'map> ObjectLayer<'map> {
             .objects
             .get(idx)
             .map(|data| Object::new(self.map(), data))
+    }
+
+    pub fn objects(&self) -> Objects<'map> {
+        Objects::new(self.map, self.data)
+    }
+}
+
+/// An iterator that iterates over all the objects in an object layer, obtained via [`ObjectLayer::objects`].
+pub struct Objects<'map> {
+    map: &'map Map,
+    data: &'map ObjectLayerData,
+    index: usize,
+}
+
+impl<'map> Objects<'map> {
+    fn new(map: &'map Map, data: &'map ObjectLayerData) -> Self {
+        Self {
+            map,
+            data,
+            index: 0,
+        }
+    }
+}
+
+impl<'map> Iterator for Objects<'map> {
+    type Item = Object<'map>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let object_data = self.data.objects.get(self.index)?;
+        self.index += 1;
+        Some(Object::new(self.map, object_data))
+    }
+}
+
+impl<'map> ExactSizeIterator for Objects<'map> {
+    fn len(&self) -> usize {
+        self.data.objects.len() - self.index
     }
 }

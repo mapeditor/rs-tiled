@@ -319,7 +319,7 @@ pub struct MapWrapper<'map, DataT>
 where
     DataT: Clone + PartialEq + std::fmt::Debug,
 {
-    map: &'map Map,
+    pub(crate) map: &'map Map,
     pub(crate) data: &'map DataT,
 }
 
