@@ -14,15 +14,15 @@ fn main() {
     let map = Map::parse_file(map_path, &mut cache).unwrap();
 
     for layer in map.layers() {
-        print!("Layer \"{}\":\n\t", layer.data().name);
+        print!("Layer \"{}\":\n\t", layer.name());
 
         match layer.layer_type() {
             tiled::LayerType::TileLayer(layer) => match layer {
                 tiled::TileLayer::Finite(data) => println!(
                     "Finite tile layer with width = {} and height = {}; ID of tile @ (0,0): {}",
-                    data.data().width(),
-                    data.data().height(),
-                    data.get_tile(0, 0).unwrap().id
+                    data.width(),
+                    data.height(),
+                    data.get_tile(0, 0).unwrap().id()
                 ),
                 tiled::TileLayer::Infinite(data) => {
                     // This is prone to change! Infinite layers will be refactored before 0.10.0
@@ -34,12 +34,12 @@ fn main() {
                 }
             },
             tiled::LayerType::ObjectLayer(layer) => {
-                println!("Object layer with {} objects", layer.data().objects.len())
+                println!("Object layer with {} objects", layer.objects().len())
             }
             tiled::LayerType::ImageLayer(layer) => {
                 println!(
                     "Image layer with {}",
-                    match &layer.data().image {
+                    match &layer.image() {
                         Some(img) =>
                             format!("an image with source = {}", img.source.to_string_lossy()),
                         None => "no image".to_owned(),
