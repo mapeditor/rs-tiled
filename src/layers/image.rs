@@ -36,3 +36,10 @@ impl ImageLayerData {
 }
 
 pub type ImageLayer<'map> = MapWrapper<'map, ImageLayerData>;
+
+impl<'map> ImageLayer<'map> {
+    /// Get a reference to the image layer's image.
+    pub fn image(&self) -> Option<&Image> {
+        self.data.image.as_ref()
+    }
+}

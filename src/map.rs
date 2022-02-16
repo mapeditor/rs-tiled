@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, sync::Arc, str::FromStr};
+use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr, sync::Arc};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
@@ -320,7 +320,7 @@ where
     DataT: Clone + PartialEq + std::fmt::Debug,
 {
     map: &'map Map,
-    data: &'map DataT,
+    pub(crate) data: &'map DataT,
 }
 
 impl<'map, DataT> MapWrapper<'map, DataT>
