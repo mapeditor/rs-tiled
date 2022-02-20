@@ -15,6 +15,7 @@ pub type TileId = u32;
 
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct Tile {
+    pub id: TileId,
     pub image: Option<Image>,
     pub properties: Properties,
     pub collision: Option<ObjectLayerData>,
@@ -28,7 +29,7 @@ impl Tile {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: Option<&Path>,
-    ) -> Result<(TileId, Tile), TiledError> {
+    ) -> Result<Tile, TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
             optionals: [
@@ -63,16 +64,14 @@ impl Tile {
                 Ok(())
             },
         });
-        Ok((
-            id,
-            Tile {
+        Ok(Tile {
+                id,
                 image,
                 properties,
                 collision: objectgroup,
                 animation,
                 tile_type,
                 probability: probability.unwrap_or(1.0),
-            },
-        ))
+        })
     }
 }

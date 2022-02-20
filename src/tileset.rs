@@ -251,8 +251,8 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                let (id, tile) = Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?;
-                tiles.insert(id, tile);
+                let tile = Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?;
+                tiles.insert(tile.id, tile);
                 Ok(())
             },
         });
