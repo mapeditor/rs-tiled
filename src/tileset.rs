@@ -9,8 +9,8 @@ use xml::EventReader;
 use crate::error::TiledError;
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
-use crate::tile::Tile;
-use crate::{util::*, Gid};
+use crate::tile::TileData;
+use crate::{util::*, Gid, Tile};
 
 /// A tileset, usually the tilesheet image.
 #[derive(Debug, PartialEq, Clone)]
@@ -33,7 +33,7 @@ pub struct Tileset {
     pub image: Option<Image>,
 
     /// All the tiles present in this tileset, indexed by their local IDs.
-    pub tiles: HashMap<u32, Tile>,
+    tiles: HashMap<u32, TileData>,
 
     /// The custom properties of the tileset.
     pub properties: Properties,
@@ -78,8 +78,8 @@ impl Tileset {
         Tileset::new_external(reader, Some(path.as_ref()))
     }
 
-    pub fn get_tile(&self, id: u32) -> Option<&Tile> {
-        self.tiles.get(&id)
+    pub fn get_tile(&self, id: u32) -> Option<Tile> {
+        self.tiles.get(&id).map(|data| Tile::new(self, data))
     }
 }
 
@@ -251,7 +251,7 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                let (id, tile) = Tile::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?;
+                let (id, tile) = TileData::new(parser, attrs, prop.path_relative_to.as_ref().and_then(|p| Some(p.as_path())))?;
                 tiles.insert(id, tile);
                 Ok(())
             },
