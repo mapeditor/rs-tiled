@@ -27,7 +27,7 @@ impl Tile {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-        path_relative_to: Option<&Path>,
+        path_relative_to: &Path,
     ) -> Result<(TileId, Tile), TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
@@ -47,7 +47,7 @@ impl Tile {
         let mut animation = None;
         parse_tag!(parser, "tile", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse:"Image".to_owned()})?)?);
+                image = Some(Image::new(parser, attrs, path_relative_to)?);
                 Ok(())
             },
             "properties" => |_| {
