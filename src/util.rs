@@ -55,21 +55,7 @@ macro_rules! parse_tag {
 pub(crate) use get_attrs;
 pub(crate) use parse_tag;
 
-use crate::{animation::Frame, error::TiledError, Gid, MapTilesetGid};
-
-// TODO: Move to animation module
-pub(crate) fn parse_animation(
-    parser: &mut impl Iterator<Item = XmlEventResult>,
-) -> Result<Vec<Frame>, TiledError> {
-    let mut animation = Vec::new();
-    parse_tag!(parser, "animation", {
-        "frame" => |attrs| {
-            animation.push(Frame::new(attrs)?);
-            Ok(())
-        },
-    });
-    Ok(animation)
-}
+use crate::{Gid, MapTilesetGid};
 
 pub(crate) type XmlEventResult = xml::reader::Result<xml::reader::XmlEvent>;
 
@@ -83,4 +69,15 @@ pub(crate) fn get_tileset_for_gid(
         .enumerate()
         .rev()
         .find(|(_idx, ts)| ts.first_gid <= gid)
+}
+
+pub fn floor_div(a: i32, b: i32) -> i32 {
+    let d = a / b;
+    let r = a % b;
+
+    if r == 0 {
+        d
+    } else {
+        d - ((a < 0) ^ (b < 0)) as i32
+    }
 }

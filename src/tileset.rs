@@ -88,14 +88,12 @@ impl Tileset {
             {
                 XmlEvent::StartElement {
                     name, attributes, ..
-                } => {
-                    if name.local_name == "tileset" {
-                        return Self::parse_external_tileset(
-                            &mut tileset_parser.into_iter(),
-                            &attributes,
-                            path.as_ref(),
-                        );
-                    }
+                } if name.local_name == "tileset" => {
+                    return Self::parse_external_tileset(
+                        &mut tileset_parser.into_iter(),
+                        &attributes,
+                        path.as_ref(),
+                    );
                 }
                 XmlEvent::EndDocument => {
                     return Err(TiledError::PrematureEnd(
