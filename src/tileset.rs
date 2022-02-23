@@ -9,8 +9,8 @@ use xml::EventReader;
 use crate::error::TiledError;
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
-use crate::tile::Tile;
-use crate::{util::*, Gid};
+use crate::tile::TileData;
+use crate::{util::*, Gid, Tile};
 
 /// A tileset, usually the tilesheet image.
 #[derive(Debug, PartialEq, Clone)]
@@ -33,7 +33,7 @@ pub struct Tileset {
     pub image: Option<Image>,
 
     /// All the tiles present in this tileset, indexed by their local IDs.
-    pub tiles: HashMap<u32, Tile>,
+    tiles: HashMap<u32, TileData>,
 
     /// The custom properties of the tileset.
     pub properties: Properties,
@@ -106,8 +106,8 @@ impl Tileset {
     }
 
     /// Gets the tile with the specified ID from the tileset.
-    pub fn get_tile(&self, id: u32) -> Option<&Tile> {
-        self.tiles.get(&id)
+    pub fn get_tile(&self, id: u32) -> Option<Tile> {
+        self.tiles.get(&id).map(|data| Tile::new(self, data))
     }
 }
 
@@ -244,20 +244,20 @@ impl Tileset {
         let mut properties = HashMap::new();
 
         parse_tag!(parser, "tileset", {
-            "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, &prop.root_path)?);
-                Ok(())
-            },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
-                Ok(())
-            },
-            "tile" => |attrs| {
-                let (id, tile) = Tile::new(parser, attrs, &prop.root_path)?;
-                tiles.insert(id, tile);
-                Ok(())
-            },
-        });
+                    "image" => |attrs| {
+                        image = Some(Image::new(parser, attrs, &prop.root_path)?);
+                        Ok(())
+                    },
+                    "properties" => |_| {
+                        properties = parse_properties(parser)?;
+                        Ok(())
+                    },
+                    "tile" => |attrs| {
+                        let (id, tile) = TileData::new(parser, attrs, &prop.root_path)?;
+                        tiles.insert(id, tile);
+                        Ok(())
+                    },
+                });
 
         // A tileset is considered an image collection tileset if there is no image attribute (because its tiles do).
         let is_image_collection_tileset = image.is_none();
