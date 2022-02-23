@@ -1,17 +1,17 @@
-use std::path::Path;
 use std::collections::HashMap;
+use std::path::Path;
 
-use crate:: {
-    layers::{LayerData, LayerTag},
+use crate::{
     error::TiledError,
-    properties::{parse_properties, Properties},
+    layers::{LayerData, LayerTag},
     map::MapTilesetGid,
+    properties::{parse_properties, Properties},
     util::*,
-    MapWrapper, Layer, Map
+    Layer, Map,
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct GroupLayerData {
+pub(crate) struct GroupLayerData {
     layers: Vec<LayerData>,
 }
 
@@ -74,21 +74,21 @@ impl GroupLayerData {
                 Ok(())
             },
         });
-        Ok((
-            Self { layers },
-            properties,
-        ))
+        Ok((Self { layers }, properties))
     }
 }
 
-pub type GroupLayer<'map> = MapWrapper<'map, GroupLayerData>;
+map_wrapper!(GroupLayer => GroupLayerData);
 
 impl<'map> GroupLayer<'map> {
     pub fn layers(&self) -> GroupLayerIter {
-        GroupLayerIter::new(self.map(), self.data())
+        GroupLayerIter::new(self.map, self.data)
     }
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
-        self.data().layers.get(index).map(|data| Layer::new(self.map(), data))
+        self.data
+            .layers
+            .get(index)
+            .map(|data| Layer::new(self.map, data))
     }
 }
 
@@ -101,7 +101,11 @@ pub struct GroupLayerIter<'map> {
 
 impl<'map> GroupLayerIter<'map> {
     fn new(map: &'map Map, group: &'map GroupLayerData) -> Self {
-        Self { map, group, index: 0 }
+        Self {
+            map,
+            group,
+            index: 0,
+        }
     }
 }
 

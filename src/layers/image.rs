@@ -2,13 +2,13 @@ use std::{collections::HashMap, path::Path};
 
 use crate::{
     parse_properties,
-    util::{parse_tag, XmlEventResult},
-    Image, MapWrapper, Properties, TiledError,
+    util::{parse_tag, XmlEventResult, map_wrapper},
+    Image, Properties, TiledError,
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ImageLayerData {
-    pub image: Option<Image>,
+pub(crate) struct ImageLayerData {
+    image: Option<Image>,
 }
 
 impl ImageLayerData {
@@ -35,4 +35,11 @@ impl ImageLayerData {
     }
 }
 
-pub type ImageLayer<'map> = MapWrapper<'map, ImageLayerData>;
+map_wrapper!(ImageLayer => ImageLayerData);
+
+impl<'map> ImageLayer<'map> {
+    /// Get a reference to the image layer's image.
+    pub fn image(&self) -> Option<&Image> {
+        self.data.image.as_ref()
+    }
+}

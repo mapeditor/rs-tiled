@@ -2,9 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{
-    error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid, MapWrapper,
-};
+use crate::{error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid};
 
 mod image;
 pub use image::*;
@@ -32,18 +30,18 @@ pub(crate) enum LayerTag {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct LayerData {
-    pub name: String,
-    pub id: u32,
-    pub visible: bool,
-    pub offset_x: f32,
-    pub offset_y: f32,
-    pub parallax_x: f32,
-    pub parallax_y: f32,
-    pub opacity: f32,
-    pub tint_color: Option<Color>,
-    pub properties: Properties,
-    pub(crate) layer_type: LayerDataType,
+pub(crate) struct LayerData {
+    name: String,
+    id: u32,
+    visible: bool,
+    offset_x: f32,
+    offset_y: f32,
+    parallax_x: f32,
+    parallax_y: f32,
+    opacity: f32,
+    tint_color: Option<Color>,
+    properties: Properties,
+    layer_type: LayerDataType,
 }
 
 impl LayerData {
@@ -112,12 +110,62 @@ impl LayerData {
     }
 }
 
-pub type Layer<'map> = MapWrapper<'map, LayerData>;
+map_wrapper!(Layer => LayerData);
 
 impl<'map> Layer<'map> {
+    /// Get a reference to the layer's name.
+    pub fn name(&self) -> &str {
+        self.data.name.as_ref()
+    }
+
+    /// Get the layer's id.
+    pub fn id(&self) -> u32 {
+        self.data.id
+    }
+
+    /// Whether this layer should be visible or not.
+    pub fn visible(&self) -> bool {
+        self.data.visible
+    }
+
+    /// Get the layer's x offset (in pixels).
+    pub fn offset_x(&self) -> f32 {
+        self.data.offset_x
+    }
+
+    /// Get the layer's y offset (in pixels).
+    pub fn offset_y(&self) -> f32 {
+        self.data.offset_y
+    }
+
+    /// Get the layer's x parallax factor.
+    pub fn parallax_x(&self) -> f32 {
+        self.data.parallax_x
+    }
+
+    /// Get the layer's y parallax factor.
+    pub fn parallax_y(&self) -> f32 {
+        self.data.parallax_y
+    }
+
+    /// Get the layer's opacity.
+    pub fn opacity(&self) -> f32 {
+        self.data.opacity
+    }
+
+    /// Get the layer's tint color.
+    pub fn tint_color(&self) -> Option<Color> {
+        self.data.tint_color
+    }
+
+    /// Get a reference to the layer's properties.
+    pub fn properties(&self) -> &Properties {
+        &self.data.properties
+    }
+
     /// Get the layer's type.
     pub fn layer_type(&self) -> LayerType<'map> {
-        LayerType::new(self.map(), &self.data().layer_type)
+        LayerType::new(self.map, &self.data.layer_type)
     }
 }
 

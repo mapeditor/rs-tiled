@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    animation::{Frame, parse_animation},
+    animation::{parse_animation, Frame},
     error::TiledError,
     image::Image,
     layers::ObjectLayerData,

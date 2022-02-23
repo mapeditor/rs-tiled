@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, sync::Arc, str::FromStr};
+use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr, sync::Arc};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
@@ -311,33 +311,4 @@ impl Gid {
     /// The GID representing an empty tile in the map.
     #[allow(dead_code)]
     pub const EMPTY: Gid = Gid(0);
-}
-
-/// A wrapper over a naive datatype that holds a reference to the parent map as well as the type's data.
-#[derive(Clone, PartialEq, Debug)]
-pub struct MapWrapper<'map, DataT>
-where
-    DataT: Clone + PartialEq + std::fmt::Debug,
-{
-    map: &'map Map,
-    data: &'map DataT,
-}
-
-impl<'map, DataT> MapWrapper<'map, DataT>
-where
-    DataT: Clone + PartialEq + std::fmt::Debug,
-{
-    pub(crate) fn new(map: &'map Map, data: &'map DataT) -> Self {
-        Self { map, data }
-    }
-
-    /// Get the wrapper's data.
-    pub fn data(&self) -> &'map DataT {
-        self.data
-    }
-
-    /// Get the wrapper's map.
-    pub fn map(&self) -> &'map Map {
-        self.map
-    }
 }
