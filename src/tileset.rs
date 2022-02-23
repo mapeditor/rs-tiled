@@ -78,6 +78,7 @@ impl Tileset {
         Tileset::new_external(reader, Some(path.as_ref()))
     }
 
+    #[inline]
     pub fn get_tile(&self, id: u32) -> Option<&Tile> {
         self.tiles.get(&id)
     }

@@ -2,7 +2,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{error::TiledError, util::{get_attrs, XmlEventResult, parse_tag}};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Frame {
     pub tile_id: u32,
     pub duration: u32,

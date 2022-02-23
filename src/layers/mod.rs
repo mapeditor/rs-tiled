@@ -169,6 +169,7 @@ impl<'map> Layer<'map> {
     }
 }
 
+#[derive(Debug)]
 pub enum LayerType<'map> {
     TileLayer(TileLayer<'map>),
     ObjectLayer(ObjectLayer<'map>),

@@ -55,18 +55,20 @@ macro_rules! parse_tag {
 /// Creates a new type that wraps an internal data type over along with a map.
 macro_rules! map_wrapper {
     ($name:ident => $data_ty:ty) => {
-        #[derive(Clone, PartialEq, Debug)]
+        #[derive(Clone, Copy, PartialEq, Debug)]
         pub struct $name<'map> {
             pub(crate) map: &'map $crate::Map,
             pub(crate) data: &'map $data_ty,
         }
 
         impl<'map> $name<'map> {
+            #[inline]
             pub(crate) fn new(map: &'map $crate::Map, data: &'map $data_ty) -> Self {
                 Self { map, data }
             }
 
             /// Get the map this object is from.
+            #[inline]
             pub fn map(&self) -> &'map $crate::Map {
                 self.map
             }

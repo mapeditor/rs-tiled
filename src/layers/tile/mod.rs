@@ -125,31 +125,37 @@ impl<'map> LayerTile<'map> {
     ///
     /// Use [`LayerTile::get_tile`] if you want to obtain the [`Tile`] that this layer tile is
     /// referencing.
+    #[inline]
     pub fn tileset_index(&self) -> usize {
         self.data.tileset_index
     }
 
     /// Get the layer tile's local id within its parent tileset.
+    #[inline]
     pub fn id(&self) -> u32 {
         self.data.id
     }
 
     /// Whether this tile is flipped on its Y axis (horizontally).
+    #[inline]
     pub fn flip_h(&self) -> bool {
         self.data.flip_h
     }
 
     /// Whether this tile is flipped on its X axis (vertically).
+    #[inline]
     pub fn flip_v(&self) -> bool {
         self.data.flip_v
     }
 
     /// Whether this tile is flipped diagonally.
+    #[inline]
     pub fn flip_d(&self) -> bool {
         self.data.flip_d
     }
 }
 
+#[derive(Debug)]
 pub enum TileLayer<'map> {
     Finite(FiniteTileLayer<'map>),
     Infinite(InfiniteTileLayer<'map>),

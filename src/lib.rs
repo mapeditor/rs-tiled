@@ -1,3 +1,7 @@
+#![deny(unsafe_code)]
+#![deny(missing_copy_implementations)]
+#![deny(missing_debug_implementations)]
+
 mod animation;
 mod cache;
 mod error;
