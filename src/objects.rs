@@ -172,6 +172,7 @@ map_wrapper!(Object => ObjectData);
 
 impl<'map> Object<'map> {
     /// Get the object's id.
+    #[inline]
     pub fn id(&self) -> u32 {
         self.data.id
     }
@@ -185,51 +186,61 @@ impl<'map> Object<'map> {
     }
 
     /// Get a reference to the object's name.
+    #[inline]
     pub fn name(&self) -> &str {
         self.data.name.as_ref()
     }
 
     /// Get a reference to the object's type.
+    #[inline]
     pub fn obj_type(&self) -> &str {
         self.data.obj_type.as_ref()
     }
 
     /// Get the object's width.
+    #[inline]
     pub fn width(&self) -> f32 {
         self.data.width
     }
 
     /// Get the object's height.
+    #[inline]
     pub fn height(&self) -> f32 {
         self.data.height
     }
 
     /// Get the object's x.
+    #[inline]
     pub fn x(&self) -> f32 {
         self.data.x
     }
 
     /// Get object's y.
+    #[inline]
     pub fn y(&self) -> f32 {
         self.data.y
     }
 
     /// Get a reference to the object's rotation.
+    #[inline]
     pub fn rotation(&self) -> f32 {
         self.data.rotation
     }
 
     /// Whether the object should be visible or not.
+    #[inline]
     pub fn visible(&self) -> bool {
         self.data.visible
     }
 
     /// Get a reference to the object's shape.
+    #[inline]
     pub fn shape(&self) -> &ObjectShape {
         &self.data.shape
     }
 
     /// Get a reference to the object's properties.
+    #[inline]
     pub fn properties(&self) -> &Properties {
         &self.data.properties
     }
