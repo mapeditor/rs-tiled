@@ -74,7 +74,7 @@ impl ObjectData {
         // If the template attribute is there, we need to go fetch the template file
         let template_id = if let Some(template) = template {
             let s: String = template;
-            let parent_dir = base_path.parent().unwrap();
+            let parent_dir = base_path.parent().ok_or(TiledError::PathIsNotFile)?;
             let template_path = parent_dir.join(Path::new(&s));
 
             let template_id =
