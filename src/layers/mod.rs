@@ -2,7 +2,10 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid};
+use crate::{
+    error::TiledError, properties::Properties, template::Template, util::*, Color, Map,
+    MapTilesetGid, ResourceCache,
+};
 
 mod image;
 pub use image::*;
@@ -52,6 +55,9 @@ impl LayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
         let (
             (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id),
@@ -77,11 +83,20 @@ impl LayerData {
 
         let (ty, properties) = match tag {
             LayerTag::TileLayer => {
-                let (ty, properties) = TileLayerData::new(parser, attrs, infinite, tilesets)?;
+                let (ty, properties) =
+                    TileLayerData::new(parser, attrs, infinite, tilesets, for_template)?;
                 (LayerDataType::TileLayer(ty), properties)
             }
             LayerTag::ObjectLayer => {
-                let (ty, properties) = ObjectLayerData::new(parser, attrs, Some(tilesets))?;
+                let (ty, properties) = ObjectLayerData::new(
+                    parser,
+                    attrs,
+                    Some(tilesets),
+                    templates,
+                    for_template,
+                    map_path,
+                    cache,
+                )?;
                 (LayerDataType::ObjectLayer(ty), properties)
             }
             LayerTag::ImageLayer => {
@@ -89,7 +104,15 @@ impl LayerData {
                 (LayerDataType::ImageLayer(ty), properties)
             }
             LayerTag::GroupLayer => {
-                let (ty, properties) = GroupLayerData::new(parser, infinite, map_path, tilesets)?;
+                let (ty, properties) = GroupLayerData::new(
+                    parser,
+                    infinite,
+                    map_path,
+                    tilesets,
+                    templates,
+                    for_template,
+                    cache,
+                )?;
                 (LayerDataType::GroupLayer(ty), properties)
             }
         };

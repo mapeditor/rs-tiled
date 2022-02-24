@@ -8,7 +8,7 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag, XmlEventResult},
-    EmbeddedParseResultType, Layer, ResourceCache,
+    EmbeddedParseResultType, Layer, ResourceCache, Template,
 };
 
 pub(crate) struct MapTilesetGid {
@@ -34,6 +34,8 @@ pub struct Map {
     tilesets: Vec<Arc<Tileset>>,
     /// The layers present in this map.
     layers: Vec<LayerData>,
+    /// All templates reachable by this map.
+    templates: Vec<Template>,
     /// The custom properties of this map.
     pub properties: Properties,
     /// The background color of this map, if any.
@@ -102,6 +104,11 @@ impl Map {
     /// Get a reference to the map's tilesets.
     pub fn tilesets(&self) -> &[Arc<Tileset>] {
         self.tilesets.as_ref()
+    }
+
+    /// Get a reference to the map's templates.
+    pub(crate) fn templates(&self) -> &[Template] {
+        self.templates.as_ref()
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
@@ -175,14 +182,21 @@ impl Map {
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
+        let mut templates = Vec::new();
 
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
-                let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
+                let res = Tileset::parse_xml_in_map(parser, attrs, map_path, &mut templates, None, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
-                        let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::parse_reader(file, &tileset_path))?;
+                        let tileset = if let Some(ts) = cache.get_tileset(&tileset_path) {
+                            ts
+                        } else {
+                            let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
+                            let tileset = Arc::new(Tileset::parse_with_template_list(file, &tileset_path, cache, &mut templates, None)?);
+                            cache.insert_tileset(tileset_path.clone(), tileset.clone());
+                            tileset
+                        };
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
@@ -199,6 +213,9 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
+                    &mut templates,
+                    None,
+                    cache
                 )?);
                 Ok(())
             },
@@ -210,6 +227,9 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
+                    &mut templates,
+                    None,
+                    cache
                 )?);
                 Ok(())
             },
@@ -221,6 +241,9 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
+                    &mut templates,
+                    None,
+                    cache
                 )?);
                 Ok(())
             },
@@ -232,6 +255,9 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
+                    &mut templates,
+                    None,
+                    cache
                 )?);
                 Ok(())
             },
@@ -252,6 +278,7 @@ impl Map {
             tile_width: tw,
             tile_height: th,
             tilesets,
+            templates,
             layers,
             properties,
             background_color: c,

@@ -407,3 +407,40 @@ fn test_group_layers() {
         layer_tile_3.properties().get("key")
     );
 }
+
+#[test]
+fn test_object_template_property() {
+    let mut cache = FilesystemResourceCache::new();
+
+    let r = Map::parse_file("assets/tiled_object_template.tmx", &mut cache).unwrap();
+
+    let object_layer = as_object_layer(r.get_layer(1).unwrap());
+    let object = object_layer.get_object(0).unwrap(); // The templated object
+    let object_nt = object_layer.get_object(1).unwrap(); // The non-templated object
+
+    // Test core properties
+    assert_eq!(object.width(), 32.0);
+    assert_eq!(object.height(), 32.0);
+    assert_eq!(object.x(), 32.0);
+    assert_eq!(object.y(), 32.0);
+
+    // Test properties are copied over
+    assert_eq!(
+        Some(&PropertyValue::IntValue(1)),
+        object.properties().get("property")
+    );
+
+    // Test tileset handling
+    assert_eq!(
+        object.get_tile().unwrap().get_tileset().name,
+        "tilesheet_template"
+    );
+    assert_eq!(
+        object_nt.get_tile().unwrap().get_tileset().name,
+        "tilesheet"
+    );
+    assert_eq!(object.get_tile().unwrap().tileset_index(), None);
+    assert_eq!(object_nt.get_tile().unwrap().tileset_index(), Some(0));
+    assert_eq!(object.get_tile().unwrap().id(), 44);
+    assert_eq!(object_nt.get_tile().unwrap().id(), 44);
+}

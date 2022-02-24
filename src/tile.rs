@@ -8,8 +8,9 @@ use crate::{
     image::Image,
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
+    template::Template,
     util::{get_attrs, parse_tag, XmlEventResult},
-    Tileset,
+    ResourceCache, Tileset,
 };
 
 pub type TileId = u32;
@@ -75,6 +76,9 @@ impl TileData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        cache: &mut impl ResourceCache,
     ) -> Result<(TileId, TileData), TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
@@ -102,7 +106,7 @@ impl TileData {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectLayerData::new(parser, attrs, None)?.0);
+                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, templates, for_template, path_relative_to, cache)?.0);
                 Ok(())
             },
             "animation" => |_| {

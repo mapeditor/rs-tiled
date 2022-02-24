@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::TiledError,
     properties::{parse_properties, Properties},
+    template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid,
+    LayerTile, LayerTileData, MapTilesetGid, ResourceCache,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -42,26 +43,65 @@ impl ObjectData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        base_path: &Path,
+        cache: &mut impl ResourceCache,
     ) -> Result<ObjectData, TiledError> {
-        let ((id, tile, n, t, w, h, v, r), (x, y)) = get_attrs!(
+        let (
+            (mut id, mut tile, mut x, mut y, mut n, mut t, mut w, mut h, mut v, mut r, template),
+            (),
+        ) = get_attrs!(
             attrs,
             optionals: [
                 ("id", id, |v:String| v.parse().ok()),
                 ("gid", tile, |v:String| v.parse().ok()
-                                            .and_then(|bits| LayerTileData::from_bits(bits, tilesets?))),
+                                            .and_then(|bits| LayerTileData::from_bits(bits, tilesets?, for_template))),
+                ("x", x, |v:String| v.parse().ok()),
+                ("y", y, |v:String| v.parse().ok()),
                 ("name", name, |v:String| v.parse().ok()),
                 ("type", obj_type, |v:String| v.parse().ok()),
                 ("width", width, |v:String| v.parse().ok()),
                 ("height", height, |v:String| v.parse().ok()),
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("rotation", rotation, |v:String| v.parse().ok()),
+                ("template", template, |v:String| v.parse().ok()),
             ],
-            required: [
-                ("x", x, |v:String| v.parse().ok()),
-                ("y", y, |v:String| v.parse().ok()),
-            ],
+            required: [],
             TiledError::MalformedAttributes("objects must have an x and a y number".to_string())
         );
+
+        // If the template attribute is there, we need to go fetch the template file
+        let template_id = if let Some(template) = template {
+            let s: String = template;
+            let parent_dir = base_path.parent().unwrap();
+            let template_path = parent_dir.join(Path::new(&s));
+
+            let template_id =
+                Template::parse_and_append_template(&template_path, templates, cache)?;
+
+            // The template sets the default values for the object
+            if let Some(obj) = &templates[template_id].object {
+                x.get_or_insert(obj.x);
+                y.get_or_insert(obj.y);
+                v.get_or_insert(obj.visible);
+                w.get_or_insert(obj.width);
+                h.get_or_insert(obj.height);
+                r.get_or_insert(obj.rotation);
+                id.get_or_insert(obj.id);
+                n.get_or_insert(obj.name.clone());
+                t.get_or_insert(obj.obj_type.clone());
+                if let Some(templ_tile) = obj.tile {
+                    tile.get_or_insert(templ_tile);
+                }
+            };
+            Some(template_id)
+        } else {
+            None
+        };
+
+        let x = x.unwrap_or(0f32);
+        let y = y.unwrap_or(0f32);
         let visible = v.unwrap_or(true);
         let width = w.unwrap_or(0f32);
         let height = h.unwrap_or(0f32);
@@ -99,6 +139,18 @@ impl ObjectData {
         });
 
         let shape = shape.unwrap_or(ObjectShape::Rect { width, height });
+
+        // Possibly copy properties from the template into the object
+        // Any that already exist in the object's map don't get copied over
+        if let Some(id) = template_id.as_ref() {
+            if let Some(obj) = &templates[*id].object {
+                for (k, v) in &obj.properties {
+                    if !properties.contains_key(k) {
+                        properties.insert(k.clone(), v.clone());
+                    }
+                }
+            }
+        }
 
         Ok(ObjectData {
             id,

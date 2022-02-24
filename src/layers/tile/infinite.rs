@@ -4,7 +4,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{floor_div, get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid,  TiledError,
+    LayerTile, LayerTileData, MapTilesetGid, TiledError,
 };
 
 use super::util::parse_data_line;
@@ -25,6 +25,7 @@ impl InfiniteTileLayerData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tilesets: &[MapTilesetGid],
+        for_template: Option<usize>,
     ) -> Result<Self, TiledError> {
         let ((e, c), ()) = get_attrs!(
             attrs,
@@ -39,7 +40,7 @@ impl InfiniteTileLayerData {
         let mut chunks = HashMap::<(i32, i32), Chunk>::new();
         parse_tag!(parser, "data", {
             "chunk" => |attrs| {
-                let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets)?;
+                let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets, for_template)?;
                 for x in chunk.x..chunk.x + chunk.width as i32 {
                     for y in chunk.y..chunk.y + chunk.height as i32 {
                         let chunk_pos = tile_to_chunk_pos(x, y);
@@ -118,6 +119,7 @@ impl InternalChunk {
         encoding: Option<String>,
         compression: Option<String>,
         tilesets: &[MapTilesetGid],
+        for_template: Option<usize>,
     ) -> Result<Self, TiledError> {
         let ((), (x, y, width, height)) = get_attrs!(
             attrs,
@@ -131,7 +133,7 @@ impl InternalChunk {
             TiledError::MalformedAttributes("chunk must have x, y, width & height attributes".to_string())
         );
 
-        let tiles = parse_data_line(encoding, compression, parser, tilesets)?;
+        let tiles = parse_data_line(encoding, compression, parser, tilesets, for_template)?;
 
         Ok(InternalChunk {
             x,

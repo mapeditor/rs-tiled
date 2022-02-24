@@ -9,21 +9,24 @@ pub(crate) fn parse_data_line(
     compression: Option<String>,
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
+    for_template: Option<usize>,
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding.as_deref(), compression.as_deref()) {
-        (Some("csv"), None) => decode_csv(parser, tilesets),
+        (Some("csv"), None) => decode_csv(parser, tilesets, for_template),
 
-        (Some("base64"), None) => parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets)),
+        (Some("base64"), None) => {
+            parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets, for_template))
+        }
         (Some("base64"), Some("zlib")) => parse_base64(parser)
             .and_then(|data| process_decoder(libflate::zlib::Decoder::new(&data[..])))
-            .map(|v| convert_to_tiles(&v, tilesets)),
+            .map(|v| convert_to_tiles(&v, tilesets, for_template)),
         (Some("base64"), Some("gzip")) => parse_base64(parser)
             .and_then(|data| process_decoder(libflate::gzip::Decoder::new(&data[..])))
-            .map(|v| convert_to_tiles(&v, tilesets)),
+            .map(|v| convert_to_tiles(&v, tilesets, for_template)),
         #[cfg(feature = "zstd")]
         (Some("base64"), Some("zstd")) => parse_base64(parser)
             .and_then(|data| process_decoder(zstd::stream::read::Decoder::with_buffer(&data[..])))
-            .map(|v| convert_to_tiles(&v, tilesets)),
+            .map(|v| convert_to_tiles(&v, tilesets, for_template)),
 
         _ => Err(TiledError::InvalidEncodingFormat {
             encoding,
@@ -60,6 +63,7 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>, Tiled
 fn decode_csv(
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
+    for_template: Option<usize>,
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     while let Some(next) = parser.next() {
         match next.map_err(TiledError::XmlDecodingError)? {
@@ -67,7 +71,7 @@ fn decode_csv(
                 let tiles = s
                     .split(',')
                     .map(|v| v.trim().parse().unwrap())
-                    .map(|bits| LayerTileData::from_bits(bits, tilesets))
+                    .map(|bits| LayerTileData::from_bits(bits, tilesets, for_template))
                     .collect();
                 return Ok(tiles);
             }
@@ -80,11 +84,15 @@ fn decode_csv(
     Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
-fn convert_to_tiles(data: &[u8], tilesets: &[MapTilesetGid]) -> Vec<Option<LayerTileData>> {
+fn convert_to_tiles(
+    data: &[u8],
+    tilesets: &[MapTilesetGid],
+    for_template: Option<usize>,
+) -> Vec<Option<LayerTileData>> {
     data.chunks_exact(4)
         .map(|chunk| {
             let bits = u32::from_le_bytes(chunk.try_into().unwrap());
-            LayerTileData::from_bits(bits, tilesets)
+            LayerTileData::from_bits(bits, tilesets, for_template)
         })
         .collect()
 }

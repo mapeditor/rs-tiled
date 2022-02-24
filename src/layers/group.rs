@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use crate::{
     error::TiledError,
     layers::{LayerData, LayerTag},
-    map::MapTilesetGid,
     properties::{parse_properties, Properties},
+    template::Template,
     util::*,
-    Layer, Map,
+    Layer, Map, MapTilesetGid, ResourceCache,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -21,6 +20,9 @@ impl GroupLayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        cache: &mut impl ResourceCache,
     ) -> Result<(Self, Properties), TiledError> {
         let mut properties = HashMap::new();
         let mut layers = Vec::new();
@@ -32,7 +34,10 @@ impl GroupLayerData {
                     LayerTag::TileLayer,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
+                    templates,
+                    for_template,
+                    cache
                 )?);
                 Ok(())
             },
@@ -43,7 +48,10 @@ impl GroupLayerData {
                     LayerTag::ImageLayer,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
+                    templates,
+                    for_template,
+                    cache
                 )?);
                 Ok(())
             },
@@ -54,7 +62,10 @@ impl GroupLayerData {
                     LayerTag::ObjectLayer,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
+                    templates,
+                    for_template,
+                    cache
                 )?);
                 Ok(())
             },
@@ -65,7 +76,10 @@ impl GroupLayerData {
                     LayerTag::GroupLayer,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
+                    templates,
+                    for_template,
+                    cache
                 )?);
                 Ok(())
             },

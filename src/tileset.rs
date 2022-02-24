@@ -9,8 +9,9 @@ use xml::EventReader;
 use crate::error::TiledError;
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
-use crate::tile::TileData;
-use crate::{util::*, Gid, Tile};
+use crate::template::Template;
+use crate::tile::Tile;
+use crate::{util::*, Gid, ResourceCache, TileData};
 
 /// A tileset, usually the tilesheet image.
 #[derive(Debug, PartialEq, Clone)]
@@ -71,15 +72,33 @@ impl Tileset {
     /// use std::fs::File;
     /// use std::path::PathBuf;
     /// use std::io::BufReader;
-    /// use tiled::Tileset;
+    /// use tiled::{Tileset, FilesystemResourceCache};
     ///
     /// let path = "assets/tilesheet.tsx";
     /// let reader = BufReader::new(File::open(path).unwrap());
-    /// let tileset = Tileset::parse_reader(reader, path).unwrap();
+    /// let mut cache = FilesystemResourceCache::new();
+    /// let tileset = Tileset::parse_reader(reader, path, &mut cache).unwrap();
     ///
     /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
     /// ```
-    pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self, TiledError> {
+    pub fn parse_reader<R: Read>(
+        reader: R,
+        path: impl AsRef<Path>,
+        cache: &mut impl ResourceCache,
+    ) -> Result<Self, TiledError> {
+        Tileset::parse_with_template_list(reader, path, cache, &mut vec![], None)
+    }
+
+    /// Parse a tileset from a reader, but updates a list of templates
+    ///
+    /// Used by Maps and Templates which require a state for managing the template list
+    pub(crate) fn parse_with_template_list<R: Read>(
+        reader: R,
+        path: impl AsRef<Path>,
+        cache: &mut impl ResourceCache,
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+    ) -> Result<Self, TiledError> {
         let mut tileset_parser = EventReader::new(reader);
         loop {
             match tileset_parser
@@ -93,6 +112,9 @@ impl Tileset {
                         &mut tileset_parser.into_iter(),
                         &attributes,
                         path.as_ref(),
+                        templates,
+                        for_template,
+                        cache,
                     );
                 }
                 XmlEvent::EndDocument => {
@@ -115,21 +137,28 @@ impl Tileset {
     pub(crate) fn parse_xml_in_map(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-        map_path: &Path,
+        map_path: &Path, // Template or Map file
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult, TiledError> {
-        Tileset::parse_xml_embedded(parser, &attrs, map_path).or_else(|err| {
-            if matches!(err, TiledError::MalformedAttributes(_)) {
-                Tileset::parse_xml_reference(&attrs, map_path)
-            } else {
-                Err(err)
-            }
-        })
+        Tileset::parse_xml_embedded(parser, &attrs, map_path, templates, for_template, cache)
+            .or_else(|err| {
+                if matches!(err, TiledError::MalformedAttributes(_)) {
+                    Tileset::parse_xml_reference(&attrs, map_path)
+                } else {
+                    Err(err)
+                }
+            })
     }
 
     fn parse_xml_embedded(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
-        map_path: &Path,
+        map_path: &Path, // Template or Map file
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult, TiledError> {
         let ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height)) = get_attrs!(
            attrs,
@@ -165,6 +194,9 @@ impl Tileset {
                 tile_height,
                 tile_width,
             },
+            templates,
+            for_template,
+            cache,
         )
         .map(|tileset| EmbeddedParseResult {
             first_gid,
@@ -201,6 +233,9 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         path: &Path,
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        cache: &mut impl ResourceCache,
     ) -> Result<Tileset, TiledError> {
         let ((spacing, margin, columns, name), (tilecount, tile_width, tile_height)) = get_attrs!(
             attrs,
@@ -232,32 +267,38 @@ impl Tileset {
                 tile_height,
                 tile_width,
             },
+            templates,
+            for_template,
+            cache,
         )
     }
 
     fn finish_parsing_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         prop: TilesetProperties,
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        cache: &mut impl ResourceCache,
     ) -> Result<Tileset, TiledError> {
         let mut image = Option::None;
         let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
         let mut properties = HashMap::new();
 
         parse_tag!(parser, "tileset", {
-                    "image" => |attrs| {
-                        image = Some(Image::new(parser, attrs, &prop.root_path)?);
-                        Ok(())
-                    },
-                    "properties" => |_| {
-                        properties = parse_properties(parser)?;
-                        Ok(())
-                    },
-                    "tile" => |attrs| {
-                        let (id, tile) = TileData::new(parser, attrs, &prop.root_path)?;
-                        tiles.insert(id, tile);
-                        Ok(())
-                    },
-                });
+                "image" => |attrs| {
+                    image = Some(Image::new(parser, attrs, &prop.root_path)?);
+                    Ok(())
+                },
+                "properties" => |_| {
+                    properties = parse_properties(parser)?;
+                    Ok(())
+                },
+                "tile" => |attrs| {
+                    let (id, tile) = TileData::new(parser, attrs, &prop.root_path, templates, for_template, cache)?;
+                    tiles.insert(id, tile);
+                    Ok(())
+                },
+            });
 
         // A tileset is considered an image collection tileset if there is no image attribute (because its tiles do).
         let is_image_collection_tileset = image.is_none();

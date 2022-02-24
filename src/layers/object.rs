@@ -1,11 +1,12 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use xml::attribute::OwnedAttribute;
 
 use crate::{
     parse_properties,
+    template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Color, Map, MapTilesetGid, Object, ObjectData, Properties, TiledError,
+    Color, Map, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, TiledError,
 };
 
 /// Raw data referring to a map object layer or tile collision data.
@@ -22,6 +23,10 @@ impl ObjectLayerData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
+        templates: &mut Vec<Template>,
+        for_template: Option<usize>,
+        path_relative_to: &Path,
+        cache: &mut impl ResourceCache,
     ) -> Result<(ObjectLayerData, Properties), TiledError> {
         let (c, ()) = get_attrs!(
             attrs,
@@ -36,7 +41,7 @@ impl ObjectLayerData {
         let mut properties = HashMap::new();
         parse_tag!(parser, "objectgroup", {
             "object" => |attrs| {
-                objects.push(ObjectData::new(parser, attrs, tilesets)?);
+                objects.push(ObjectData::new(parser, attrs, tilesets, templates, for_template, path_relative_to, cache)?);
                 Ok(())
             },
             "properties" => |_| {
