@@ -121,10 +121,10 @@ impl event::EventHandler<ggez::GameError> for Game {
         self.scale *= 1.0 + y as f32 * 0.1;
 
         // zoom to mouse cursor
-        let mouse_pos = input::mouse::position(ctx);
-        let window_size = graphics::size(ctx);
-        let pos_x = mouse_pos.x - window_size.0 / 2.0 + (self.map.width() * self.map.tile_width()) as f32 / 2.0;
-        let pos_y = mouse_pos.y - window_size.1 / 2.0 + (self.map.height() * self.map.tile_height()) as f32 / 2.0;
+        let Point2 { x: mouse_x, y: mouse_y } = input::mouse::position(ctx);
+        let (window_width, window_height) = graphics::size(ctx);
+        let pos_x = mouse_x - window_width / 2.0 + (self.map.width() * self.map.tile_width()) as f32 / 2.0;
+        let pos_y = mouse_y - window_height / 2.0 + (self.map.height() * self.map.tile_height()) as f32 / 2.0;
         self.pan.0 = (self.pan.0 - pos_x) / old_scale * self.scale + pos_x;
         self.pan.1 = (self.pan.1 - pos_y) / old_scale * self.scale + pos_y;
     }
