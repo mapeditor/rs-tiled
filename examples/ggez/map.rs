@@ -122,30 +122,28 @@ impl MapHandler {
                     let width = d.data().width();
                     let height = d.data().height();
 
+                    let secs_since_start = ggez::timer::time_since_start(ctx).as_secs_f32();
+
                     // iterate through every tile in the layer
                     for x in 0..width as i32 {
                         for y in 0..height as i32 {
                             if let Some(tile) = d.get_tile(x, y) {
                                 // get tile's rectangle in the tileset texture
-                                let rect = get_tile_rect(tile.tileset, tile.id);
                                 let ts = tile.tileset;
                                 if let Some((batch, ts_size)) = ts_sizes_and_batches.get_mut(&ts.name) {
                                     let mut dx = x as f32 * self.map.tile_width as f32 + parallax_pan.0 * (layer.parallax_x - 1.0);
                                     let mut dy = y as f32 * self.map.tile_height as f32 + parallax_pan.1 * (layer.parallax_y - 1.0);
 
                                     if self.example_animate {
-                                        dx += (ggez::timer::time_since_start(ctx).as_secs_f32() - x as f32 * 0.3 + i as f32 * 0.25).sin() * 20.0;
-                                        dy += (ggez::timer::time_since_start(ctx).as_secs_f32() * 1.25 + y as f32 * 0.3 + i as f32 * 0.25).cos() * 20.0;
+                                        dx += (secs_since_start - x as f32 * 0.3 + i as f32 * 0.25).sin() * 20.0;
+                                        dy += (secs_since_start * 1.25 + y as f32 * 0.3 + i as f32 * 0.25).cos() * 20.0;
                                     }
 
                                     batch.add(
                                         DrawParam::default()
-                                            .src(ggez::graphics::Rect::new(
-                                                rect.0 as f32 / (*ts_size).0 as f32,
-                                                rect.1 as f32 / (*ts_size).1 as f32,
-                                                rect.2 as f32 / (*ts_size).0 as f32,
-                                                rect.3 as f32 / (*ts_size).1 as f32,
-                                            ))
+                                            .src(
+                                                get_tile_rect(tile.tileset, tile.id, ts_size.0, ts_size.1)
+                                            )
                                             .dest([
                                                 dx,
                                                 dy,
@@ -227,13 +225,25 @@ impl MapHandler {
         Ok(())
     }
 }
-
-fn get_tile_rect(tileset: &Tileset, id: u32) -> (u32, u32, u32, u32) {
+fn get_tile_rect(
+    tileset: &tiled::Tileset,
+    id: u32,
+    ts_img_width: u16,
+    ts_img_height: u16,
+) -> graphics::Rect {
     let ts_x = id % tileset.columns;
     let ts_y = id / tileset.columns;
 
-    let x = tileset.margin + (tileset.tile_width + tileset.spacing) * ts_x;
-    let y = tileset.margin + (tileset.tile_height + tileset.spacing) * ts_y;
+    let x = (tileset.margin + (tileset.tile_width + tileset.spacing) * ts_x) as f32;
+    let y = (tileset.margin + (tileset.tile_height + tileset.spacing) * ts_y) as f32;
 
-    (x, y, tileset.tile_width, tileset.tile_height)
+    let ts_img_width = ts_img_width as f32;
+    let ts_img_height = ts_img_height as f32;
+
+    graphics::Rect {
+        x: x / ts_img_width,
+        y: y / ts_img_height,
+        w: tileset.tile_width as f32 / ts_img_width,
+        h: tileset.tile_height as f32 / ts_img_height,
+    }
 }
