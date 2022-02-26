@@ -14,7 +14,8 @@ fn main() -> GameResult {
         .window_mode(ggez::conf::WindowMode::default()
             .dimensions(1000.0, 800.0)
         )
-        .add_resource_path(""); // add repo root to ggez filesystem (our example map looks for `assets/tilesheet.png`)
+        // add repo root to ggez filesystem (our example map looks for `assets/tilesheet.png`)
+        .add_resource_path(std::env::var("CARGO_MANIFEST_DIR").unwrap());
 
     let (mut ctx, event_loop) = cb.build()?;
 
