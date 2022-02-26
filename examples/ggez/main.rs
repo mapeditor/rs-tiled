@@ -1,6 +1,6 @@
 mod map;
 
-use ggez::{event::{self, MouseButton}, Context, GameResult, graphics::{self, DrawParam}, input};
+use ggez::{event::{self, MouseButton}, Context, GameResult, graphics::{self, DrawParam}, input, mint::Point2};
 use map::MapHandler;
 use tiled::{Map, FilesystemResourceCache};
 
@@ -60,12 +60,12 @@ impl event::EventHandler<ggez::GameError> for Game {
 
         // draw map tiles + objects
 
-        let window_size = graphics::size(ctx);
+        let (window_width, window_height) = graphics::size(ctx);
 
         let draw_param = DrawParam::default()
             .dest([
-                self.pan.0 + window_size.0 / 2.0 - (self.map.width() * self.map.tile_width()) as f32 / 2.0, 
-                self.pan.1 + window_size.1 / 2.0 - (self.map.height() * self.map.tile_height()) as f32 / 2.0
+                self.pan.0 + window_width / 2.0 - (self.map.width() * self.map.tile_width()) as f32 / 2.0, 
+                self.pan.1 + window_height / 2.0 - (self.map.height() * self.map.tile_height()) as f32 / 2.0
                 ])
             .scale([self.scale, self.scale]);
 
@@ -87,7 +87,7 @@ impl event::EventHandler<ggez::GameError> for Game {
             ctx,
             &text,
             DrawParam::default()
-                .dest([window_size.0 - text.width(ctx) - 40.0, 10.0])
+                .dest([window_width - text.width(ctx) - 40.0, 10.0])
                 .scale([1.25, 1.25])
                 .color(graphics::Color::WHITE),
         )?;
