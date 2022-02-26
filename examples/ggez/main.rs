@@ -107,8 +107,8 @@ impl event::EventHandler<ggez::GameError> for Game {
     }
 
     fn mouse_motion_event(&mut self, ctx: &mut Context, _x: f32, _y: f32, dx: f32, dy: f32) {
-        // middle click + drag pans the map around
-        if input::mouse::button_pressed(ctx, event::MouseButton::Middle) {
+        // left or middle click + drag pans the map around
+        if input::mouse::button_pressed(ctx, event::MouseButton::Left) || input::mouse::button_pressed(ctx, event::MouseButton::Middle) {
             self.pan.0 += dx;
             self.pan.1 += dy;
         }
