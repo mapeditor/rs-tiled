@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 mod animation;
 mod cache;
 mod error;
