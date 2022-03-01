@@ -11,7 +11,11 @@ pub type ResourcePath = Path;
 /// An owned type that is used to refer to a resource. For the non-owned variant, see [`ResourcePath`].
 pub type ResourcePathBuf = PathBuf;
 
+/// A trait identifying a data type that holds resources (such as tilesets) and maps them to a
+/// [`ResourcePath`] to prevent loading them more than once.
 pub trait ResourceCache {
+    /// Obtains a tileset from the cache, if it exists.
+    /// 
     /// # Example
     /// ```
     /// use std::fs::File;
@@ -28,6 +32,11 @@ pub trait ResourceCache {
     /// # }
     /// ```
     fn get_tileset(&self, path: impl AsRef<ResourcePath>) -> Option<Arc<Tileset>>;
+    
+    /// Returns the tileset mapped to `path` if it exists, otherwise calls `f` and, depending on its
+    /// result, it will:
+    /// - Insert the object into the cache, if the result was [`Ok`].
+    /// - Return the error and leave the cache intact, if the result was [`Err`].
     fn get_or_try_insert_tileset_with<F, E>(
         &mut self,
         path: ResourcePathBuf,
@@ -43,6 +52,7 @@ pub struct FilesystemResourceCache {
 }
 
 impl FilesystemResourceCache {
+    /// Creates an empty [`FilesystemResourceCache`].
     pub fn new() -> Self {
         Self {
             tilesets: HashMap::new(),

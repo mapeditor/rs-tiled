@@ -10,11 +10,15 @@ pub enum TiledError {
     /// An error occured when decompressing using the
     /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
     DecompressingError(std::io::Error),
+    /// An error occured when decoding a base64 encoded dataset.
     Base64DecodingError(base64::DecodeError),
+    /// An error occured when parsing a XML file, such as a TMX or TSX file.
     XmlDecodingError(xml::reader::Error),
+    /// The XML stream ended before the document was fully parsed.
     PrematureEnd(String),
     /// The path given is invalid because it isn't contained in any folder.
     PathIsNotFile,
+    /// Could not open some file due to an I/O error.
     CouldNotOpenFile {
         path: PathBuf,
         err: std::io::Error,
@@ -33,7 +37,10 @@ pub enum TiledError {
     /// Found an unknown property value type while parsing a [`PropertyValue`].
     /// 
     /// [`PropertyValue`]: crate::PropertyValue
-    UnknownPropertyType{name: String},
+    UnknownPropertyType {
+        /// The name of the property whose value type is unknown.
+        name: String
+    },
 }
 
 impl fmt::Display for TiledError {

@@ -23,6 +23,7 @@ pub(crate) struct MapTilesetGid {
 pub struct Map {
     /// The TMX format version this map was saved to.
     pub version: String,
+    /// The way tiles are laid out in the map.
     pub orientation: Orientation,
     /// Width of the map, in tiles.
     pub width: u32,
