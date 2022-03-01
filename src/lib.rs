@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
 mod animation;
@@ -13,6 +14,7 @@ mod tileset;
 mod util;
 
 pub use animation::*;
+
 pub use cache::*;
 pub use error::*;
 pub use image::*;

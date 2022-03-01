@@ -169,10 +169,15 @@ impl<'map> Layer<'map> {
     }
 }
 
+/// Represents some kind of map layer.
 pub enum LayerType<'map> {
+    /// A tile layer; Also see [`TileLayer`].
     TileLayer(TileLayer<'map>),
+    /// An object layer (also called object group); Also see [`ObjectLayer`].
     ObjectLayer(ObjectLayer<'map>),
+    /// An image layer; Also see [`ImageLayer`].
     ImageLayer(ImageLayer<'map>),
+    /// A group layer; Also see [`GroupLayer`].
     GroupLayer(GroupLayer<'map>),
 }
 

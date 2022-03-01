@@ -9,7 +9,7 @@ Code contributions are welcome as are bug reports, documentation, suggestions an
 
 [There is a package on crates.io](https://crates.io/crates/tiled), to use simply add:
 
-```
+```toml
 tiled = "0.9.5"
 ```
 
@@ -20,13 +20,18 @@ The minimum supported TMX version is 0.13.
 ### Example
 
 ```rust
-use tiled::Map;
+use tiled::{FilesystemResourceCache, Map};
 
 fn main() {
-    let map = Map::parse_file("assets/tiled_base64_zlib.tmx").unwrap();
+    let map = Map::parse_file(
+        "assets/tiled_base64_zlib.tmx",
+        &mut FilesystemResourceCache::new(),
+    )
+    .unwrap();
     println!("{:?}", map);
-    println!("{:?}", map.tileset_by_gid(22));
+    println!("{:?}", map.tilesets()[0].get_tile(0).unwrap().probability());
 }
+
 ```
 
 ### Licences

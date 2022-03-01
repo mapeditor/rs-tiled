@@ -82,13 +82,19 @@ fn tile_to_chunk_pos(x: i32, y: i32) -> (i32, i32) {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Chunk {
+pub(crate) struct Chunk {
     tiles: Box<[Option<LayerTileData>; Self::TILE_COUNT]>,
 }
 
 impl Chunk {
+    /// Internal infinite layer chunk width. Do not rely on this value as it might change between
+    /// versions. 
     pub const WIDTH: u32 = 16;
+    /// Internal infinite layer chunk height. Do not rely on this value as it might change between
+    /// versions. 
     pub const HEIGHT: u32 = 16;
+    /// Internal infinite layer chunk tile count. Do not rely on this value as it might change
+    /// between versions. 
     pub const TILE_COUNT: usize = Self::WIDTH as usize * Self::HEIGHT as usize;
 
     pub(crate) fn new() -> Self {
@@ -146,6 +152,9 @@ impl InternalChunk {
 map_wrapper!(InfiniteTileLayer => InfiniteTileLayerData);
 
 impl<'map> InfiniteTileLayer<'map> {
+    /// Obtains the tile present at the position given.
+    /// 
+    /// If the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data
             .get_tile(x, y)

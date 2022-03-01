@@ -81,9 +81,12 @@ impl GroupLayerData {
 map_wrapper!(GroupLayer => GroupLayerData);
 
 impl<'map> GroupLayer<'map> {
+    /// Returns an iterator over the layers present in this group, ordered in the same way as in the
+    /// TMX file it was loaded from.
     pub fn layers(&self) -> GroupLayerIter {
         GroupLayerIter::new(self.map, self.data)
     }
+    /// Gets a specific layer from the group by index.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
         self.data
             .layers

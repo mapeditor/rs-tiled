@@ -1,3 +1,5 @@
+//! Structures related to Tiled maps.
+
 use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr, sync::Arc};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};

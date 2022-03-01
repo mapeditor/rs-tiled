@@ -150,8 +150,11 @@ impl<'map> LayerTile<'map> {
     }
 }
 
+/// A map layer containing tiles in some way. May be finite or infinite.
 pub enum TileLayer<'map> {
+    /// An finite tile layer; Also see [`FiniteTileLayer`].
     Finite(FiniteTileLayer<'map>),
+    /// An infinite tile layer; Also see [`InfiniteTileLayer`].
     Infinite(InfiniteTileLayer<'map>),
 }
 
@@ -163,6 +166,9 @@ impl<'map> TileLayer<'map> {
         }
     }
 
+    /// Obtains the tile present at the position given.
+    /// 
+    /// If the position given is invalid or the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         match self {
             TileLayer::Finite(finite) => finite.get_tile(x, y),

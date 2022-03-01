@@ -63,6 +63,9 @@ impl FiniteTileLayerData {
 map_wrapper!(FiniteTileLayer => FiniteTileLayerData);
 
 impl<'map> FiniteTileLayer<'map> {
+    /// Obtains the tile present at the position given.
+    /// 
+    /// If the position given is invalid or the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data
             .get_tile(x, y)
