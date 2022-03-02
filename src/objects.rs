@@ -9,7 +9,11 @@ use crate::{
     LayerTile, LayerTileData, MapTilesetGid,
 };
 
+/// A structure describing an [`Object`]'s shape.
+/// 
+/// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-object).
 #[derive(Debug, PartialEq, Clone)]
+#[allow(missing_docs)]
 pub enum ObjectShape {
     Rect { width: f32, height: f32 },
     Ellipse { width: f32, height: f32 },
@@ -19,6 +23,8 @@ pub enum ObjectShape {
 }
 
 /// Raw data belonging to an object. Used internally and for tile collisions.
+/// 
+/// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-object).
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectData {
     pub id: u32,
@@ -168,7 +174,11 @@ impl ObjectData {
     }
 }
 
-map_wrapper!(Object => ObjectData);
+map_wrapper!(
+    #[doc = "Wrapper over an [`ObjectData`] that contains both a reference to the data as well as
+    to the map it is contained in."]
+    Object => ObjectData
+);
 
 impl<'map> Object<'map> {
     /// Get the object's id.

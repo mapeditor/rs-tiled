@@ -15,8 +15,11 @@ pub struct Image {
     /// [source]: https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#image
     // TODO: Embedded images
     pub source: PathBuf,
+    /// The width in pixels of the image.
     pub width: i32,
+    /// The height in pixels of the image.
     pub height: i32,
+    /// A color that should be interpreted as transparent (0 alpha), if any.
     pub transparent_colour: Option<Color>,
 }
 

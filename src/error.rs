@@ -20,20 +20,27 @@ pub enum TiledError {
     PathIsNotFile,
     /// Could not open some file due to an I/O error.
     CouldNotOpenFile {
+        /// The path to the file that was unable to be opened.
         path: PathBuf,
+        /// The error that occured when trying to open the file.
         err: std::io::Error,
     },
     /// There was an invalid tile in the map parsed.
     InvalidTileFound,
     /// Unknown encoding or compression format or invalid combination of both (for tile layers)
     InvalidEncodingFormat {
+        /// The `encoding` attribute of the tile layer data, if any.
         encoding: Option<String>,
+        /// The `compression` attribute of the tile layer data, if any.
         compression: Option<String>,
     },
     /// There was an error parsing the value of a [`PropertyValue`].
     /// 
     /// [`PropertyValue`]: crate::PropertyValue
-    InvalidPropertyValue{description: String},
+    InvalidPropertyValue {
+        /// A description of the error that occured.
+        description: String
+    },
     /// Found an unknown property value type while parsing a [`PropertyValue`].
     /// 
     /// [`PropertyValue`]: crate::PropertyValue
