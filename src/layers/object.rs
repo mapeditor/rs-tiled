@@ -13,7 +13,7 @@ use crate::{
 pub struct ObjectLayerData {
     /// The objects present in this layer.
     pub objects: Vec<ObjectData>,
-    /// The color that should be used to modulate this layer with.
+    /// The color used in the editor to display objects in this layer.
     pub colour: Option<Color>,
 }
 
