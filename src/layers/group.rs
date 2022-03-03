@@ -93,6 +93,7 @@ impl<'map> GroupLayer<'map> {
 }
 
 /// An iterator that iterates over all the layers in a group layer, obtained via [`GroupLayer::layers`].
+#[derive(Debug)]
 pub struct GroupLayerIter<'map> {
     map: &'map Map,
     group: &'map GroupLayerData,

@@ -64,6 +64,7 @@ impl<'map> ObjectLayer<'map> {
 }
 
 /// An iterator that iterates over all the objects in an object layer, obtained via [`ObjectLayer::objects`].
+#[derive(Debug)]
 pub struct Objects<'map> {
     map: &'map Map,
     data: &'map ObjectLayerData,
@@ -91,6 +92,7 @@ impl<'map> Iterator for Objects<'map> {
 }
 
 impl<'map> ExactSizeIterator for Objects<'map> {
+    #[inline]
     fn len(&self) -> usize {
         self.data.objects.len() - self.index
     }

@@ -24,6 +24,7 @@ pub(crate) struct TileData {
     probability: f32,
 }
 
+#[derive(Debug)]
 pub struct Tile<'tileset> {
     pub(crate) tileset: &'tileset Tileset,
     pub(crate) data: &'tileset TileData,
