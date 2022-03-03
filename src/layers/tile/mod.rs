@@ -106,7 +106,10 @@ impl TileLayerData {
     }
 }
 
-map_wrapper!(LayerTile => LayerTileData);
+map_wrapper!(
+    #[doc = "An instance of a [`Tile`] present in a [`TileLayer`]."]
+    LayerTile => LayerTileData
+);
 
 impl<'map> LayerTile<'map> {
     /// Get a reference to the layer tile's referenced tile, if it exists.

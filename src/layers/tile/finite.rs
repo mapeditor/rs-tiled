@@ -60,7 +60,10 @@ impl FiniteTileLayerData {
     }
 }
 
-map_wrapper!(FiniteTileLayer => FiniteTileLayerData);
+map_wrapper!(
+    #[doc = "A [`TileLayer`] with a defined bound (width and height)."]
+    FiniteTileLayer => FiniteTileLayerData
+);
 
 impl<'map> FiniteTileLayer<'map> {
     /// Obtains the tile present at the position given.

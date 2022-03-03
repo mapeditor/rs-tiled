@@ -78,11 +78,15 @@ impl GroupLayerData {
     }
 }
 
-map_wrapper!(GroupLayer => GroupLayerData);
+map_wrapper!(
+    #[doc = "A group layer, used to organize the layers of the map in a hierarchy."]
+    #[doc = "## Note"]
+    #[doc = "This type is currently nonstandard, as its attributes do not recursively affect child layers."]
+    GroupLayer => GroupLayerData
+);
 
 impl<'map> GroupLayer<'map> {
-    /// Returns an iterator over the layers present in this group, ordered in the same way as in the
-    /// TMX file it was loaded from.
+    /// Returns an iterator over the layers present in this group in display order.
     pub fn layers(&self) -> GroupLayerIter {
         GroupLayerIter::new(self.map, self.data)
     }

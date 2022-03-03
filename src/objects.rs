@@ -10,7 +10,7 @@ use crate::{
 };
 
 /// A structure describing an [`Object`]'s shape.
-/// 
+///
 /// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-object).
 #[derive(Debug, PartialEq, Clone)]
 #[allow(missing_docs)]
@@ -23,21 +23,40 @@ pub enum ObjectShape {
 }
 
 /// Raw data belonging to an object. Used internally and for tile collisions.
-/// 
+///
 /// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-object).
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectData {
+    /// ID of the object, which is unique per map since Tiled 0.11.
+    ///
+    /// On older versions this value is defaulted to 0.
     pub id: u32,
     tile: Option<LayerTileData>,
+    /// The name of the object, which is arbitrary and set by the user.
     pub name: String,
+    /// The type of the object, which is arbitrary and set by the user.
     pub obj_type: String,
+    /// The width of the object, if applicable. This refers to the attribute in `object`.
+    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
+    /// member in [`ObjectShape`] instead.
+    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
     pub width: f32,
+    /// The height of the object, if applicable. This refers to the attribute in `object`.
+    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
+    /// member in [`ObjectShape`] instead.
+    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
     pub height: f32,
+    /// The X coordinate of this object in pixels.
     pub x: f32,
+    /// The Y coordinate of this object in pixels.
     pub y: f32,
+    /// The clockwise rotation of this object around (x,y) in degrees.
     pub rotation: f32,
+    /// Whether the object is shown or hidden.
     pub visible: bool,
+    /// The object's shape.
     pub shape: ObjectShape,
+    /// The object's custom properties set by the user.
     pub properties: Properties,
 }
 
@@ -106,6 +125,7 @@ impl ObjectData {
 
         let shape = shape.unwrap_or(ObjectShape::Rect { width, height });
 
+        #[allow(deprecated)]
         Ok(ObjectData {
             id,
             tile,
@@ -181,7 +201,9 @@ map_wrapper!(
 );
 
 impl<'map> Object<'map> {
-    /// Get the object's id.
+    /// ID of the object, which is unique per map since Tiled 0.11.
+    ///
+    /// On older versions this value is defaulted to 0.
     pub fn id(&self) -> u32 {
         self.data.id
     }
@@ -194,52 +216,60 @@ impl<'map> Object<'map> {
             .map(|tile| LayerTile::new(self.map, tile))
     }
 
-    /// Get a reference to the object's name.
+    /// The name of the object, which is arbitrary and set by the user.
     pub fn name(&self) -> &str {
         self.data.name.as_ref()
     }
 
-    /// Get a reference to the object's type.
+    /// The type of the object, which is arbitrary and set by the user.
     pub fn obj_type(&self) -> &str {
         self.data.obj_type.as_ref()
     }
 
-    /// Get the object's width.
+    /// The width of the object, if applicable. This refers to the attribute in `object`.
+    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
+    /// member in [`ObjectShape`] instead.
+    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
     pub fn width(&self) -> f32 {
+        #[allow(deprecated)]
         self.data.width
     }
 
-    /// Get the object's height.
+    /// The height of the object, if applicable. This refers to the attribute in `object`.
+    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
+    /// member in [`ObjectShape`] instead.
+    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
     pub fn height(&self) -> f32 {
+        #[allow(deprecated)]
         self.data.height
     }
 
-    /// Get the object's x.
+    /// The X coordinate of this object in pixels.
     pub fn x(&self) -> f32 {
         self.data.x
     }
 
-    /// Get object's y.
+    /// The Y coordinate of this object in pixels.
     pub fn y(&self) -> f32 {
         self.data.y
     }
 
-    /// Get a reference to the object's rotation.
+    /// The clockwise rotation of this object around (x,y) in degrees.
     pub fn rotation(&self) -> f32 {
         self.data.rotation
     }
 
-    /// Whether the object should be visible or not.
+    /// Whether the object is shown or hidden.
     pub fn visible(&self) -> bool {
         self.data.visible
     }
 
-    /// Get a reference to the object's shape.
+    /// The object's shape.
     pub fn shape(&self) -> &ObjectShape {
         &self.data.shape
     }
 
-    /// Get a reference to the object's properties.
+    /// The object's custom properties set by the user.
     pub fn properties(&self) -> &Properties {
         &self.data.properties
     }

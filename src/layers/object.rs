@@ -50,7 +50,9 @@ impl ObjectLayerData {
     }
 }
 
-map_wrapper!(ObjectLayer => ObjectLayerData);
+map_wrapper!(
+    #[doc = "Also called an \"object group\". Used for storing [`Object`]s in a map."]
+    ObjectLayer => ObjectLayerData);
 
 impl<'map> ObjectLayer<'map> {
     /// Obtains the object corresponding to the index given.

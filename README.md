@@ -36,6 +36,6 @@ fn main() {
 
 ### Licences
 
-assets/tilesheet.png by Buch (https://opengameart.org/content/sci-fi-interior-tiles)
+assets/tilesheet.png by [Buch](https://opengameart.org/content/sci-fi-interior-tiles)
 
 Licenced under MIT

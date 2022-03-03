@@ -110,7 +110,10 @@ impl LayerData {
     }
 }
 
-map_wrapper!(Layer => LayerData);
+map_wrapper!(
+    #[doc = "A map layer, accessed via [`Map::layers()`]."]
+    Layer => LayerData
+);
 
 impl<'map> Layer<'map> {
     /// Get a reference to the layer's name.

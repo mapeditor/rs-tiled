@@ -4,6 +4,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{error::TiledError, properties::Color, util::*};
 
+/// A reference to an image stored somewhere within the filesystem.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Image {
     /// The filepath of the image.

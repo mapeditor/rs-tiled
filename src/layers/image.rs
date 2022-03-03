@@ -35,7 +35,10 @@ impl ImageLayerData {
     }
 }
 
-map_wrapper!(ImageLayer => ImageLayerData);
+map_wrapper!(
+    #[doc = "A layer consisting of a single image."]
+    ImageLayer => ImageLayerData
+);
 
 impl<'map> ImageLayer<'map> {
     /// Get a reference to the image layer's image.
