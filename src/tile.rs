@@ -9,26 +9,74 @@ use crate::{
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
+    Tileset,
 };
 
 pub type TileId = u32;
 
 #[derive(Debug, PartialEq, Clone, Default)]
-pub struct Tile {
-    pub image: Option<Image>,
-    pub properties: Properties,
-    pub collision: Option<ObjectLayerData>,
-    pub animation: Option<Vec<Frame>>,
-    pub tile_type: Option<String>,
-    pub probability: f32,
+pub(crate) struct TileData {
+    image: Option<Image>,
+    properties: Properties,
+    collision: Option<ObjectLayerData>,
+    animation: Option<Vec<Frame>>,
+    tile_type: Option<String>,
+    probability: f32,
 }
 
-impl Tile {
+#[derive(Debug)]
+pub struct Tile<'tileset> {
+    pub(crate) tileset: &'tileset Tileset,
+    pub(crate) data: &'tileset TileData,
+}
+
+impl<'tileset> Tile<'tileset> {
+    pub(crate) fn new(tileset: &'tileset Tileset, data: &'tileset TileData) -> Self {
+        Self { tileset, data }
+    }
+
+    /// Get the tileset this tile is from.
+    pub fn tileset(&self) -> &'tileset Tileset {
+        self.tileset
+    }
+
+    /// Get a reference to the tile's image.
+    pub fn image(&self) -> Option<&Image> {
+        self.data.image.as_ref()
+    }
+
+    /// Get a reference to the tile's properties.
+    pub fn properties(&self) -> &Properties {
+        &self.data.properties
+    }
+
+    /// Get a reference to the tile's collision.
+    pub fn collision(&self) -> Option<&ObjectLayerData> {
+        self.data.collision.as_ref()
+    }
+
+    /// Get a reference to the tile's animation frames.
+    pub fn animation(&self) -> Option<&[Frame]> {
+        self.data.animation.as_ref().map(Vec::as_slice)
+    }
+
+    /// Get a reference to the tile's type.
+    pub fn tile_type(&self) -> Option<&str> {
+        self.data.tile_type.as_deref()
+    }
+
+    /// Get the tile's probability.
+    pub fn probability(&self) -> f32 {
+        self.data.probability
+    }
+}
+
+impl TileData {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-        path_relative_to: Option<&Path>,
-    ) -> Result<(TileId, Tile), TiledError> {
+        path_relative_to: &Path,
+    ) -> Result<(TileId, TileData), TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
             optionals: [
@@ -47,7 +95,7 @@ impl Tile {
         let mut animation = None;
         parse_tag!(parser, "tile", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to.ok_or(TiledError::SourceRequired{object_to_parse:"Image".to_owned()})?)?);
+                image = Some(Image::new(parser, attrs, path_relative_to)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -65,7 +113,7 @@ impl Tile {
         });
         Ok((
             id,
-            Tile {
+            TileData {
                 image,
                 properties,
                 collision: objectgroup,

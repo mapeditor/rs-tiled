@@ -183,7 +183,7 @@ impl Map {
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, Some(&tileset_path)))?;
+                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::parse_reader(file, &tileset_path))?;
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {

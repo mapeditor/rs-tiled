@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Gid, Map, MapTilesetGid,  Properties, Tile, TileId, TiledError, Tileset,
+    Gid, Map, MapTilesetGid, Properties, Tile, TileId, TiledError, Tileset,
 };
 
 mod finite;
@@ -110,7 +110,7 @@ map_wrapper!(LayerTile => LayerTileData);
 
 impl<'map> LayerTile<'map> {
     /// Get a reference to the layer tile's referenced tile, if it exists.
-    pub fn get_tile(&self) -> Option<&'map Tile> {
+    pub fn get_tile(&self) -> Option<Tile<'map>> {
         self.get_tileset().get_tile(self.data.id)
     }
     /// Get a reference to the layer tile's referenced tileset.

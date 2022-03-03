@@ -191,7 +191,7 @@ fn test_tile_property() {
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
         .get_tile(1)
         .unwrap()
-        .properties
+        .properties()
         .get("a tile property")
     {
         v.clone()
