@@ -1,19 +1,17 @@
 # rs-tiled
-
-[![Rust](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml/badge.svg)](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml)
-[![Crates.io](https://img.shields.io/crates/v/tiled.svg)](https://crates.io/crates/tiled)
-
-Read maps from the [Tiled Map Editor](http://www.mapeditor.org/) into rust for use in video games. It is game engine agnostic and pretty barebones at the moment. Documentation is available [on docs.rs](https://docs.rs/tiled/).
-
-Code contributions are welcome as are bug reports, documentation, suggestions and criticism.
-
-[There is a package on crates.io](https://crates.io/crates/tiled), to use simply add:
-
 ```toml
 tiled = "0.9.5"
 ```
 
-to the dependencies section of your Cargo.toml.
+[![Rust](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml/badge.svg)](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml)
+[![Crates.io](https://img.shields.io/crates/v/tiled.svg)](https://crates.io/crates/tiled)
+
+A crate for reading TMX (map) and TSX (tileset) files from the [Tiled Map Editor](http://www.mapeditor.org/) into Rust.
+It provides a huge set of features as well as a strong wrapper over internal features such as GIDs.
+
+Documentation is available [on docs.rs](https://docs.rs/tiled/).
+
+Code contributions are welcome as are bug reports, documentation, suggestions and criticism.
 
 The minimum supported TMX version is 0.13.
 

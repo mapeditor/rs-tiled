@@ -111,7 +111,7 @@ impl LayerData {
 }
 
 map_wrapper!(
-    #[doc = "A map layer, accessed via [`Map::layers()`]."]
+    #[doc = "A generic map layer, accessed via [`Map::layers()`]."]
     Layer => LayerData
 );
 

@@ -61,7 +61,7 @@ impl FiniteTileLayerData {
 }
 
 map_wrapper!(
-    #[doc = "A [`TileLayer`] with a defined bound (width and height)."]
+    #[doc = "A [`TileLayer`](super::TileLayer) with a defined bound (width and height)."]
     FiniteTileLayer => FiniteTileLayerData
 );
 

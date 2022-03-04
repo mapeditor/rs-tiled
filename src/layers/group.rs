@@ -80,8 +80,10 @@ impl GroupLayerData {
 
 map_wrapper!(
     #[doc = "A group layer, used to organize the layers of the map in a hierarchy."]
+    #[doc = "\nAlso see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#group)."]
     #[doc = "## Note"]
-    #[doc = "This type is currently nonstandard, as its attributes do not recursively affect child layers."]
+    #[doc = "Although the TMX documentation states that its attributes recursively affect child
+    layers, this is currently only true for the editor, and not the crate."]
     GroupLayer => GroupLayerData
 );
 

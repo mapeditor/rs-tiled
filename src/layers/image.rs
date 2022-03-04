@@ -37,6 +37,7 @@ impl ImageLayerData {
 
 map_wrapper!(
     #[doc = "A layer consisting of a single image."]
+    #[doc = "\nAlso see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#imagelayer)."]
     ImageLayer => ImageLayerData
 );
 

@@ -39,7 +39,8 @@ pub struct Tileset {
     /// the tile count, and as such there may be tiles with an ID bigger than the tile count.
     pub tilecount: u32,
     /// The number of tile columns in the tileset. Editable for image collection tilesets, otherwise
-    /// equal to `image.width() / tile_width`.
+    /// calculated using [image](Self::image) width, [tile width](Self::tile_width),
+    /// [spacing](Self::spacing) and [margin](Self::margin).
     pub columns: u32,
 
     /// A tileset can either:

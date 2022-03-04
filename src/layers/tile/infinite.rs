@@ -151,7 +151,7 @@ impl InternalChunk {
 }
 
 map_wrapper!(
-    #[doc = "A [`TileLayer`] with no bounds, internally stored using [`Chunk`]s."]
+    #[doc = "A [`TileLayer`](super::TileLayer) with no bounds, internally stored using [`Chunk`]s."]
     InfiniteTileLayer => InfiniteTileLayerData
 );
 
