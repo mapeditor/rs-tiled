@@ -12,6 +12,12 @@ pub struct ImageLayerData {
 }
 
 impl ImageLayerData {
+    /// Get a reference to the image layer's image.
+    #[inline]
+    pub fn image(&self) -> Option<&Image> {
+        self.image.as_ref()
+    }
+
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         map_path: &Path,
@@ -40,11 +46,3 @@ map_wrapper!(
     #[doc = "\nAlso see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#imagelayer)."]
     ImageLayer => ImageLayerData
 );
-
-impl<'map> ImageLayer<'map> {
-    /// Get a reference to the image layer's image.
-    #[inline]
-    pub fn image(&self) -> Option<&Image> {
-        self.data.image.as_ref()
-    }
-}

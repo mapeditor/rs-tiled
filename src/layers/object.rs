@@ -18,6 +18,12 @@ pub struct ObjectLayerData {
 }
 
 impl ObjectLayerData {
+    /// Get a reference to the object layer's colour.
+    #[inline]
+    pub fn colour(&self) -> Option<Color> {
+        self.colour
+    }
+
     /// If it is known that there are no objects with tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
     pub(crate) fn new(
@@ -65,13 +71,9 @@ impl<'map> ObjectLayer<'map> {
 
     /// Returns an iterator over the objects present in this layer, in the order they were declared
     /// in in the TMX file.
+    #[inline]
     pub fn objects(&self) -> Objects<'map> {
         Objects::new(self.map, self.data)
-    }
-
-    /// Get a reference to the object layer's colour.
-    pub fn colour(&self) -> Option<Color> {
-        self.data.colour
     }
 }
 
@@ -84,6 +86,7 @@ pub struct Objects<'map> {
 }
 
 impl<'map> Objects<'map> {
+    #[inline]
     fn new(map: &'map Map, data: &'map ObjectLayerData) -> Self {
         Self {
             map,

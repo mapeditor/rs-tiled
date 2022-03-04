@@ -105,11 +105,13 @@ impl Map {
 
 impl Map {
     /// Get a reference to the map's tilesets.
+    #[inline]
     pub fn tilesets(&self) -> &[Arc<Tileset>] {
         self.tilesets.as_ref()
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
+    #[inline]
     pub fn layers(&self) -> MapLayerIter {
         MapLayerIter::new(self)
     }
