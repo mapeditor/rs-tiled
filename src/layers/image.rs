@@ -35,7 +35,11 @@ impl ImageLayerData {
     }
 }
 
-map_wrapper!(ImageLayer => ImageLayerData);
+map_wrapper!(
+    #[doc = "A layer consisting of a single image."]
+    #[doc = "\nAlso see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#imagelayer)."]
+    ImageLayer => ImageLayerData
+);
 
 impl<'map> ImageLayer<'map> {
     /// Get a reference to the image layer's image.
