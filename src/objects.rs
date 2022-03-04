@@ -204,6 +204,7 @@ impl<'map> Object<'map> {
     /// ID of the object, which is unique per map since Tiled 0.11.
     ///
     /// On older versions this value is defaulted to 0.
+    #[inline]
     pub fn id(&self) -> u32 {
         self.data.id
     }
@@ -217,11 +218,13 @@ impl<'map> Object<'map> {
     }
 
     /// The name of the object, which is arbitrary and set by the user.
+    #[inline]
     pub fn name(&self) -> &str {
         self.data.name.as_ref()
     }
 
     /// The type of the object, which is arbitrary and set by the user.
+    #[inline]
     pub fn obj_type(&self) -> &str {
         self.data.obj_type.as_ref()
     }
@@ -230,6 +233,7 @@ impl<'map> Object<'map> {
     /// Since it is duplicate or irrelevant information in all cases, use the equivalent
     /// member in [`ObjectShape`] instead.
     #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
+    #[inline]
     pub fn width(&self) -> f32 {
         #[allow(deprecated)]
         self.data.width
@@ -239,37 +243,44 @@ impl<'map> Object<'map> {
     /// Since it is duplicate or irrelevant information in all cases, use the equivalent
     /// member in [`ObjectShape`] instead.
     #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
+    #[inline]
     pub fn height(&self) -> f32 {
         #[allow(deprecated)]
         self.data.height
     }
 
     /// The X coordinate of this object in pixels.
+    #[inline]
     pub fn x(&self) -> f32 {
         self.data.x
     }
 
     /// The Y coordinate of this object in pixels.
+    #[inline]
     pub fn y(&self) -> f32 {
         self.data.y
     }
 
     /// The clockwise rotation of this object around (x,y) in degrees.
+    #[inline]
     pub fn rotation(&self) -> f32 {
         self.data.rotation
     }
 
     /// Whether the object is shown or hidden.
+    #[inline]
     pub fn visible(&self) -> bool {
         self.data.visible
     }
 
     /// The object's shape.
+    #[inline]
     pub fn shape(&self) -> &ObjectShape {
         &self.data.shape
     }
 
     /// The object's custom properties set by the user.
+    #[inline]
     pub fn properties(&self) -> &Properties {
         &self.data.properties
     }

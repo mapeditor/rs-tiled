@@ -43,6 +43,7 @@ map_wrapper!(
 
 impl<'map> ImageLayer<'map> {
     /// Get a reference to the image layer's image.
+    #[inline]
     pub fn image(&self) -> Option<&Image> {
         self.data.image.as_ref()
     }

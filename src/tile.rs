@@ -26,6 +26,7 @@ pub(crate) struct TileData {
 }
 
 /// Points to a tile belonging to a tileset.
+#[derive(Debug)]
 pub struct Tile<'tileset> {
     pub(crate) tileset: &'tileset Tileset,
     pub(crate) data: &'tileset TileData,

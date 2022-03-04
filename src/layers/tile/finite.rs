@@ -76,11 +76,13 @@ impl<'map> FiniteTileLayer<'map> {
     }
 
     /// Get the tile layer's width in tiles.
+    #[inline]
     pub fn width(&self) -> u32 {
         self.data.width
     }
 
     /// Get the tile layer's height in tiles.
+    #[inline]
     pub fn height(&self) -> u32 {
         self.data.height
     }

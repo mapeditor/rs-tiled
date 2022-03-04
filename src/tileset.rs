@@ -126,6 +126,7 @@ impl Tileset {
     }
 
     /// Gets the tile with the specified ID from the tileset.
+    #[inline]
     pub fn get_tile(&self, id: u32) -> Option<Tile> {
         self.tiles.get(&id).map(|data| Tile::new(self, data))
     }

@@ -121,6 +121,7 @@ impl Map {
 }
 
 /// An iterator that iterates over all the layers in a map, obtained via [`Map::layers`].
+#[derive(Debug)]
 pub struct MapLayerIter<'map> {
     map: &'map Map,
     index: usize,
