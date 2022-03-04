@@ -117,7 +117,7 @@ impl PropertyValue {
             },
             "file" => Ok(PropertyValue::FileValue(value)),
             _ => Err(TiledError::UnknownPropertyType {
-                name: property_type,
+                type_name: property_type,
             }),
         }
     }

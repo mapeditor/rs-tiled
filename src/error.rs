@@ -45,8 +45,9 @@ pub enum TiledError {
     /// 
     /// [`PropertyValue`]: crate::PropertyValue
     UnknownPropertyType {
-        /// The name of the property whose value type is unknown.
-        name: String
+        /// The name of the type that isn't recognized by the crate.
+        /// Supported types are `string`, `int`, `float`, `bool`, `color`, `file` and `object`.
+        type_name: String
     },
 }
 
@@ -87,8 +88,8 @@ impl fmt::Display for TiledError {
                 ),
             TiledError::InvalidPropertyValue{description} =>
                 write!(fmt, "Invalid property value: {}", description),
-            TiledError::UnknownPropertyType { name } =>
-                write!(fmt, "Unknown property value type '{}'", name),
+            TiledError::UnknownPropertyType { type_name } =>
+                write!(fmt, "Unknown property value type '{}'", type_name),
         }
     }
 }
