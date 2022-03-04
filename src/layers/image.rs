@@ -9,16 +9,11 @@ use crate::{
 /// The raw data of an [`ImageLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(Debug, PartialEq, Clone)]
 pub struct ImageLayerData {
-    image: Option<Image>,
+    /// The single image this layer contains, if it exists.
+    pub image: Option<Image>,
 }
 
 impl ImageLayerData {
-    /// Get a reference to the image layer's image.
-    #[inline]
-    pub fn image(&self) -> Option<&Image> {
-        self.image.as_ref()
-    }
-
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         map_path: &Path,

@@ -28,17 +28,33 @@ pub enum ObjectShape {
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectData {
     id: u32,
+    // TODO: make public, differ somewhat from get_tile
     tile: Option<LayerTileData>,
-    name: String,
-    obj_type: String,
-    width: f32,
-    height: f32,
-    x: f32,
-    y: f32,
-    rotation: f32,
-    visible: bool,
-    shape: ObjectShape,
-    properties: Properties,
+    /// The name of the object, which is arbitrary and set by the user.
+    pub name: String,    /// The type of the object, which is arbitrary and set by the user.
+    pub obj_type: String,
+    /// The width of the object, if applicable. This refers to the attribute in `object`.
+    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
+    /// member in [`ObjectShape`] instead.
+    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
+    pub width: f32,
+    /// The height of the object, if applicable. This refers to the attribute in `object`.
+    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
+    /// member in [`ObjectShape`] instead.
+    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
+    pub height: f32,
+    /// The X coordinate of this object in pixels.
+    pub x: f32,
+    /// The Y coordinate of this object in pixels.
+    pub y: f32,
+    /// The clockwise rotation of this object around (x,y) in degrees.
+    pub rotation: f32,
+    /// Whether the object is shown or hidden.
+    pub visible: bool,
+    /// The object's shape.
+    pub shape: ObjectShape,
+    /// The object's custom properties as set by the user.
+    pub properties: Properties,
 }
 
 impl ObjectData {
@@ -48,72 +64,6 @@ impl ObjectData {
     #[inline]
     pub fn id(&self) -> u32 {
         self.id
-    }
-
-    /// The name of the object, which is arbitrary and set by the user.
-    #[inline]
-    pub fn name(&self) -> &str {
-        self.name.as_ref()
-    }
-
-    /// The type of the object, which is arbitrary and set by the user.
-    #[inline]
-    pub fn obj_type(&self) -> &str {
-        self.obj_type.as_ref()
-    }
-
-    /// The width of the object, if applicable. This refers to the attribute in `object`.
-    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
-    /// member in [`ObjectShape`] instead.
-    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
-    #[inline]
-    pub fn width(&self) -> f32 {
-        self.width
-    }
-
-    /// The height of the object, if applicable. This refers to the attribute in `object`.
-    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
-    /// member in [`ObjectShape`] instead.
-    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
-    #[inline]
-    pub fn height(&self) -> f32 {
-        self.height
-    }
-
-    /// The X coordinate of this object in pixels.
-    #[inline]
-    pub fn x(&self) -> f32 {
-        self.x
-    }
-
-    /// The Y coordinate of this object in pixels.
-    #[inline]
-    pub fn y(&self) -> f32 {
-        self.y
-    }
-
-    /// The clockwise rotation of this object around (x,y) in degrees.
-    #[inline]
-    pub fn rotation(&self) -> f32 {
-        self.rotation
-    }
-
-    /// Whether the object is shown or hidden.
-    #[inline]
-    pub fn visible(&self) -> bool {
-        self.visible
-    }
-
-    /// The object's shape.
-    #[inline]
-    pub fn shape(&self) -> &ObjectShape {
-        &self.shape
-    }
-
-    /// The object's custom properties set by the user.
-    #[inline]
-    pub fn properties(&self) -> &Properties {
-        &self.properties
     }
 }
 
@@ -182,6 +132,7 @@ impl ObjectData {
 
         let shape = shape.unwrap_or(ObjectShape::Rect { width, height });
 
+        #[allow(deprecated)]
         Ok(ObjectData {
             id,
             tile,

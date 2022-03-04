@@ -24,9 +24,12 @@ pub struct LayerTileData {
     tileset_index: usize,
     /// The local ID of the tile in the tileset it's in.
     id: TileId,
-    flip_h: bool,
-    flip_v: bool,
-    flip_d: bool,
+    /// Whether this tile is flipped on its Y axis (horizontally).
+    pub flip_h: bool,
+    /// Whether this tile is flipped on its X axis (vertically).
+    pub flip_v: bool,
+    /// Whether this tile is flipped diagonally.
+    pub flip_d: bool,
 }
 
 impl LayerTileData {
@@ -45,24 +48,6 @@ impl LayerTileData {
     #[inline]
     pub fn id(&self) -> u32 {
         self.id
-    }
-
-    /// Whether this tile is flipped on its Y axis (horizontally).
-    #[inline]
-    pub fn flip_h(&self) -> bool {
-        self.flip_h
-    }
-
-    /// Whether this tile is flipped on its X axis (vertically).
-    #[inline]
-    pub fn flip_v(&self) -> bool {
-        self.flip_v
-    }
-
-    /// Whether this tile is flipped diagonally.
-    #[inline]
-    pub fn flip_d(&self) -> bool {
-        self.flip_d
     }
 
     const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
@@ -178,7 +163,7 @@ impl<'map> TileLayer<'map> {
     }
 
     /// Obtains the tile present at the position given.
-    /// 
+    ///
     /// If the position given is invalid or the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         match self {

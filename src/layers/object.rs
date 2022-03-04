@@ -12,18 +12,13 @@ use crate::{
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectLayerData {
     /// The objects present in this layer.
-    pub objects: Vec<ObjectData>,
+    // TODO: read-only property
+    objects: Vec<ObjectData>,
     /// The color used in the editor to display objects in this layer.
     pub colour: Option<Color>,
 }
 
 impl ObjectLayerData {
-    /// Get a reference to the object layer's colour.
-    #[inline]
-    pub fn colour(&self) -> Option<Color> {
-        self.colour
-    }
-
     /// If it is known that there are no objects with tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
     pub(crate) fn new(
