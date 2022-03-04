@@ -377,7 +377,12 @@ fn test_group_layers() {
         layer_tile_1.properties().get("key")
     );
     assert_eq!(
-        Some(&PropertyValue::StringValue("value4".to_string())),
+        Some(&PropertyValue::ColorValue(Color {
+            alpha: 0x12,
+            red: 0x34,
+            green: 0x56,
+            blue: 0x78
+        })),
         layer_group_1.properties().get("key")
     );
     assert_eq!(
