@@ -6,6 +6,7 @@ use crate::{
     Image, Properties, TiledError,
 };
 
+/// The raw data of an [`ImageLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(Debug, PartialEq, Clone)]
 pub struct ImageLayerData {
     image: Option<Image>,

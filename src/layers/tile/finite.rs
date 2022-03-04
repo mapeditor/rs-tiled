@@ -7,6 +7,7 @@ use crate::{
 
 use super::util::parse_data_line;
 
+/// The raw data of a [`FiniteTileLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(PartialEq, Clone, Default)]
 pub struct FiniteTileLayerData {
     width: u32,

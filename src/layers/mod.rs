@@ -29,6 +29,7 @@ pub(crate) enum LayerTag {
     GroupLayer,
 }
 
+/// The raw data of a [`Layer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(Clone, PartialEq, Debug)]
 pub struct LayerData {
     name: String,
