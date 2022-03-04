@@ -4,6 +4,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{error::TiledError, properties::Color, util::*};
 
+/// A reference to an image stored somewhere within the filesystem.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Image {
     /// The filepath of the image.
@@ -15,8 +16,11 @@ pub struct Image {
     /// [source]: https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#image
     // TODO: Embedded images
     pub source: PathBuf,
+    /// The width in pixels of the image.
     pub width: i32,
+    /// The height in pixels of the image.
     pub height: i32,
+    /// A color that should be interpreted as transparent (0 alpha), if any.
     pub transparent_colour: Option<Color>,
 }
 

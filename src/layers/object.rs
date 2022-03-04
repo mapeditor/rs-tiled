@@ -11,7 +11,9 @@ use crate::{
 /// Raw data referring to a map object layer or tile collision data.
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectLayerData {
+    /// The objects present in this layer.
     pub objects: Vec<ObjectData>,
+    /// The color used in the editor to display objects in this layer.
     pub colour: Option<Color>,
 }
 
@@ -48,9 +50,12 @@ impl ObjectLayerData {
     }
 }
 
-map_wrapper!(ObjectLayer => ObjectLayerData);
+map_wrapper!(
+    #[doc = "Also called an \"object group\". Used for storing [`Object`]s in a map."]
+    ObjectLayer => ObjectLayerData);
 
 impl<'map> ObjectLayer<'map> {
+    /// Obtains the object corresponding to the index given.
     pub fn get_object(&self, idx: usize) -> Option<Object<'map>> {
         self.data
             .objects
@@ -58,8 +63,15 @@ impl<'map> ObjectLayer<'map> {
             .map(|data| Object::new(self.map, data))
     }
 
+    /// Returns an iterator over the objects present in this layer, in the order they were declared
+    /// in in the TMX file.
     pub fn objects(&self) -> Objects<'map> {
         Objects::new(self.map, self.data)
+    }
+
+    /// Get a reference to the object layer's colour.
+    pub fn colour(&self) -> Option<Color> {
+        self.data.colour
     }
 }
 

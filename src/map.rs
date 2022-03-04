@@ -1,3 +1,5 @@
+//! Structures related to Tiled maps.
+
 use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr, sync::Arc};
 
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
@@ -21,6 +23,7 @@ pub(crate) struct MapTilesetGid {
 pub struct Map {
     /// The TMX format version this map was saved to.
     pub version: String,
+    /// The way tiles are laid out in the map.
     pub orientation: Orientation,
     /// Width of the map, in tiles.
     pub width: u32,
@@ -38,6 +41,8 @@ pub struct Map {
     pub properties: Properties,
     /// The background color of this map, if any.
     pub background_color: Option<Color>,
+    /// Whether this map is infinite. An infinite map has no fixed size and can grow in all
+    /// directions. Its layer data is stored in chunks.
     pub infinite: bool,
 }
 
@@ -263,6 +268,7 @@ impl Map {
 
 /// Represents the way tiles are laid out in a map.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[allow(missing_docs)]
 pub enum Orientation {
     Orthogonal,
     Isometric,

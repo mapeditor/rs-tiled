@@ -54,8 +54,9 @@ macro_rules! parse_tag {
 
 /// Creates a new type that wraps an internal data type over along with a map.
 macro_rules! map_wrapper {
-    ($name:ident => $data_ty:ty) => {
+    ($(#[$attrs:meta])* $name:ident => $data_ty:ty) => {
         #[derive(Clone, Copy, PartialEq, Debug)]
+        $(#[$attrs])*
         pub struct $name<'map> {
             pub(crate) map: &'map $crate::Map,
             pub(crate) data: &'map $data_ty,

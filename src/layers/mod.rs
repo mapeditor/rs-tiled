@@ -110,7 +110,10 @@ impl LayerData {
     }
 }
 
-map_wrapper!(Layer => LayerData);
+map_wrapper!(
+    #[doc = "A generic map layer, accessed via [`Map::layers()`]."]
+    Layer => LayerData
+);
 
 impl<'map> Layer<'map> {
     /// Get a reference to the layer's name.
@@ -180,11 +183,16 @@ impl<'map> Layer<'map> {
     }
 }
 
+/// Represents some kind of map layer.
 #[derive(Debug)]
 pub enum LayerType<'map> {
+    /// A tile layer; Also see [`TileLayer`].
     TileLayer(TileLayer<'map>),
+    /// An object layer (also called object group); Also see [`ObjectLayer`].
     ObjectLayer(ObjectLayer<'map>),
+    /// An image layer; Also see [`ImageLayer`].
     ImageLayer(ImageLayer<'map>),
+    /// A group layer; Also see [`GroupLayer`].
     GroupLayer(GroupLayer<'map>),
 }
 

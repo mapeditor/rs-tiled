@@ -7,7 +7,9 @@ use crate::{
     util::{get_attrs, parse_tag, XmlEventResult},
 };
 
+/// Represents a RGBA color with 8-bit depth on each channel.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[allow(missing_docs)]
 pub struct Color {
     pub alpha: u8,
     pub red: u8,
@@ -55,16 +57,26 @@ impl FromStr for Color {
     }
 }
 
+/// Represents a custom property's value.
+///
+/// Also read the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-properties).
 #[derive(Debug, PartialEq, Clone)]
 pub enum PropertyValue {
+    /// A boolean value. Corresponds to the `bool` property type.
     BoolValue(bool),
+    /// A floating point value. Corresponds to the `float` property type.
     FloatValue(f32),
+    /// A signed integer value. Corresponds to the `int` property type.
     IntValue(i32),
+    /// A color value. Corresponds to the `color` property type.
     ColorValue(Color),
+    /// A string value. Corresponds to the `string` property type.
     StringValue(String),
-    /// Holds the path relative to the map or tileset
+    /// A filepath value. Corresponds to the `file` property type.
+    /// Holds the path relative to the map or tileset.
     FileValue(String),
-    /// Holds the id of a referenced object, or 0 if unset
+    /// An object ID value. Corresponds to the `object` property type.
+    /// Holds the id of a referenced object, or 0 if unset.
     ObjectValue(u32),
 }
 
@@ -110,6 +122,7 @@ impl PropertyValue {
     }
 }
 
+/// A custom property container.
 pub type Properties = HashMap<String, PropertyValue>;
 
 pub(crate) fn parse_properties(
