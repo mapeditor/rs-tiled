@@ -5,14 +5,14 @@
 /// This is probably a really terrible way to do this. It does cut down on lines
 /// though which is nice.
 macro_rules! get_attrs {
-    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),* $(,)*],
+    ($attrs:expr, $(optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),* $(,)*],)?
      required: [$(($name:pat, $var:ident, $method:expr)),* $(,)*], $err:expr) => {
         {
-            $(let mut $oVar = None;)*
+            $($(let mut $oVar = None;)*)?
             $(let mut $var = None;)*
             for attr in $attrs.iter() {
                 match attr.name.local_name.as_ref() {
-                    $($oName => $oVar = $oMethod(attr.value.clone()),)*
+                    $($($oName => $oVar = $oMethod(attr.value.clone()),)*)?
                     $($name => $var = $method(attr.value.clone()),)*
                     _ => {}
                 }
@@ -20,7 +20,7 @@ macro_rules! get_attrs {
             if !(true $(&& $var.is_some())*) {
                 return Err($err);
             }
-            (($($oVar),*), ($($var.unwrap()),*))
+            ($(($($oVar),*),)? ($($var.unwrap()),*))
         }
     }
 }

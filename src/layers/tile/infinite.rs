@@ -126,9 +126,8 @@ impl InternalChunk {
         compression: Option<String>,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self, TiledError> {
-        let ((), (x, y, width, height)) = get_attrs!(
+        let (x, y, width, height) = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("x", x, |v: String| v.parse().ok()),
                 ("y", y, |v: String| v.parse().ok()),
