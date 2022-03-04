@@ -163,20 +163,21 @@ fn test_image_layers() {
     });
     {
         let first = image_layers.next().unwrap();
-        assert_eq!(first.1.name(), "Image Layer 1");
+        assert_eq!(first.1.name, "Image Layer 1");
         assert!(
-            first.0.image().is_none(),
+            first.0.image.is_none(),
             "{}'s image should be None",
-            first.1.name()
+            first.1.name
         );
     }
     {
         let second = image_layers.next().unwrap();
-        assert_eq!(second.1.name(), "Image Layer 2");
+        assert_eq!(second.1.name, "Image Layer 2");
         let image = second
             .0
-            .image()
-            .expect(&format!("{}'s image shouldn't be None", second.1.name()));
+            .image
+            .as_ref()
+            .expect(&format!("{}'s image shouldn't be None", second.1.name));
         assert_eq!(image.source, PathBuf::from("assets/tilesheet.png"));
         assert_eq!(image.width, 448);
         assert_eq!(image.height, 192);
@@ -207,7 +208,7 @@ fn test_layer_property() {
 
     let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
-        r.get_layer(0).unwrap().properties().get("prop3")
+        r.get_layer(0).unwrap().properties.get("prop3")
     {
         v.clone()
     } else {
@@ -225,7 +226,7 @@ fn test_object_group_property() {
     let group_layer = as_group_layer(group_layer);
     let sub_layer = group_layer.get_layer(0).unwrap();
     let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) =
-        sub_layer.properties().get("an object group property")
+        sub_layer.properties.get("an object group property")
     {
         *v
     } else {
@@ -262,18 +263,18 @@ fn test_flipped() {
     assert_eq!(t1.id(), t2.id());
     assert_eq!(t2.id(), t3.id());
     assert_eq!(t3.id(), t4.id());
-    assert!(t1.flip_d());
-    assert!(t1.flip_h());
-    assert!(t1.flip_v());
-    assert!(!t2.flip_d());
-    assert!(!t2.flip_h());
-    assert!(t2.flip_v());
-    assert!(!t3.flip_d());
-    assert!(t3.flip_h());
-    assert!(!t3.flip_v());
-    assert!(t4.flip_d());
-    assert!(!t4.flip_h());
-    assert!(!t4.flip_v());
+    assert!(t1.flip_d);
+    assert!(t1.flip_h);
+    assert!(t1.flip_v);
+    assert!(!t2.flip_d);
+    assert!(!t2.flip_h);
+    assert!(t2.flip_v);
+    assert!(!t3.flip_d);
+    assert!(t3.flip_h);
+    assert!(!t3.flip_v);
+    assert!(t4.flip_d);
+    assert!(!t4.flip_h);
+    assert!(!t4.flip_v);
 }
 
 #[test]
@@ -298,19 +299,19 @@ fn test_parallax_layers() {
     for (i, layer) in r.layers().enumerate() {
         match i {
             0 => {
-                assert_eq!(layer.name(), "Background");
-                assert_eq!(layer.parallax_x(), 0.5);
-                assert_eq!(layer.parallax_y(), 0.75);
+                assert_eq!(layer.name, "Background");
+                assert_eq!(layer.parallax_x, 0.5);
+                assert_eq!(layer.parallax_y, 0.75);
             }
             1 => {
-                assert_eq!(layer.name(), "Middle");
-                assert_eq!(layer.parallax_x(), 1.0);
-                assert_eq!(layer.parallax_y(), 1.0);
+                assert_eq!(layer.name, "Middle");
+                assert_eq!(layer.parallax_x, 1.0);
+                assert_eq!(layer.parallax_y, 1.0);
             }
             2 => {
-                assert_eq!(layer.name(), "Foreground");
-                assert_eq!(layer.parallax_x(), 2.0);
-                assert_eq!(layer.parallax_y(), 2.0);
+                assert_eq!(layer.name, "Foreground");
+                assert_eq!(layer.parallax_x, 2.0);
+                assert_eq!(layer.parallax_y, 2.0);
             }
             _ => panic!("unexpected layer"),
         }
@@ -326,7 +327,7 @@ fn test_object_property() {
     let prop_value = if let Some(PropertyValue::ObjectValue(v)) = as_object_layer(layer)
         .get_object(0)
         .unwrap()
-        .properties()
+        .properties
         .get("object property")
     {
         *v
@@ -342,7 +343,7 @@ fn test_tint_color() {
 
     let r = Map::parse_file("assets/tiled_image_layers.tmx", &mut cache).unwrap();
     assert_eq!(
-        r.get_layer(0).unwrap().tint_color(),
+        r.get_layer(0).unwrap().tint_color,
         Some(Color {
             alpha: 0x12,
             red: 0x34,
@@ -351,7 +352,7 @@ fn test_tint_color() {
         })
     );
     assert_eq!(
-        r.get_layer(1).unwrap().tint_color(),
+        r.get_layer(1).unwrap().tint_color,
         Some(Color {
             alpha: 0xFF,
             red: 0x12,
@@ -374,15 +375,15 @@ fn test_group_layers() {
 
     assert_eq!(
         Some(&PropertyValue::StringValue("value1".to_string())),
-        layer_tile_1.properties().get("key")
+        layer_tile_1.properties.get("key")
     );
     assert_eq!(
         Some(&PropertyValue::StringValue("value4".to_string())),
-        layer_group_1.properties().get("key")
+        layer_group_1.properties.get("key")
     );
     assert_eq!(
         Some(&PropertyValue::StringValue("value5".to_string())),
-        layer_group_2.properties().get("key")
+        layer_group_2.properties.get("key")
     );
 
     // Depth = 1
@@ -392,11 +393,11 @@ fn test_group_layers() {
     let layer_group_3 = layer_group_2.get_layer(0).unwrap();
     assert_eq!(
         Some(&PropertyValue::StringValue("value2".to_string())),
-        layer_tile_2.properties().get("key")
+        layer_tile_2.properties.get("key")
     );
     assert_eq!(
         Some(&PropertyValue::StringValue("value6".to_string())),
-        layer_group_3.properties().get("key")
+        layer_group_3.properties.get("key")
     );
 
     // Depth = 2
@@ -404,6 +405,6 @@ fn test_group_layers() {
     let layer_tile_3 = layer_group_3.get_layer(0).unwrap();
     assert_eq!(
         Some(&PropertyValue::StringValue("value3".to_string())),
-        layer_tile_3.properties().get("key")
+        layer_tile_3.properties.get("key")
     );
 }
