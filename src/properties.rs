@@ -60,7 +60,7 @@ pub enum PropertyValue {
     BoolValue(bool),
     FloatValue(f32),
     IntValue(i32),
-    ColorValue(u32),
+    ColorValue(Color),
     StringValue(String),
     /// Holds the path relative to the map or tileset
     FileValue(String),
@@ -90,12 +90,11 @@ impl PropertyValue {
                     description: err.to_string(),
                 }),
             },
-            "color" if value.len() > 1 => match u32::from_str_radix(&value[1..], 16) {
-                Ok(color) => Ok(PropertyValue::ColorValue(color)),
-                Err(err) => Err(TiledError::InvalidPropertyValue {
-                    description: err.to_string(),
+            "color" if value.len() > 1 => Color::from_str(&value)
+                .map(|color| PropertyValue::ColorValue(color))
+                .map_err(|_| TiledError::InvalidPropertyValue {
+                    description: "Couldn't parse color".to_string(),
                 }),
-            },
             "string" => Ok(PropertyValue::StringValue(value)),
             "object" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::ObjectValue(val)),
