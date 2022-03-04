@@ -82,8 +82,8 @@ map_wrapper!(
     #[doc = "A group layer, used to organize the layers of the map in a hierarchy."]
     #[doc = "\nAlso see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#group)."]
     #[doc = "## Note"]
-    #[doc = "Although the TMX documentation states that its attributes recursively affect child
-    layers, this is currently only true for the editor, and not the crate."]
+    #[doc = "In Tiled, the properties of the group layer recursively affect child layers.
+    Implementing this behavior is left up to the user of this library."]
     GroupLayer => GroupLayerData
 );
 
