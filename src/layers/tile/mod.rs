@@ -17,7 +17,7 @@ pub use infinite::*;
 
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct LayerTileData {
+pub struct LayerTileData {
     /// The index of the tileset this tile's in, relative to the tile's map. Guaranteed to be a
     /// valid index of the map tileset container, but **isn't guaranteed to actually contain
     /// this tile**.

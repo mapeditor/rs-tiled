@@ -8,7 +8,7 @@ use crate::{
 use super::util::parse_data_line;
 
 #[derive(PartialEq, Clone, Default)]
-pub(crate) struct FiniteTileLayerData {
+pub struct FiniteTileLayerData {
     width: u32,
     height: u32,
     /// The tiles are arranged in rows.

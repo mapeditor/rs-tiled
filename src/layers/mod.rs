@@ -30,7 +30,7 @@ pub(crate) enum LayerTag {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct LayerData {
+pub struct LayerData {
     name: String,
     id: u32,
     visible: bool,

@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct GroupLayerData {
+pub struct GroupLayerData {
     layers: Vec<LayerData>,
 }
 
