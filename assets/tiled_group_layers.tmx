@@ -18,7 +18,7 @@
  </layer>
  <group id="3" name="group-1">
   <properties>
-   <property name="key" value="value4"/>
+   <property name="key" type="color" value="#12345678"/>
   </properties>
   <layer id="5" name="tile-2" width="8" height="8">
    <properties>

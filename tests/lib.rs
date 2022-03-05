@@ -33,7 +33,7 @@ fn as_group_layer<'map>(layer: Layer<'map>) -> GroupLayer<'map> {
 }
 
 fn compare_everything_but_tileset_sources(r: &Map, e: &Map) {
-    assert_eq!(r.version, e.version);
+    assert_eq!(r.version(), e.version());
     assert_eq!(r.orientation, e.orientation);
     assert_eq!(r.width, e.width);
     assert_eq!(r.height, e.height);
@@ -41,7 +41,7 @@ fn compare_everything_but_tileset_sources(r: &Map, e: &Map) {
     assert_eq!(r.tile_height, e.tile_height);
     assert_eq!(r.properties, e.properties);
     assert_eq!(r.background_color, e.background_color);
-    assert_eq!(r.infinite, e.infinite);
+    assert_eq!(r.infinite(), e.infinite());
     // TODO: Also compare layers
     /*
     r.layers()
@@ -378,7 +378,12 @@ fn test_group_layers() {
         layer_tile_1.properties.get("key")
     );
     assert_eq!(
-        Some(&PropertyValue::StringValue("value4".to_string())),
+        Some(&PropertyValue::ColorValue(Color {
+            alpha: 0x12,
+            red: 0x34,
+            green: 0x56,
+            blue: 0x78
+        })),
         layer_group_1.properties.get("key")
     );
     assert_eq!(

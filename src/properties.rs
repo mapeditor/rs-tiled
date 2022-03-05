@@ -58,7 +58,7 @@ impl FromStr for Color {
 }
 
 /// Represents a custom property's value.
-/// 
+///
 /// Also read the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-properties).
 #[derive(Debug, PartialEq, Clone)]
 pub enum PropertyValue {
@@ -69,7 +69,7 @@ pub enum PropertyValue {
     /// A signed integer value. Corresponds to the `int` property type.
     IntValue(i32),
     /// A color value. Corresponds to the `color` property type.
-    ColorValue(u32),
+    ColorValue(Color),
     /// A string value. Corresponds to the `string` property type.
     StringValue(String),
     /// A filepath value. Corresponds to the `file` property type.
@@ -102,12 +102,11 @@ impl PropertyValue {
                     description: err.to_string(),
                 }),
             },
-            "color" if value.len() > 1 => match u32::from_str_radix(&value[1..], 16) {
-                Ok(color) => Ok(PropertyValue::ColorValue(color)),
-                Err(err) => Err(TiledError::InvalidPropertyValue {
-                    description: err.to_string(),
+            "color" if value.len() > 1 => Color::from_str(&value)
+                .map(|color| PropertyValue::ColorValue(color))
+                .map_err(|_| TiledError::InvalidPropertyValue {
+                    description: "Couldn't parse color".to_string(),
                 }),
-            },
             "string" => Ok(PropertyValue::StringValue(value)),
             "object" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::ObjectValue(val)),
@@ -117,7 +116,7 @@ impl PropertyValue {
             },
             "file" => Ok(PropertyValue::FileValue(value)),
             _ => Err(TiledError::UnknownPropertyType {
-                name: property_type,
+                type_name: property_type,
             }),
         }
     }
