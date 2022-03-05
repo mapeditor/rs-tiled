@@ -75,10 +75,8 @@ impl TileLayerData {
         infinite: bool,
         tilesets: &[MapTilesetGid],
     ) -> Result<(Self, Properties), TiledError> {
-        let ((), (width, height)) = get_attrs!(
+        let (width, height) = get_attrs!(
             attrs,
-            optionals: [
-            ],
             required: [
                 ("width", width, |v: String| v.parse().ok()),
                 ("height", height, |v: String| v.parse().ok()),

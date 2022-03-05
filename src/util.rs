@@ -1,26 +1,51 @@
 /// Loops through the attributes once and pulls out the ones we ask it to. It
 /// will check that the required ones are there. This could have been done with
 /// attrs.find but that would be inefficient.
-///
-/// This is probably a really terrible way to do this. It does cut down on lines
-/// though which is nice.
 macro_rules! get_attrs {
-    ($attrs:expr, $(optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),* $(,)*],)?
-     required: [$(($name:pat, $var:ident, $method:expr)),* $(,)*], $err:expr) => {
+    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),+ $(,)*]
+     , required: [$(($name:pat, $var:ident, $method:expr)),+ $(,)*], $err:expr) => {
         {
-            $($(let mut $oVar = None;)*)?
+            $(let mut $oVar = None;)*
             $(let mut $var = None;)*
-            for attr in $attrs.iter() {
-                match attr.name.local_name.as_ref() {
-                    $($($oName => $oVar = $oMethod(attr.value.clone()),)*)?
-                    $($name => $var = $method(attr.value.clone()),)*
-                    _ => {}
-                }
-            }
+            $crate::util::match_attrs!($attrs, match: [$(($oName, $oVar, $oMethod)),+, $(($name, $var, $method)),+]);
+
             if !(true $(&& $var.is_some())*) {
                 return Err($err);
             }
-            ($(($($oVar),*),)? ($($var.unwrap()),*))
+            (
+                    ($($oVar),*),
+                    ($($var.unwrap()),*)
+            )
+        }
+    };
+    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),+ $(,)*]) => {
+        {
+            $(let mut $oVar = None;)+
+            $crate::util::match_attrs!($attrs, match: [$(($oName, $oVar, $oMethod)),+]);
+            ($($oVar),*)
+        }
+    };
+    ($attrs:expr, required: [$(($name:pat, $var:ident, $method:expr)),+ $(,)*], $err:expr) => {
+        {
+            $(let mut $var = None;)*
+            $crate::util::match_attrs!($attrs, match: [$(($name, $var, $method)),+]);
+
+            if !(true $(&& $var.is_some())*) {
+                return Err($err);
+            }
+            
+            ($($var.unwrap()),*)
+        }
+    };
+}
+
+macro_rules! match_attrs {
+    ($attrs:expr, match: [$(($name:pat, $var:ident, $method:expr)),*]) => {
+        for attr in $attrs.iter() {
+            match <String as AsRef<str>>::as_ref(&attr.name.local_name) {
+                $($name => $var = $method(attr.value.clone()),)*
+                _ => {}
+            }
         }
     }
 }
@@ -79,6 +104,7 @@ macro_rules! map_wrapper {
 
 pub(crate) use get_attrs;
 pub(crate) use map_wrapper;
+pub(crate) use match_attrs;
 pub(crate) use parse_tag;
 
 use crate::{Gid, MapTilesetGid};
