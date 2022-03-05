@@ -33,7 +33,7 @@ macro_rules! get_attrs {
             if !(true $(&& $var.is_some())*) {
                 return Err($err);
             }
-            
+
             ($($var.unwrap()),*)
         }
     };
@@ -56,21 +56,20 @@ macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
         while let Some(next) = $parser.next() {
             match next.map_err(TiledError::XmlDecodingError)? {
-                xml::reader::XmlEvent::StartElement {name, attributes, ..} => {
-                    if false {}
-                    $(else if name.local_name == $open_tag {
-                        match $open_method(attributes) {
-                            Ok(()) => {},
-                            Err(e) => return Err(e)
-                        };
-                    })*
+                #[allow(unused_variables)]
+                $(
+                    xml::reader::XmlEvent::StartElement {name, attributes, ..}
+                        if name.local_name == $open_tag => $open_method(attributes)?,
+                )*
+
+
+                xml::reader::XmlEvent::EndElement {name, ..} => if name.local_name == $close_tag {
+                    break;
                 }
-                xml::reader::XmlEvent::EndElement {name, ..} => {
-                    if name.local_name == $close_tag {
-                        break;
-                    }
+
+                xml::reader::XmlEvent::EndDocument => {
+                    return Err(TiledError::PrematureEnd("Document ended before we expected.".to_string()));
                 }
-                xml::reader::XmlEvent::EndDocument => return Err(TiledError::PrematureEnd("Document ended before we expected.".to_string())),
                 _ => {}
             }
         }
