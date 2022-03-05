@@ -31,7 +31,8 @@ pub struct ObjectData {
     // TODO: make public, differ somewhat from get_tile
     tile: Option<LayerTileData>,
     /// The name of the object, which is arbitrary and set by the user.
-    pub name: String,    /// The type of the object, which is arbitrary and set by the user.
+    pub name: String,
+    /// The type of the object, which is arbitrary and set by the user.
     pub obj_type: String,
     /// The width of the object, if applicable. This refers to the attribute in `object`.
     /// Since it is duplicate or irrelevant information in all cases, use the equivalent
