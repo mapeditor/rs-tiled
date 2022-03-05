@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Gid, Map, MapTilesetGid, Properties, Tile, TileId, TiledError, Tileset,
+    Error, Gid, Map, MapTilesetGid, Properties, Tile, TileId, Tileset,
 };
 
 mod finite;
@@ -74,7 +74,7 @@ impl TileLayerData {
         attrs: Vec<OwnedAttribute>,
         infinite: bool,
         tilesets: &[MapTilesetGid],
-    ) -> Result<(Self, Properties), TiledError> {
+    ) -> Result<(Self, Properties), Error> {
         let ((), (width, height)) = get_attrs!(
             attrs,
             optionals: [
@@ -83,7 +83,7 @@ impl TileLayerData {
                 ("width", width, |v: String| v.parse().ok()),
                 ("height", height, |v: String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("layer parsing error, width and height attributes required".to_string())
+            Error::MalformedAttributes("layer parsing error, width and height attributes required".to_string())
         );
         let mut result = Self::Finite(Default::default());
         let mut properties = HashMap::new();
@@ -176,7 +176,7 @@ impl<'map> TileLayer<'map> {
     }
 
     /// Obtains the tile present at the position given.
-    /// 
+    ///
     /// If the position given is invalid or the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         match self {

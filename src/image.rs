@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::TiledError, properties::Color, util::*};
+use crate::{error::Error, properties::Color, util::*};
 
 /// A reference to an image stored somewhere within the filesystem.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -29,7 +29,7 @@ impl Image {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: impl AsRef<Path>,
-    ) -> Result<Image, TiledError> {
+    ) -> Result<Image, Error> {
         let (c, (s, w, h)) = get_attrs!(
             attrs,
             optionals: [
@@ -40,7 +40,7 @@ impl Image {
                 ("width", width, |v:String| v.parse().ok()),
                 ("height", height, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("Image must have a source, width and height with correct types".to_string())
+            Error::MalformedAttributes("Image must have a source, width and height with correct types".to_string())
         );
 
         parse_tag!(parser, "image", { "" => |_| Ok(()) });

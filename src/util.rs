@@ -30,7 +30,7 @@ macro_rules! get_attrs {
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
         while let Some(next) = $parser.next() {
-            match next.map_err(TiledError::XmlDecodingError)? {
+            match next.map_err(Error::XmlDecodingError)? {
                 xml::reader::XmlEvent::StartElement {name, attributes, ..} => {
                     if false {}
                     $(else if name.local_name == $open_tag {
@@ -45,7 +45,7 @@ macro_rules! parse_tag {
                         break;
                     }
                 }
-                xml::reader::XmlEvent::EndDocument => return Err(TiledError::PrematureEnd("Document ended before we expected.".to_string())),
+                xml::reader::XmlEvent::EndDocument => return Err(Error::PrematureEnd("Document ended before we expected.".to_string())),
                 _ => {}
             }
         }

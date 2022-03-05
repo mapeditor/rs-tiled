@@ -2,7 +2,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, map_wrapper, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, TiledError,
+    Error, LayerTile, LayerTileData, MapTilesetGid,
 };
 
 use super::util::parse_data_line;
@@ -31,7 +31,7 @@ impl FiniteTileLayerData {
         width: u32,
         height: u32,
         tilesets: &[MapTilesetGid],
-    ) -> Result<Self, TiledError> {
+    ) -> Result<Self, Error> {
         let ((e, c), ()) = get_attrs!(
             attrs,
             optionals: [
@@ -39,7 +39,7 @@ impl FiniteTileLayerData {
                 ("compression", compression, |v| Some(v)),
             ],
             required: [],
-            TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
+            Error::MalformedAttributes("data must have an encoding and a compression".to_string())
         );
 
         let tiles = parse_data_line(e, c, parser, tilesets)?;
@@ -67,7 +67,7 @@ map_wrapper!(
 
 impl<'map> FiniteTileLayer<'map> {
     /// Obtains the tile present at the position given.
-    /// 
+    ///
     /// If the position given is invalid or the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data

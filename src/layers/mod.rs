@@ -2,7 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid};
+use crate::{error::Error, properties::Properties, util::*, Color, Map, MapTilesetGid};
 
 mod image;
 pub use image::*;
@@ -52,7 +52,7 @@ impl LayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
-    ) -> Result<Self, TiledError> {
+    ) -> Result<Self, Error> {
         let (
             (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id),
             (),
@@ -72,7 +72,7 @@ impl LayerData {
             required: [
             ],
 
-            TiledError::MalformedAttributes("layer parsing error, no id attribute found".to_string())
+            Error::MalformedAttributes("layer parsing error, no id attribute found".to_string())
         );
 
         let (ty, properties) = match tag {
