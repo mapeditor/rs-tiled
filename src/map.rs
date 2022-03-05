@@ -170,7 +170,7 @@ impl Map {
                 ("tilewidth", tile_width, |v:String| v.parse().ok()),
                 ("tileheight", tile_height, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("map must have a version, width and height with correct types".to_string())
+            TiledError::MalformedAttributes("map must have version, width, height, tilewidth, tileheight and orientation with correct types".to_string())
         );
 
         let infinite = infinite.unwrap_or(false);
