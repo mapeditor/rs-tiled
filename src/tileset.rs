@@ -6,7 +6,7 @@ use xml::attribute::OwnedAttribute;
 use xml::reader::XmlEvent;
 use xml::EventReader;
 
-use crate::error::Error;
+use crate::error::{Error, Result};
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
 use crate::tile::TileData;
@@ -99,7 +99,7 @@ impl Tileset {
     ///
     /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
     /// ```
-    pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self, Error> {
+    pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self> {
         let mut tileset_parser = EventReader::new(reader);
         loop {
             match tileset_parser.next().map_err(Error::XmlDecodingError)? {
@@ -134,7 +134,7 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
-    ) -> Result<EmbeddedParseResult, Error> {
+    ) -> Result<EmbeddedParseResult> {
         Tileset::parse_xml_embedded(parser, &attrs, map_path).or_else(|err| {
             if matches!(err, Error::MalformedAttributes(_)) {
                 Tileset::parse_xml_reference(&attrs, map_path)
@@ -148,7 +148,7 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         map_path: &Path,
-    ) -> Result<EmbeddedParseResult, Error> {
+    ) -> Result<EmbeddedParseResult> {
         let ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height)) = get_attrs!(
            attrs,
            optionals: [
@@ -190,7 +190,7 @@ impl Tileset {
     fn parse_xml_reference(
         attrs: &Vec<OwnedAttribute>,
         map_path: &Path,
-    ) -> Result<EmbeddedParseResult, Error> {
+    ) -> Result<EmbeddedParseResult> {
         let ((), (first_gid, source)) = get_attrs!(
             attrs,
             optionals: [],
@@ -213,7 +213,7 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         path: &Path,
-    ) -> Result<Tileset, Error> {
+    ) -> Result<Tileset> {
         let ((spacing, margin, columns, name), (tilecount, tile_width, tile_height)) = get_attrs!(
             attrs,
             optionals: [
@@ -250,7 +250,7 @@ impl Tileset {
     fn finish_parsing_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         prop: TilesetProperties,
-    ) -> Result<Tileset, Error> {
+    ) -> Result<Tileset> {
         let mut image = Option::None;
         let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
         let mut properties = HashMap::new();
@@ -306,7 +306,7 @@ impl Tileset {
         tile_width: u32,
         margin: u32,
         spacing: u32,
-    ) -> Result<u32, Error> {
+    ) -> Result<u32> {
         image
             .as_ref()
             .ok_or(Error::MalformedAttributes(

@@ -51,8 +51,11 @@ pub enum Error {
     },
 }
 
+/// A result with an error variant of [`TiledError`].
+pub type Result<T> = std::result::Result<T, Error>;
+
 impl fmt::Display for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
         match self {
             Error::MalformedAttributes(s) => write!(fmt, "{}", s),
             Error::DecompressingError(e) => write!(fmt, "{}", e),

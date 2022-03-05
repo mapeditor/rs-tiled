@@ -2,14 +2,14 @@ use std::{convert::TryInto, io::Read};
 
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, Error, LayerTileData, MapTilesetGid};
+use crate::{util::XmlEventResult, Error, LayerTileData, MapTilesetGid, Result};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
-) -> Result<Vec<Option<LayerTileData>>, Error> {
+) -> Result<Vec<Option<LayerTileData>>> {
     match (encoding.as_deref(), compression.as_deref()) {
         (Some("csv"), None) => decode_csv(parser, tilesets),
 
@@ -32,7 +32,7 @@ pub(crate) fn parse_data_line(
     }
 }
 
-fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<u8>, Error> {
+fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<u8>> {
     while let Some(next) = parser.next() {
         match next.map_err(Error::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
@@ -47,7 +47,7 @@ fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec
     Err(Error::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
-fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>, Error> {
+fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
     decoder
         .and_then(|mut decoder| {
             let mut data = Vec::new();
@@ -60,7 +60,7 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>, Error
 fn decode_csv(
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
-) -> Result<Vec<Option<LayerTileData>>, Error> {
+) -> Result<Vec<Option<LayerTileData>>> {
     while let Some(next) = parser.next() {
         match next.map_err(Error::XmlDecodingError)? {
             XmlEvent::Characters(s) => {

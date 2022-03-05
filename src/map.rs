@@ -5,7 +5,7 @@ use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromSt
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
-    error::Error,
+    error::{Error, Result},
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
@@ -61,7 +61,7 @@ impl Map {
         reader: R,
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self> {
         let mut parser = EventReader::new(reader);
         loop {
             match parser.next().map_err(Error::XmlDecodingError)? {
@@ -91,10 +91,7 @@ impl Map {
     /// files will be loaded relative to the path given.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
-    pub fn parse_file(
-        path: impl AsRef<Path>,
-        cache: &mut impl ResourceCache,
-    ) -> Result<Self, Error> {
+    pub fn parse_file(path: impl AsRef<Path>, cache: &mut impl ResourceCache) -> Result<Self> {
         let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
             path: path.as_ref().to_owned(),
             err,
@@ -155,7 +152,7 @@ impl Map {
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
         cache: &mut impl ResourceCache,
-    ) -> Result<Map, Error> {
+    ) -> Result<Map> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [
@@ -279,7 +276,7 @@ pub enum Orientation {
 impl FromStr for Orientation {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
             "isometric" => Ok(Orientation::Isometric),

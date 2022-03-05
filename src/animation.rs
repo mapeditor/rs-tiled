@@ -3,7 +3,7 @@
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::Error,
+    error::{Error, Result},
     util::{get_attrs, parse_tag, XmlEventResult},
 };
 
@@ -20,7 +20,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    pub(crate) fn new(attrs: Vec<OwnedAttribute>) -> Result<Frame, Error> {
+    pub(crate) fn new(attrs: Vec<OwnedAttribute>) -> Result<Frame> {
         let ((), (tile_id, duration)) = get_attrs!(
             attrs,
             optionals: [],
@@ -39,7 +39,7 @@ impl Frame {
 
 pub(crate) fn parse_animation(
     parser: &mut impl Iterator<Item = XmlEventResult>,
-) -> Result<Vec<Frame>, Error> {
+) -> Result<Vec<Frame>> {
     let mut animation = Vec::new();
     parse_tag!(parser, "animation", {
         "frame" => |attrs| {

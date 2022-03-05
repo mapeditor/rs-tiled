@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::Error,
+    error::{Error, Result},
     properties::{parse_properties, Properties},
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
     LayerTile, LayerTileData, MapTilesetGid,
@@ -67,7 +67,7 @@ impl ObjectData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
-    ) -> Result<ObjectData, Error> {
+    ) -> Result<ObjectData> {
         let ((id, tile, n, t, w, h, v, r), (x, y)) = get_attrs!(
             attrs,
             optionals: [
@@ -144,7 +144,7 @@ impl ObjectData {
 }
 
 impl ObjectData {
-    fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, Error> {
+    fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
@@ -157,7 +157,7 @@ impl ObjectData {
         Ok(ObjectShape::Polyline { points })
     }
 
-    fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, Error> {
+    fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
         let ((), s) = get_attrs!(
             attrs,
             optionals: [],
@@ -170,7 +170,7 @@ impl ObjectData {
         Ok(ObjectShape::Polygon { points: points })
     }
 
-    fn parse_points(s: String) -> Result<Vec<(f32, f32)>, Error> {
+    fn parse_points(s: String) -> Result<Vec<(f32, f32)>> {
         let pairs = s.split(' ');
         pairs
             .map(|point| point.split(','))

@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 use xml::{attribute::OwnedAttribute, reader::XmlEvent};
 
 use crate::{
-    error::Error,
+    error::{Error, Result},
     util::{get_attrs, parse_tag, XmlEventResult},
 };
 
@@ -20,7 +20,7 @@ pub struct Color {
 impl FromStr for Color {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Color, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Color, Self::Err> {
         let s = if s.starts_with("#") { &s[1..] } else { s };
         match s.len() {
             6 => {
@@ -81,7 +81,7 @@ pub enum PropertyValue {
 }
 
 impl PropertyValue {
-    fn new(property_type: String, value: String) -> Result<PropertyValue, Error> {
+    fn new(property_type: String, value: String) -> Result<PropertyValue> {
         // Check the property type against the value.
         match property_type.as_str() {
             "bool" => match value.parse() {
@@ -127,7 +127,7 @@ pub type Properties = HashMap<String, PropertyValue>;
 
 pub(crate) fn parse_properties(
     parser: &mut impl Iterator<Item = XmlEventResult>,
-) -> Result<Properties, Error> {
+) -> Result<Properties> {
     let mut p = HashMap::new();
     parse_tag!(parser, "properties", {
         "property" => |attrs:Vec<OwnedAttribute>| {

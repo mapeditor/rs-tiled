@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::Error, properties::Color, util::*};
+use crate::{error::{Error, Result}, properties::Color, util::*};
 
 /// A reference to an image stored somewhere within the filesystem.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -29,7 +29,7 @@ impl Image {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: impl AsRef<Path>,
-    ) -> Result<Image, Error> {
+    ) -> Result<Image> {
         let (c, (s, w, h)) = get_attrs!(
             attrs,
             optionals: [
