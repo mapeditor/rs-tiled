@@ -45,8 +45,8 @@ impl ObjectLayerData {
         Ok((ObjectLayerData { objects, colour: c }, properties))
     }
 
-    /// Returns the data belonging to the objects contained within the layer, in no particular
-    /// order.
+    /// Returns the data belonging to the objects contained within the layer, in the order they were
+    /// declared in the TMX file.
     #[inline]
     pub fn object_data(&self) -> &[ObjectData] {
         self.objects.as_ref()
