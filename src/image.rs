@@ -34,7 +34,7 @@ pub struct Image {
     ///
     /// let image_layer = match map
     ///     .layers()
-    ///     .find(|layer| layer.name() == "image")
+    ///     .find(|layer| layer.name == "image")
     ///     .unwrap()
     ///     .layer_type()
     /// {
@@ -45,7 +45,7 @@ pub struct Image {
     /// // Image layer has an image with the source attribute set to "../tilesheet.png"
     /// // Given the information we gave to the `parse_file` function, the image source should be
     /// // "assets/folder/../tilesheet.png". The filepath is not canonicalized.
-    /// let image_source = &image_layer.image().unwrap().source;
+    /// let image_source = &image_layer.image.as_ref().unwrap().source;
     ///
     /// assert_eq!(
     ///     image_source,
