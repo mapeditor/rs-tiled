@@ -51,7 +51,7 @@ pub enum Error {
     },
 }
 
-/// A result with an error variant of [`TiledError`].
+/// A result with an error variant of [`tiled::error::Error`].
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl fmt::Display for Error {
