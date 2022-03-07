@@ -12,31 +12,31 @@ changelog if you are migrating from an older version.
 
 ### Added
 - Documentation to all crate items.
-- Tests for `zstd`-compressed files.
-- Support for multiline string properties.
+- Group layer support.
 - Layer ID parsing.
 - Object property parsing.
+- Support for multiline string properties.
 - SFML example.
-- Missing derive and inline attributes.
 - `Layer::parallax_x` & `Layer::parallax_y`.
 - `Tileset::columns`.
-- `Tileset::source`.
+- Missing derive and inline attributes.
+- Tests for `zstd`-compressed files.
 
 
 ### Changed
 - **Set the minimum Tiled TMX version to 0.13.**
-- `Tileset::tilecount` is no longer optional.
 - Refactor crate interface and internals to be more consistent, sound and easy to use.
 - Hide GIDs as internal data; Provide a cleaner API.
+- Contain all layer types in an enum as opposed to different containers.
+- `Tileset::tilecount` is no longer optional.
 - Improve errors.
 - Use `Color` type in color properties.
 - Rename "colour"-related appareances to "color".
-- Contain all layer types in an enum as opposed to different containers.
 - Use `impl AsRef<Path>` where appropiate.
-- Tileset now has a single image at most instead of a vector.
+- Change `Tileset::image` to be a single image at most instead of a vector.
 - Update README.
 - Make layer and tileset names optional, defaulting to an empty string.
-- Reorganized crate internally.
+- Reorganize crate internally.
 - Update `zstd` to `0.9`.
 
 ### Fixed
