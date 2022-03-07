@@ -27,14 +27,12 @@ impl InfiniteTileLayerData {
         attrs: Vec<OwnedAttribute>,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self, TiledError> {
-        let ((e, c), ()) = get_attrs!(
+        let (e, c) = get_attrs!(
             attrs,
             optionals: [
                 ("encoding", encoding, |v| Some(v)),
                 ("compression", compression, |v| Some(v)),
-            ],
-            required: [],
-            TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
+            ]
         );
 
         let mut chunks = HashMap::<(i32, i32), Chunk>::new();
@@ -127,9 +125,8 @@ impl InternalChunk {
         compression: Option<String>,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self, TiledError> {
-        let ((), (x, y, width, height)) = get_attrs!(
+        let (x, y, width, height) = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("x", x, |v: String| v.parse().ok()),
                 ("y", y, |v: String| v.parse().ok()),

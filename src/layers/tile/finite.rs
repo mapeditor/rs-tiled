@@ -45,14 +45,12 @@ impl FiniteTileLayerData {
         height: u32,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self, TiledError> {
-        let ((e, c), ()) = get_attrs!(
+        let (e, c) = get_attrs!(
             attrs,
             optionals: [
                 ("encoding", encoding, |v| Some(v)),
                 ("compression", compression, |v| Some(v)),
-            ],
-            required: [],
-            TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
+            ]
         );
 
         let tiles = parse_data_line(e, c, parser, tilesets)?;
