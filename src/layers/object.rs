@@ -11,8 +11,6 @@ use crate::{
 /// Raw data referring to a map object layer or tile collision data.
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectLayerData {
-    /// The objects present in this layer.
-    // TODO: read-only property
     objects: Vec<ObjectData>,
     /// The color used in the editor to display objects in this layer.
     pub colour: Option<Color>,
@@ -48,6 +46,13 @@ impl ObjectLayerData {
             },
         });
         Ok((ObjectLayerData { objects, colour: c }, properties))
+    }
+
+    /// Returns the data belonging to the objects contained within the layer, in no particular
+    /// order.
+    #[inline]
+    pub fn object_data(&self) -> &[ObjectData] {
+        self.objects.as_ref()
     }
 }
 

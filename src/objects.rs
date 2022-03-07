@@ -28,7 +28,6 @@ pub enum ObjectShape {
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectData {
     id: u32,
-    // TODO: make public, differ somewhat from get_tile
     tile: Option<LayerTileData>,
     /// The name of the object, which is arbitrary and set by the user.
     pub name: String,
@@ -65,6 +64,12 @@ impl ObjectData {
     #[inline]
     pub fn id(&self) -> u32 {
         self.id
+    }
+
+    /// Returns the data of the tile that this object is referencing, if it exists.
+    #[inline]
+    pub fn tile_data(&self) -> Option<LayerTileData> {
+        self.tile
     }
 }
 
