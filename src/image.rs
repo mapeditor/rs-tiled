@@ -43,7 +43,7 @@ impl Image {
             TiledError::MalformedAttributes("Image must have a source, width and height with correct types".to_string())
         );
 
-        parse_tag!(parser, "image", { "" => |_| Ok(()) });
+        parse_tag!(parser, "image", { });
         Ok(Image {
             source: path_relative_to.as_ref().join(s),
             width: w,

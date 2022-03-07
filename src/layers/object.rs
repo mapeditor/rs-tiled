@@ -25,14 +25,11 @@ impl ObjectLayerData {
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
     ) -> Result<(ObjectLayerData, Properties), TiledError> {
-        let (c, ()) = get_attrs!(
+        let c = get_attrs!(
             attrs,
             optionals: [
                 ("color", colour, |v:String| v.parse().ok()),
-            ],
-            required: [],
-            // this error should never happen since there are no required attrs
-            TiledError::MalformedAttributes("object group parsing error".to_string())
+            ]
         );
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
