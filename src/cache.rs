@@ -15,13 +15,13 @@ pub type ResourcePathBuf = PathBuf;
 /// [`ResourcePath`] to prevent loading them more than once.
 pub trait ResourceCache {
     /// Obtains a tileset from the cache, if it exists.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use std::fs::File;
     /// use tiled::{FilesystemResourceCache, ResourceCache, Tileset};
-    /// # use tiled::TiledError;
-    /// # fn main() -> Result<(), TiledError> {
+    /// # use tiled::Result;
+    /// # fn main() -> Result<()> {
     /// let mut cache = FilesystemResourceCache::new();
     /// let path = "assets/tilesheet.tsx";
     ///
@@ -32,7 +32,7 @@ pub trait ResourceCache {
     /// # }
     /// ```
     fn get_tileset(&self, path: impl AsRef<ResourcePath>) -> Option<Arc<Tileset>>;
-    
+
     /// Returns the tileset mapped to `path` if it exists, otherwise calls `f` and, depending on its
     /// result, it will:
     /// - Insert the object into the cache, if the result was [`Ok`].

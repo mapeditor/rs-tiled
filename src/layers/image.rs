@@ -2,8 +2,8 @@ use std::{collections::HashMap, path::Path};
 
 use crate::{
     parse_properties,
-    util::{parse_tag, XmlEventResult, map_wrapper},
-    Image, Properties, TiledError,
+    util::{map_wrapper, parse_tag, XmlEventResult},
+    Error, Image, Properties, Result,
 };
 
 /// The raw data of an [`ImageLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -17,11 +17,11 @@ impl ImageLayerData {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         map_path: &Path,
-    ) -> Result<(Self, Properties), TiledError> {
+    ) -> Result<(Self, Properties)> {
         let mut image: Option<Image> = None;
         let mut properties = HashMap::new();
 
-        let path_relative_to = map_path.parent().ok_or(TiledError::PathIsNotFile)?;
+        let path_relative_to = map_path.parent().ok_or(Error::PathIsNotFile)?;
 
         parse_tag!(parser, "imagelayer", {
             "image" => |attrs| {

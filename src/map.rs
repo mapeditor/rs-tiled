@@ -5,7 +5,7 @@ use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromSt
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
-    error::TiledError,
+    error::{Error, Result},
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
@@ -74,10 +74,10 @@ impl Map {
         reader: R,
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
-    ) -> Result<Self, TiledError> {
+    ) -> Result<Self> {
         let mut parser = EventReader::new(reader);
         loop {
-            match parser.next().map_err(TiledError::XmlDecodingError)? {
+            match parser.next().map_err(Error::XmlDecodingError)? {
                 XmlEvent::StartElement {
                     name, attributes, ..
                 } => {
@@ -91,7 +91,7 @@ impl Map {
                     }
                 }
                 XmlEvent::EndDocument => {
-                    return Err(TiledError::PrematureEnd(
+                    return Err(Error::PrematureEnd(
                         "Document ended before map was parsed".to_string(),
                     ))
                 }
@@ -104,11 +104,8 @@ impl Map {
     /// files will be loaded relative to the path given.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
-    pub fn parse_file(
-        path: impl AsRef<Path>,
-        cache: &mut impl ResourceCache,
-    ) -> Result<Self, TiledError> {
-        let reader = File::open(path.as_ref()).map_err(|err| TiledError::CouldNotOpenFile {
+    pub fn parse_file(path: impl AsRef<Path>, cache: &mut impl ResourceCache) -> Result<Self> {
+        let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
             path: path.as_ref().to_owned(),
             err,
         })?;
@@ -183,7 +180,7 @@ impl Map {
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
         cache: &mut impl ResourceCache,
-    ) -> Result<Map, TiledError> {
+    ) -> Result<Map> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [
@@ -198,7 +195,7 @@ impl Map {
                 ("tilewidth", tile_width, |v:String| v.parse().ok()),
                 ("tileheight", tile_height, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("map must have version, width, height, tilewidth, tileheight and orientation with correct types".to_string())
+            Error::MalformedAttributes("map must have version, width, height, tilewidth, tileheight and orientation with correct types".to_string())
         );
 
         let infinite = infinite.unwrap_or(false);
@@ -215,7 +212,7 @@ impl Map {
                 let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
-                        let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
+                        let file = File::open(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err })?;
                         let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::parse_reader(file, &tileset_path))?;
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
@@ -307,7 +304,7 @@ pub enum Orientation {
 impl FromStr for Orientation {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
             "isometric" => Ok(Orientation::Isometric),

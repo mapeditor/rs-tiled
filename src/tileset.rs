@@ -6,14 +6,14 @@ use xml::attribute::OwnedAttribute;
 use xml::reader::XmlEvent;
 use xml::EventReader;
 
-use crate::error::TiledError;
+use crate::error::{Error, Result};
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
 use crate::tile::TileData;
 use crate::{util::*, Gid, Tile};
 
 /// A collection of tiles for usage in maps and template objects.
-/// 
+///
 /// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset).
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tileset {
@@ -21,12 +21,12 @@ pub struct Tileset {
     pub name: String,
     /// The (maximum) width in pixels of the tiles in this tileset. Irrelevant for [image collection]
     /// tilesets.
-    /// 
+    ///
     /// [image collection]: Self::image
     pub tile_width: u32,
     /// The (maximum) height in pixels of the tiles in this tileset. Irrelevant for [image collection]
     /// tilesets.
-    /// 
+    ///
     /// [image collection]: Self::image
     pub tile_height: u32,
     /// The spacing in pixels between the tiles in this tileset (applies to the tileset image).
@@ -99,13 +99,10 @@ impl Tileset {
     ///
     /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
     /// ```
-    pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self, TiledError> {
+    pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self> {
         let mut tileset_parser = EventReader::new(reader);
         loop {
-            match tileset_parser
-                .next()
-                .map_err(TiledError::XmlDecodingError)?
-            {
+            match tileset_parser.next().map_err(Error::XmlDecodingError)? {
                 XmlEvent::StartElement {
                     name, attributes, ..
                 } if name.local_name == "tileset" => {
@@ -116,7 +113,7 @@ impl Tileset {
                     );
                 }
                 XmlEvent::EndDocument => {
-                    return Err(TiledError::PrematureEnd(
+                    return Err(Error::PrematureEnd(
                         "Tileset Document ended before map was parsed".to_string(),
                     ))
                 }
@@ -137,9 +134,9 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
-    ) -> Result<EmbeddedParseResult, TiledError> {
+    ) -> Result<EmbeddedParseResult> {
         Tileset::parse_xml_embedded(parser, &attrs, map_path).or_else(|err| {
-            if matches!(err, TiledError::MalformedAttributes(_)) {
+            if matches!(err, Error::MalformedAttributes(_)) {
                 Tileset::parse_xml_reference(&attrs, map_path)
             } else {
                 Err(err)
@@ -151,7 +148,7 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         map_path: &Path,
-    ) -> Result<EmbeddedParseResult, TiledError> {
+    ) -> Result<EmbeddedParseResult> {
         let ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height)) = get_attrs!(
            attrs,
            optionals: [
@@ -166,13 +163,10 @@ impl Tileset {
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
+            Error::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
 
-        let root_path = map_path
-            .parent()
-            .ok_or(TiledError::PathIsNotFile)?
-            .to_owned();
+        let root_path = map_path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
 
         Self::finish_parsing_xml(
             parser,
@@ -196,20 +190,17 @@ impl Tileset {
     fn parse_xml_reference(
         attrs: &Vec<OwnedAttribute>,
         map_path: &Path,
-    ) -> Result<EmbeddedParseResult, TiledError> {
+    ) -> Result<EmbeddedParseResult> {
         let (first_gid, source) = get_attrs!(
             attrs,
             required: [
                 ("firstgid", first_gid, |v:String| v.parse().ok().map(|n| Gid(n))),
                 ("source", name, |v| Some(v)),
             ],
-            TiledError::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
+            Error::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
         );
 
-        let tileset_path = map_path
-            .parent()
-            .ok_or(TiledError::PathIsNotFile)?
-            .join(source);
+        let tileset_path = map_path.parent().ok_or(Error::PathIsNotFile)?.join(source);
 
         Ok(EmbeddedParseResult {
             first_gid,
@@ -221,7 +212,7 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         path: &Path,
-    ) -> Result<Tileset, TiledError> {
+    ) -> Result<Tileset> {
         let ((spacing, margin, columns, name), (tilecount, tile_width, tile_height)) = get_attrs!(
             attrs,
             optionals: [
@@ -235,10 +226,10 @@ impl Tileset {
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("tileset must have a name, tile width and height with correct types".to_string())
+            Error::MalformedAttributes("tileset must have a name, tile width and height with correct types".to_string())
         );
 
-        let root_path = path.parent().ok_or(TiledError::PathIsNotFile)?.to_owned();
+        let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
 
         Self::finish_parsing_xml(
             parser,
@@ -258,26 +249,26 @@ impl Tileset {
     fn finish_parsing_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         prop: TilesetProperties,
-    ) -> Result<Tileset, TiledError> {
+    ) -> Result<Tileset> {
         let mut image = Option::None;
         let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
         let mut properties = HashMap::new();
 
         parse_tag!(parser, "tileset", {
-                    "image" => |attrs| {
-                        image = Some(Image::new(parser, attrs, &prop.root_path)?);
-                        Ok(())
-                    },
-                    "properties" => |_| {
-                        properties = parse_properties(parser)?;
-                        Ok(())
-                    },
-                    "tile" => |attrs| {
-                        let (id, tile) = TileData::new(parser, attrs, &prop.root_path)?;
-                        tiles.insert(id, tile);
-                        Ok(())
-                    },
-                });
+            "image" => |attrs| {
+                image = Some(Image::new(parser, attrs, &prop.root_path)?);
+                Ok(())
+            },
+            "properties" => |_| {
+                properties = parse_properties(parser)?;
+                Ok(())
+            },
+            "tile" => |attrs| {
+                let (id, tile) = TileData::new(parser, attrs, &prop.root_path)?;
+                tiles.insert(id, tile);
+                Ok(())
+            },
+        });
 
         // A tileset is considered an image collection tileset if there is no image attribute (because its tiles do).
         let is_image_collection_tileset = image.is_none();
@@ -314,10 +305,10 @@ impl Tileset {
         tile_width: u32,
         margin: u32,
         spacing: u32,
-    ) -> Result<u32, TiledError> {
+    ) -> Result<u32> {
         image
             .as_ref()
-            .ok_or(TiledError::MalformedAttributes(
+            .ok_or(Error::MalformedAttributes(
                 "No <image> nor columns attribute in <tileset>".to_string(),
             ))
             .and_then(|image| Ok((image.width as u32 - margin + spacing) / (tile_width + spacing)))

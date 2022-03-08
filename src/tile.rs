@@ -4,12 +4,12 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     animation::{parse_animation, Frame},
-    error::TiledError,
+    error::Error,
     image::Image,
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Tileset,
+    Result, Tileset,
 };
 
 /// A tile ID, local to a tileset.
@@ -78,7 +78,7 @@ impl TileData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
-    ) -> Result<(TileId, TileData), TiledError> {
+    ) -> Result<(TileId, TileData)> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
             optionals: [
@@ -88,7 +88,7 @@ impl TileData {
             required: [
                 ("id", id, |v:String| v.parse::<u32>().ok()),
             ],
-            TiledError::MalformedAttributes("tile must have an id with the correct type".to_string())
+            Error::MalformedAttributes("tile must have an id with the correct type".to_string())
         );
 
         let mut image = Option::None;

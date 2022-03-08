@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 use xml::{attribute::OwnedAttribute, reader::XmlEvent};
 
 use crate::{
-    error::TiledError,
+    error::{Error, Result},
     util::{get_attrs, parse_tag, XmlEventResult},
 };
 
@@ -20,7 +20,7 @@ pub struct Color {
 impl FromStr for Color {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Color, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Color, Self::Err> {
         let s = if s.starts_with("#") { &s[1..] } else { s };
         match s.len() {
             6 => {
@@ -81,41 +81,41 @@ pub enum PropertyValue {
 }
 
 impl PropertyValue {
-    fn new(property_type: String, value: String) -> Result<PropertyValue, TiledError> {
+    fn new(property_type: String, value: String) -> Result<PropertyValue> {
         // Check the property type against the value.
         match property_type.as_str() {
             "bool" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::BoolValue(val)),
-                Err(err) => Err(TiledError::InvalidPropertyValue {
+                Err(err) => Err(Error::InvalidPropertyValue {
                     description: err.to_string(),
                 }),
             },
             "float" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::FloatValue(val)),
-                Err(err) => Err(TiledError::InvalidPropertyValue {
+                Err(err) => Err(Error::InvalidPropertyValue {
                     description: err.to_string(),
                 }),
             },
             "int" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::IntValue(val)),
-                Err(err) => Err(TiledError::InvalidPropertyValue {
+                Err(err) => Err(Error::InvalidPropertyValue {
                     description: err.to_string(),
                 }),
             },
             "color" if value.len() > 1 => Color::from_str(&value)
                 .map(|color| PropertyValue::ColorValue(color))
-                .map_err(|_| TiledError::InvalidPropertyValue {
+                .map_err(|_| Error::InvalidPropertyValue {
                     description: "Couldn't parse color".to_string(),
                 }),
             "string" => Ok(PropertyValue::StringValue(value)),
             "object" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::ObjectValue(val)),
-                Err(err) => Err(TiledError::InvalidPropertyValue {
+                Err(err) => Err(Error::InvalidPropertyValue {
                     description: err.to_string(),
                 }),
             },
             "file" => Ok(PropertyValue::FileValue(value)),
-            _ => Err(TiledError::UnknownPropertyType {
+            _ => Err(Error::UnknownPropertyType {
                 type_name: property_type,
             }),
         }
@@ -127,7 +127,7 @@ pub type Properties = HashMap<String, PropertyValue>;
 
 pub(crate) fn parse_properties(
     parser: &mut impl Iterator<Item = XmlEventResult>,
-) -> Result<Properties, TiledError> {
+) -> Result<Properties> {
     let mut p = HashMap::new();
     parse_tag!(parser, "properties", {
         "property" => |attrs:Vec<OwnedAttribute>| {
@@ -140,7 +140,7 @@ pub(crate) fn parse_properties(
                 required: [
                     ("name", key, |v| Some(v)),
                 ],
-                TiledError::MalformedAttributes("property must have a name and a value".to_string())
+                Error::MalformedAttributes("property must have a name and a value".to_string())
             );
             let t = t.unwrap_or("string".into());
 
@@ -150,9 +150,9 @@ pub(crate) fn parse_properties(
                     // if the "value" attribute was missing, might be a multiline string
                     match parser.next() {
                         Some(Ok(XmlEvent::Characters(s))) => Ok(s),
-                        Some(Err(err)) => Err(TiledError::XmlDecodingError(err)),
+                        Some(Err(err)) => Err(Error::XmlDecodingError(err)),
                         None => unreachable!(), // EndDocument or error must come first
-                        _ => Err(TiledError::MalformedAttributes(format!("property '{}' is missing a value", k))),
+                        _ => Err(Error::MalformedAttributes(format!("property '{}' is missing a value", k))),
                     }?
                 }
             };

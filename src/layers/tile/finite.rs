@@ -2,7 +2,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, map_wrapper, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, TiledError,
+    LayerTile, LayerTileData, MapTilesetGid, Result,
 };
 
 use super::util::parse_data_line;
@@ -44,7 +44,7 @@ impl FiniteTileLayerData {
         width: u32,
         height: u32,
         tilesets: &[MapTilesetGid],
-    ) -> Result<Self, TiledError> {
+    ) -> Result<Self> {
         let (e, c) = get_attrs!(
             attrs,
             optionals: [
