@@ -90,7 +90,7 @@ map_wrapper!(
 
 impl<'map> GroupLayer<'map> {
     /// Returns an iterator over the layers present in this group in display order.
-    pub fn layers<'group>(&self) -> impl ExactSizeIterator<Item = Layer> {
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
         self.layers
             .iter()
             .map(move |layer| Layer::new(self.map, layer))
