@@ -9,7 +9,7 @@ readme = "README.md"
 license = "MIT"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
 edition = "2018"
-include = ["src/**/*.rs", "README.md", "LICENSE"]
+include = ["src/**/*.rs", "README.md", "LICENSE", "CHANGELOG.md"]
 
 [features]
 default = ["zstd"]
@@ -17,7 +17,6 @@ default = ["zstd"]
 [lib]
 name = "tiled"
 path = "src/lib.rs"
-
 
 [[example]]
 name = "example"
