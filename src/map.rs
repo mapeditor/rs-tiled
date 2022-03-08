@@ -135,7 +135,7 @@ impl Map {
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
     #[inline]
-    pub fn layers<'map>(&'map self) -> impl ExactSizeIterator<Item = Layer<'map>> {
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
         self.layers.iter().map(move |layer| Layer::new(self, layer))
     }
 

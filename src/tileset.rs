@@ -130,10 +130,10 @@ impl Tileset {
 
     /// Iterates through the tiles from this tileset.
     #[inline]
-    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (&u32, Tile)> {
+    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (u32, Tile)> {
         self.tiles
             .iter()
-            .map(move |(id, data)| (id, Tile::new(self, data)))
+            .map(move |(id, data)| (*id, Tile::new(self, data)))
     }
 }
 

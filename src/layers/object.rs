@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Color, Error, Map, MapTilesetGid, Object, ObjectData, Properties, Result,
+    Color, Error, MapTilesetGid, Object, ObjectData, Properties, Result,
 };
 
 /// Raw data referring to a map object layer or tile collision data.
@@ -69,7 +69,9 @@ impl<'map> ObjectLayer<'map> {
     /// Returns an iterator over the objects present in this layer, in the order they were declared
     /// in in the TMX file.
     #[inline]
-    pub fn objects<'layer>(&'layer self) -> impl ExactSizeIterator<Item = Object<'layer>> {
-        self.objects.iter().map(move |object| Object::new(self.map, object))
+    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object> {
+        self.objects
+            .iter()
+            .map(move |object| Object::new(self.map, object))
     }
 }

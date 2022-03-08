@@ -7,7 +7,7 @@ use crate::{
     map::MapTilesetGid,
     properties::{parse_properties, Properties},
     util::*,
-    Error, Layer, Map,
+    Error, Layer,
 };
 
 /// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -90,8 +90,10 @@ map_wrapper!(
 
 impl<'map> GroupLayer<'map> {
     /// Returns an iterator over the layers present in this group in display order.
-    pub fn layers<'group>(&'group self) -> impl ExactSizeIterator<Item = Layer<'group>> {
-        self.layers.iter().map(move |layer| Layer::new(self.map, layer))
+    pub fn layers<'group>(&self) -> impl ExactSizeIterator<Item = Layer> {
+        self.layers
+            .iter()
+            .map(move |layer| Layer::new(self.map, layer))
     }
     /// Gets a specific layer from the group by index.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
