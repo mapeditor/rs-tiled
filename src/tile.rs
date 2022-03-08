@@ -9,7 +9,7 @@ use crate::{
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Tileset,
+    Result, Tileset,
 };
 
 /// A tile ID, local to a tileset.
@@ -78,7 +78,7 @@ impl TileData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
-    ) -> Result<(TileId, TileData), Error> {
+    ) -> Result<(TileId, TileData)> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
             optionals: [

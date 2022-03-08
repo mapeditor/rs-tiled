@@ -3,7 +3,7 @@ use std::path::Path;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::{Error, Result},
+    error::{Result},
     properties::Properties,
     util::*,
     Color, Map, MapTilesetGid,

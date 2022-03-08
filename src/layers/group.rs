@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use crate::{
-    error::Error,
+    error::Result,
     layers::{LayerData, LayerTag},
     map::MapTilesetGid,
     properties::{parse_properties, Properties},
     util::*,
-    Layer, Map,
+    Error, Layer, Map,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -21,7 +21,7 @@ impl GroupLayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
-    ) -> Result<(Self, Properties), Error> {
+    ) -> Result<(Self, Properties)> {
         let mut properties = HashMap::new();
         let mut layers = Vec::new();
         parse_tag!(parser, "group", {

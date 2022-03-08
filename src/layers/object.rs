@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Color, Error, Map, MapTilesetGid, Object, ObjectData, Properties,
+    Color, Error, Map, MapTilesetGid, Object, ObjectData, Properties, Result,
 };
 
 /// Raw data referring to a map object layer or tile collision data.
@@ -24,7 +24,7 @@ impl ObjectLayerData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
-    ) -> Result<(ObjectLayerData, Properties), Error> {
+    ) -> Result<(ObjectLayerData, Properties)> {
         let c = get_attrs!(
             attrs,
             optionals: [

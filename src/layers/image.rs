@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use crate::{
     parse_properties,
     util::{map_wrapper, parse_tag, XmlEventResult},
-    Error, Image, Properties,
+    Error, Image, Properties, Result,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -15,7 +15,7 @@ impl ImageLayerData {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         map_path: &Path,
-    ) -> Result<(Self, Properties), Error> {
+    ) -> Result<(Self, Properties)> {
         let mut image: Option<Image> = None;
         let mut properties = HashMap::new();
 
