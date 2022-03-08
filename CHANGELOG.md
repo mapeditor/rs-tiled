@@ -17,6 +17,7 @@ changelog if you are migrating from an older version.
 - Object property parsing.
 - Support for multiline string properties.
 - SFML example.
+- `Result` type.
 - `Layer::parallax_x` & `Layer::parallax_y`.
 - `Tileset::columns`.
 - Missing derive and inline attributes.
@@ -28,6 +29,7 @@ changelog if you are migrating from an older version.
 - Refactor crate interface and internals to be more consistent, sound and easy to use.
 - Hide GIDs as internal data; Provide a cleaner API.
 - Contain all layer types in an enum as opposed to different containers.
+- Rename `TiledError` to `Error`.
 - `Tileset::tilecount` is no longer optional.
 - Improve errors.
 - Use `Color` type in color properties.
