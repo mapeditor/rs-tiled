@@ -127,6 +127,14 @@ impl Tileset {
     pub fn get_tile(&self, id: u32) -> Option<Tile> {
         self.tiles.get(&id).map(|data| Tile::new(self, data))
     }
+
+    /// Iterates through the tiles from this tileset.
+    #[inline]
+    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (&u32, Tile)> {
+        self.tiles
+            .iter()
+            .map(move |(id, data)| (id, Tile::new(self, data)))
+    }
 }
 
 impl Tileset {
