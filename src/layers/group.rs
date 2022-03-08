@@ -90,8 +90,8 @@ map_wrapper!(
 
 impl<'map> GroupLayer<'map> {
     /// Returns an iterator over the layers present in this group in display order.
-    pub fn layers(&self) -> GroupLayerIter {
-        GroupLayerIter::new(self.map, self.data)
+    pub fn layers<'group>(&'group self) -> impl ExactSizeIterator<Item = Layer<'group>> {
+        self.layers.iter().map(move |layer| Layer::new(self.map, layer))
     }
     /// Gets a specific layer from the group by index.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
@@ -99,38 +99,5 @@ impl<'map> GroupLayer<'map> {
             .layers
             .get(index)
             .map(|data| Layer::new(self.map, data))
-    }
-}
-
-/// An iterator that iterates over all the layers in a group layer, obtained via [`GroupLayer::layers`].
-#[derive(Debug)]
-pub struct GroupLayerIter<'map> {
-    map: &'map Map,
-    group: &'map GroupLayerData,
-    index: usize,
-}
-
-impl<'map> GroupLayerIter<'map> {
-    fn new(map: &'map Map, group: &'map GroupLayerData) -> Self {
-        Self {
-            map,
-            group,
-            index: 0,
-        }
-    }
-}
-
-impl<'map> Iterator for GroupLayerIter<'map> {
-    type Item = Layer<'map>;
-    fn next(&mut self) -> Option<Self::Item> {
-        let layer_data = self.group.layers.get(self.index)?;
-        self.index += 1;
-        Some(Layer::new(self.map, layer_data))
-    }
-}
-
-impl<'map> ExactSizeIterator for GroupLayerIter<'map> {
-    fn len(&self) -> usize {
-        self.group.layers.len() - self.index
     }
 }

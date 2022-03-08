@@ -69,43 +69,7 @@ impl<'map> ObjectLayer<'map> {
     /// Returns an iterator over the objects present in this layer, in the order they were declared
     /// in in the TMX file.
     #[inline]
-    pub fn objects(&self) -> Objects<'map> {
-        Objects::new(self.map, self.data)
-    }
-}
-
-/// An iterator that iterates over all the objects in an object layer, obtained via [`ObjectLayer::objects`].
-#[derive(Debug)]
-pub struct Objects<'map> {
-    map: &'map Map,
-    data: &'map ObjectLayerData,
-    index: usize,
-}
-
-impl<'map> Objects<'map> {
-    #[inline]
-    fn new(map: &'map Map, data: &'map ObjectLayerData) -> Self {
-        Self {
-            map,
-            data,
-            index: 0,
-        }
-    }
-}
-
-impl<'map> Iterator for Objects<'map> {
-    type Item = Object<'map>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let object_data = self.data.objects.get(self.index)?;
-        self.index += 1;
-        Some(Object::new(self.map, object_data))
-    }
-}
-
-impl<'map> ExactSizeIterator for Objects<'map> {
-    #[inline]
-    fn len(&self) -> usize {
-        self.data.objects.len() - self.index
+    pub fn objects<'layer>(&'layer self) -> impl ExactSizeIterator<Item = Object<'layer>> {
+        self.objects.iter().map(move |object| Object::new(self.map, object))
     }
 }
