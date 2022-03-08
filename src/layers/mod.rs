@@ -58,10 +58,7 @@ impl LayerData {
         map_path: &Path,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
-        let (
-            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id),
-            (),
-        ) = get_attrs!(
+        let (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
@@ -73,11 +70,7 @@ impl LayerData {
                 ("parallaxy", parallax_y, |v:String| v.parse().ok()),
                 ("name", name, |v| Some(v)),
                 ("id", id, |v:String| v.parse().ok()),
-            ],
-            required: [
-            ],
-
-            Error::MalformedAttributes("layer parsing error, no id attribute found".to_string())
+            ]
         );
 
         let (ty, properties) = match tag {

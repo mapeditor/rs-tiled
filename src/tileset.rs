@@ -191,9 +191,8 @@ impl Tileset {
         attrs: &Vec<OwnedAttribute>,
         map_path: &Path,
     ) -> Result<EmbeddedParseResult> {
-        let ((), (first_gid, source)) = get_attrs!(
+        let (first_gid, source) = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("firstgid", first_gid, |v:String| v.parse().ok().map(|n| Gid(n))),
                 ("source", name, |v| Some(v)),

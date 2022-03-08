@@ -21,9 +21,8 @@ pub struct Frame {
 
 impl Frame {
     pub(crate) fn new(attrs: Vec<OwnedAttribute>) -> Result<Frame> {
-        let ((), (tile_id, duration)) = get_attrs!(
+        let (tile_id, duration) = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("tileid", tile_id, |v:String| v.parse().ok()),
                 ("duration", duration, |v:String| v.parse().ok()),

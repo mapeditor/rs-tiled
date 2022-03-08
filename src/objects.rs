@@ -145,9 +145,8 @@ impl ObjectData {
 
 impl ObjectData {
     fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
-        let ((), s) = get_attrs!(
+        let s = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("points", points, |v| Some(v)),
             ],
@@ -158,9 +157,8 @@ impl ObjectData {
     }
 
     fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
-        let ((), s) = get_attrs!(
+        let s = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("points", points, |v| Some(v)),
             ],

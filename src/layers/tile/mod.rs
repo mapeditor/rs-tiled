@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Error, Gid, Map, MapTilesetGid, Properties, Tile, TileId, Tileset,
+    Error, Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset,
 };
 
 mod finite;
@@ -74,11 +74,9 @@ impl TileLayerData {
         attrs: Vec<OwnedAttribute>,
         infinite: bool,
         tilesets: &[MapTilesetGid],
-    ) -> Result<(Self, Properties), Error> {
-        let ((), (width, height)) = get_attrs!(
+    ) -> Result<(Self, Properties)> {
+        let (width, height) = get_attrs!(
             attrs,
-            optionals: [
-            ],
             required: [
                 ("width", width, |v: String| v.parse().ok()),
                 ("height", height, |v: String| v.parse().ok()),

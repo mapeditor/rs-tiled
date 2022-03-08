@@ -2,7 +2,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, map_wrapper, XmlEventResult},
-    Error, LayerTile, LayerTileData, MapTilesetGid, Result,
+    LayerTile, LayerTileData, MapTilesetGid, Result,
 };
 
 use super::util::parse_data_line;
@@ -32,14 +32,12 @@ impl FiniteTileLayerData {
         height: u32,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
-        let ((e, c), ()) = get_attrs!(
+        let (e, c) = get_attrs!(
             attrs,
             optionals: [
                 ("encoding", encoding, |v| Some(v)),
                 ("compression", compression, |v| Some(v)),
-            ],
-            required: [],
-            Error::MalformedAttributes("data must have an encoding and a compression".to_string())
+            ]
         );
 
         let tiles = parse_data_line(e, c, parser, tilesets)?;
