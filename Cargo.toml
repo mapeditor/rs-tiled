@@ -1,7 +1,6 @@
 [package]
-
 name = "tiled"
-version = "0.9.5"
+version = "0.10.0"
 description = "A rust crate for loading maps created by the Tiled editor"
 categories = ["game-development"]
 keywords = ["gamedev", "tiled", "tmx", "map"]
@@ -10,6 +9,7 @@ readme = "README.md"
 license = "MIT"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
 edition = "2018"
+include = ["src/**/*.rs", "README.md", "LICENSE", "CHANGELOG.md"]
 
 [features]
 default = ["zstd"]
