@@ -29,22 +29,39 @@ pub(crate) enum LayerTag {
     GroupLayer,
 }
 
+/// The raw data of a [`Layer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct LayerData {
-    name: String,
+pub struct LayerData {
+    /// The layer's name, set arbitrarily by the user.
+    pub name: String,
     id: u32,
-    visible: bool,
-    offset_x: f32,
-    offset_y: f32,
-    parallax_x: f32,
-    parallax_y: f32,
-    opacity: f32,
-    tint_color: Option<Color>,
-    properties: Properties,
+    /// Whether this layer should be visible or not.
+    pub visible: bool,
+    /// The layer's x offset (in pixels).
+    pub offset_x: f32,
+    /// The layer's y offset (in pixels).
+    pub offset_y: f32,
+    /// The layer's x parallax factor.
+    pub parallax_x: f32,
+    /// The layer's y parallax factor.
+    pub parallax_y: f32,
+    /// The layer's opacity.
+    pub opacity: f32,
+    /// The layer's tint color.
+    pub tint_color: Option<Color>,
+    /// The layer's custom properties, as arbitrarily set by the user.
+    pub properties: Properties,
     layer_type: LayerDataType,
 }
 
 impl LayerData {
+    /// Get the layer's id. Unique within the parent map. Valid only if greater than 0. Defaults to
+    /// 0 if the layer was loaded from a file that didn't have the attribute present.
+    #[inline]
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
@@ -109,66 +126,6 @@ map_wrapper!(
 );
 
 impl<'map> Layer<'map> {
-    /// Get a reference to the layer's name.
-    #[inline]
-    pub fn name(&self) -> &str {
-        self.data.name.as_ref()
-    }
-
-    /// Get the layer's id.
-    #[inline]
-    pub fn id(&self) -> u32 {
-        self.data.id
-    }
-
-    /// Whether this layer should be visible or not.
-    #[inline]
-    pub fn visible(&self) -> bool {
-        self.data.visible
-    }
-
-    /// Get the layer's x offset (in pixels).
-    #[inline]
-    pub fn offset_x(&self) -> f32 {
-        self.data.offset_x
-    }
-
-    /// Get the layer's y offset (in pixels).
-    #[inline]
-    pub fn offset_y(&self) -> f32 {
-        self.data.offset_y
-    }
-
-    /// Get the layer's x parallax factor.
-    #[inline]
-    pub fn parallax_x(&self) -> f32 {
-        self.data.parallax_x
-    }
-
-    /// Get the layer's y parallax factor.
-    #[inline]
-    pub fn parallax_y(&self) -> f32 {
-        self.data.parallax_y
-    }
-
-    /// Get the layer's opacity.
-    #[inline]
-    pub fn opacity(&self) -> f32 {
-        self.data.opacity
-    }
-
-    /// Get the layer's tint color.
-    #[inline]
-    pub fn tint_color(&self) -> Option<Color> {
-        self.data.tint_color
-    }
-
-    /// Get a reference to the layer's properties.
-    #[inline]
-    pub fn properties(&self) -> &Properties {
-        &self.data.properties
-    }
-
     /// Get the layer's type.
     #[inline]
     pub fn layer_type(&self) -> LayerType<'map> {

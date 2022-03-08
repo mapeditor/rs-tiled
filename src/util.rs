@@ -98,6 +98,15 @@ macro_rules! map_wrapper {
                 self.map
             }
         }
+
+        impl<'map> std::ops::Deref for $name<'map> {
+            type Target = $data_ty;
+
+            #[inline]
+            fn deref(&self) -> &'map Self::Target {
+                self.data
+            }
+        }
     };
 }
 

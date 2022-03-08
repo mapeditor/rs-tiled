@@ -10,8 +10,9 @@ use crate::{
     Layer, Map,
 };
 
+/// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct GroupLayerData {
+pub struct GroupLayerData {
     layers: Vec<LayerData>,
 }
 

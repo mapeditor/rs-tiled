@@ -21,17 +21,32 @@ pub(crate) struct MapTilesetGid {
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Map {
-    /// The TMX format version this map was saved to.
-    pub version: String,
+    version: String,
     /// The way tiles are laid out in the map.
     pub orientation: Orientation,
     /// Width of the map, in tiles.
+    ///
+    /// ## Note
+    /// There is no guarantee that this value will be the same as the width from its tile layers.
     pub width: u32,
     /// Height of the map, in tiles.
+    ///
+    /// ## Note
+    /// There is no guarantee that this value will be the same as the height from its tile layers.
     pub height: u32,
     /// Tile width, in pixels.
+    ///
+    /// ## Note
+    /// This value along with [`Self::tile_height`] determine the general size of the map, and
+    /// individual tiles may have different sizes. As such, there is no guarantee that this value
+    /// will be the same as the one from the tilesets the map is using.
     pub tile_width: u32,
     /// Tile height, in pixels.
+    ///
+    /// ## Note
+    /// This value along with [`Self::tile_width`] determine the general size of the map, and
+    /// individual tiles may have different sizes. As such, there is no guarantee that this value
+    /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
     /// The tilesets present on this map.
     tilesets: Vec<Arc<Tileset>>,
@@ -41,9 +56,7 @@ pub struct Map {
     pub properties: Properties,
     /// The background color of this map, if any.
     pub background_color: Option<Color>,
-    /// Whether this map is infinite. An infinite map has no fixed size and can grow in all
-    /// directions. Its layer data is stored in chunks.
-    pub infinite: bool,
+    infinite: bool,
 }
 
 impl Map {
@@ -101,15 +114,30 @@ impl Map {
         })?;
         Self::parse_reader(reader, path.as_ref(), cache)
     }
+
+    /// The TMX format version this map was saved to. Equivalent to the map file's `version`
+    /// attribute.
+    pub fn version(&self) -> &str {
+        self.version.as_ref()
+    }
+
+    /// Whether this map is infinite. An infinite map has no fixed size and can grow in all
+    /// directions. Its layer data is stored in chunks. This value determines whether the map's
+    /// tile layers are [`FiniteTileLayer`](crate::FiniteTileLayer)s or [`crate::InfiniteTileLayer`](crate::InfiniteTileLayer)s.
+    pub fn infinite(&self) -> bool {
+        self.infinite
+    }
 }
 
 impl Map {
     /// Get a reference to the map's tilesets.
+    #[inline]
     pub fn tilesets(&self) -> &[Arc<Tileset>] {
         self.tilesets.as_ref()
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
+    #[inline]
     pub fn layers(&self) -> MapLayerIter {
         MapLayerIter::new(self)
     }

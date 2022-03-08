@@ -27,10 +27,7 @@ pub enum ObjectShape {
 /// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-object).
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectData {
-    /// ID of the object, which is unique per map since Tiled 0.11.
-    ///
-    /// On older versions this value is defaulted to 0.
-    pub id: u32,
+    id: u32,
     tile: Option<LayerTileData>,
     /// The name of the object, which is arbitrary and set by the user.
     pub name: String,
@@ -56,8 +53,24 @@ pub struct ObjectData {
     pub visible: bool,
     /// The object's shape.
     pub shape: ObjectShape,
-    /// The object's custom properties set by the user.
+    /// The object's custom properties as set by the user.
     pub properties: Properties,
+}
+
+impl ObjectData {
+    /// ID of the object, which is unique per map since Tiled 0.11.
+    ///
+    /// On older versions this value is defaulted to 0.
+    #[inline]
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    /// Returns the data of the tile that this object is referencing, if it exists.
+    #[inline]
+    pub fn tile_data(&self) -> Option<LayerTileData> {
+        self.tile
+    }
 }
 
 impl ObjectData {
@@ -199,87 +212,11 @@ map_wrapper!(
 );
 
 impl<'map> Object<'map> {
-    /// ID of the object, which is unique per map since Tiled 0.11.
-    ///
-    /// On older versions this value is defaulted to 0.
-    #[inline]
-    pub fn id(&self) -> u32 {
-        self.data.id
-    }
-
     /// Returns the tile that the object is using as image, if any.
     pub fn get_tile(&self) -> Option<LayerTile<'map>> {
         self.data
             .tile
             .as_ref()
             .map(|tile| LayerTile::new(self.map, tile))
-    }
-
-    /// The name of the object, which is arbitrary and set by the user.
-    #[inline]
-    pub fn name(&self) -> &str {
-        self.data.name.as_ref()
-    }
-
-    /// The type of the object, which is arbitrary and set by the user.
-    #[inline]
-    pub fn obj_type(&self) -> &str {
-        self.data.obj_type.as_ref()
-    }
-
-    /// The width of the object, if applicable. This refers to the attribute in `object`.
-    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
-    /// member in [`ObjectShape`] instead.
-    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
-    #[inline]
-    pub fn width(&self) -> f32 {
-        #[allow(deprecated)]
-        self.data.width
-    }
-
-    /// The height of the object, if applicable. This refers to the attribute in `object`.
-    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
-    /// member in [`ObjectShape`] instead.
-    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
-    #[inline]
-    pub fn height(&self) -> f32 {
-        #[allow(deprecated)]
-        self.data.height
-    }
-
-    /// The X coordinate of this object in pixels.
-    #[inline]
-    pub fn x(&self) -> f32 {
-        self.data.x
-    }
-
-    /// The Y coordinate of this object in pixels.
-    #[inline]
-    pub fn y(&self) -> f32 {
-        self.data.y
-    }
-
-    /// The clockwise rotation of this object around (x,y) in degrees.
-    #[inline]
-    pub fn rotation(&self) -> f32 {
-        self.data.rotation
-    }
-
-    /// Whether the object is shown or hidden.
-    #[inline]
-    pub fn visible(&self) -> bool {
-        self.data.visible
-    }
-
-    /// The object's shape.
-    #[inline]
-    pub fn shape(&self) -> &ObjectShape {
-        &self.data.shape
-    }
-
-    /// The object's custom properties set by the user.
-    #[inline]
-    pub fn properties(&self) -> &Properties {
-        &self.data.properties
     }
 }
