@@ -15,7 +15,7 @@ pub type ResourcePathBuf = PathBuf;
 /// [`ResourcePath`] to prevent loading them more than once. Normally you don't need to use this
 /// type yourself unless you want to create a custom caching solution to, for instance, integrate
 /// with your own.
-/// If you simply want to load a map or tileset, use the [`Loader`](tiled::Loader) type.
+/// If you simply want to load a map or tileset, use the [`Loader`](crate::Loader) type.
 pub trait ResourceCache {
     /// Obtains a tileset from the cache, if it exists.
     ///
