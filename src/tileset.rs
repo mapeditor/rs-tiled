@@ -10,7 +10,7 @@ use crate::error::{Error, Result};
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
 use crate::tile::TileData;
-use crate::{util::*, Gid, Tile};
+use crate::{util::*, Gid, Tile, TileId};
 
 /// A collection of tiles for usage in maps and template objects.
 ///
@@ -53,7 +53,7 @@ pub struct Tileset {
     pub image: Option<Image>,
 
     /// All the tiles present in this tileset, indexed by their local IDs.
-    tiles: HashMap<u32, TileData>,
+    tiles: HashMap<TileId, TileData>,
 
     /// The custom properties of the tileset.
     pub properties: Properties,
@@ -124,13 +124,13 @@ impl Tileset {
 
     /// Gets the tile with the specified ID from the tileset.
     #[inline]
-    pub fn get_tile(&self, id: u32) -> Option<Tile> {
+    pub fn get_tile(&self, id: TileId) -> Option<Tile> {
         self.tiles.get(&id).map(|data| Tile::new(self, data))
     }
 
     /// Iterates through the tiles from this tileset.
     #[inline]
-    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (u32, Tile)> {
+    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (TileId, Tile)> {
         self.tiles
             .iter()
             .map(move |(id, data)| (*id, Tile::new(self, data)))
