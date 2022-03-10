@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr, sync::Arc};
 
-use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::{Error, Result},
@@ -70,46 +70,26 @@ impl Map {
     /// the library won't read from the filesystem if it is not required to do so.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
+    #[deprecated(since = "0.10.1", note = "Use [`Loader::parse_tmx_map_from`] instead")]
     pub fn parse_reader<R: Read>(
         reader: R,
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
     ) -> Result<Self> {
-        let mut parser = EventReader::new(reader);
-        loop {
-            match parser.next().map_err(Error::XmlDecodingError)? {
-                XmlEvent::StartElement {
-                    name, attributes, ..
-                } => {
-                    if name.local_name == "map" {
-                        return Self::parse_xml(
-                            &mut parser.into_iter(),
-                            attributes,
-                            path.as_ref(),
-                            cache,
-                        );
-                    }
-                }
-                XmlEvent::EndDocument => {
-                    return Err(Error::PrematureEnd(
-                        "Document ended before map was parsed".to_string(),
-                    ))
-                }
-                _ => {}
-            }
-        }
+        crate::parse::xml::parse_map(reader, path.as_ref(), cache)
     }
 
     /// Parse a file hopefully containing a Tiled map and try to parse it.  All external
     /// files will be loaded relative to the path given.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
+    #[deprecated(since = "0.10.1", note = "Use [`Loader::parse_tmx_map`] instead")]
     pub fn parse_file(path: impl AsRef<Path>, cache: &mut impl ResourceCache) -> Result<Self> {
         let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
             path: path.as_ref().to_owned(),
             err,
         })?;
-        Self::parse_reader(reader, path.as_ref(), cache)
+        crate::parse::xml::parse_map(reader, path.as_ref(), cache)
     }
 
     /// The TMX format version this map was saved to. Equivalent to the map file's `version`
@@ -146,7 +126,7 @@ impl Map {
 }
 
 impl Map {
-    fn parse_xml(
+    pub(crate) fn parse_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
