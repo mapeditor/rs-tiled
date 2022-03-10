@@ -46,7 +46,7 @@ impl LayerTileData {
 
     /// Get the layer tile's local id within its parent tileset.
     #[inline]
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> TileId {
         self.id
     }
 

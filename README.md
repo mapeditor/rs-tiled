@@ -27,7 +27,7 @@ fn main() {
     )
     .unwrap();
     println!("{:?}", map);
-    println!("{:?}", map.tilesets()[0].get_tile(0).unwrap().probability());
+    println!("{:?}", map.tilesets()[0].get_tile(0).unwrap().probability);
 }
 
 ```
