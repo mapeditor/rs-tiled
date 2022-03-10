@@ -13,11 +13,11 @@ mod layers;
 mod loader;
 mod map;
 mod objects;
+mod parse;
 mod properties;
 mod tile;
 mod tileset;
 mod util;
-mod parse;
 
 pub use animation::*;
 pub use cache::*;

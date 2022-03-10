@@ -13,7 +13,7 @@ use sfml::{
     window::{ContextSettings, Key, Style},
 };
 use std::{env, path::PathBuf, time::Duration};
-use tiled::{FilesystemResourceCache, FiniteTileLayer, Map};
+use tiled::{FiniteTileLayer, Loader, Map};
 use tilesheet::Tilesheet;
 
 /// A path to the map to display.
@@ -94,17 +94,17 @@ impl Drawable for Level {
 }
 
 fn main() {
-    let mut cache = FilesystemResourceCache::new();
+    let mut loader = Loader::new();
 
-    let map = Map::parse_file(
-        PathBuf::from(
-            env::var("CARGO_MANIFEST_DIR")
-                .expect("To run the example, use `cargo run --example sfml`"),
+    let map = loader
+        .load_tmx_map(
+            PathBuf::from(
+                env::var("CARGO_MANIFEST_DIR")
+                    .expect("To run the example, use `cargo run --example sfml`"),
+            )
+            .join(MAP_PATH),
         )
-        .join(MAP_PATH),
-        &mut cache,
-    )
-    .unwrap();
+        .unwrap();
     let level = Level::from_map(map);
 
     let mut window = create_window();
