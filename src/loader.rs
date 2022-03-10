@@ -48,11 +48,11 @@ impl<Cache: ResourceCache> Loader<Cache> {
 
     /// Parses a map out of a reader hopefully containing the contents of a Tiled file.
     ///
-    /// This augments [`load_tmx_map`](Loader::load_tmx_map()) with a custom reader: some
-    /// engines (e.g. Amethyst) simply hand over a byte stream and file location for parsing,
-    /// in which case this function may be required.
+    /// This augments [`load_tmx_map`] with a custom reader: some engines (e.g. Amethyst) simply
+    /// hand over a byte stream and file location for parsing, in which case this function may be
+    /// required.
     ///
-    /// If you need to parse a file in the filesystem instead, [Loader::load_tmx_map()] might be
+    /// If you need to parse a file in the filesystem instead, [`load_tmx_map`] might be
     /// more convenient.
     ///
     /// The path is used for external dependencies such as tilesets or images. It is required.
@@ -62,6 +62,7 @@ impl<Cache: ResourceCache> Loader<Cache> {
     /// All intermediate objects such as map tilesets will be stored in the [internal loader cache].
     ///
     /// [internal loader cache]: Loader::cache()
+    /// [`load_tmx_map`]: Loader::load_tmx_map()
     pub fn load_tmx_map_from(&mut self, reader: impl Read, path: impl AsRef<Path>) -> Result<Map> {
         crate::parse::xml::parse_map(reader, path.as_ref(), &mut self.cache)
     }
@@ -70,8 +71,8 @@ impl<Cache: ResourceCache> Loader<Cache> {
     /// will be loaded relative to the path given.
     ///
     /// Unless you specifically want to load a tileset, you won't need to call this function. If
-    /// you are trying to load a map, simply use [Loader::load_tmx_map] or
-    /// [Loader::load_tmx_map_from].
+    /// you are trying to load a map, simply use [`Loader::load_tmx_map`] or
+    /// [`Loader::load_tmx_map_from`].
     ///
     /// If you need to parse a reader object instead, use [Loader::load_tsx_tileset_from()].
     pub fn load_tsx_tileset(&mut self, path: impl AsRef<Path>) -> Result<Tileset> {
@@ -86,8 +87,8 @@ impl<Cache: ResourceCache> Loader<Cache> {
     /// Uses the `path` parameter as the root for any relative paths found in the tileset.
     ///
     /// Unless you specifically want to load a tileset, you won't need to call this function. If
-    /// you are trying to load a map, simply use [Loader::load_tmx_map] or
-    /// [Loader::load_tmx_map_from].
+    /// you are trying to load a map, simply use [`Loader::load_tmx_map`] or
+    /// [`Loader::load_tmx_map_from`].
     ///
     /// ## Example
     /// ```
