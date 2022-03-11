@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1]
+### Added
+- `Loader` type for loading map and tileset files without having to necessarily mention the cache
+to use.
+
+### Deprecated
+- `Map::parse_reader`: Use `Loader::parse_tmx_map_from` instead.
+- `Map::parse_file`: Use `Loader::load_tmx_map` instead.
+- `Tileset::parse_reader`: Use `Loader::load_tsx_tileset` instead.
+
 ## [0.10.0]
 As this release changes practically the entire interface of the crate, it is recommended that you
 check out the [examples](https://github.com/mapeditor/rs-tiled/tree/master/examples) instead of the
