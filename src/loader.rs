@@ -17,7 +17,7 @@ pub struct Loader<Cache: ResourceCache = FilesystemResourceCache> {
 }
 
 impl Loader<FilesystemResourceCache> {
-    /// Creates a new loader, creating a default resource cache in the process.
+    /// Creates a new loader, creating a default ([`FilesystemResourceCache`]) resource cache in the process.
     pub fn new() -> Self {
         Self {
             cache: FilesystemResourceCache::new(),
@@ -26,6 +26,50 @@ impl Loader<FilesystemResourceCache> {
 }
 
 impl<Cache: ResourceCache> Loader<Cache> {
+    /// Creates a new loader using a specific resource cache.
+    ///
+    /// ## Example
+    /// ```
+    /// # fn main() -> tiled::Result<()> {
+    /// use std::{sync::Arc, path::Path};
+    ///
+    /// use tiled::{Loader, ResourceCache};
+    ///
+    /// /// An example resource cache that doesn't actually cache any resources at all.
+    /// struct NoopResourceCache;
+    ///
+    /// impl ResourceCache for NoopResourceCache {
+    ///     fn get_tileset(
+    ///         &self,
+    ///         _path: impl AsRef<tiled::ResourcePath>,
+    ///     ) -> Option<std::sync::Arc<tiled::Tileset>> {
+    ///         None
+    ///     }
+    ///
+    ///     fn get_or_try_insert_tileset_with<F, E>(
+    ///         &mut self,
+    ///         _path: tiled::ResourcePathBuf,
+    ///         f: F,
+    ///     ) -> Result<std::sync::Arc<tiled::Tileset>, E>
+    ///     where
+    ///         F: FnOnce() -> Result<tiled::Tileset, E>,
+    ///     {
+    ///         f().map(Arc::new)
+    ///     }
+    /// }
+    ///
+    /// let mut loader = Loader::with_cache(NoopResourceCache);
+    ///
+    /// let map = loader.load_tmx_map("assets/tiled_base64_external.tmx")?;
+    ///
+    /// assert_eq!(
+    ///     map.tilesets()[0].image.as_ref().unwrap().source,
+    ///     Path::new("assets/tilesheet.png")
+    /// );
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn with_cache(cache: Cache) -> Self {
         Self { cache }
     }
@@ -115,7 +159,13 @@ impl<Cache: ResourceCache> Loader<Cache> {
         crate::parse::xml::parse_tileset(reader, path.as_ref())
     }
 
+    /// Returns a reference to the loader's internal [`ResourceCache`].
     pub fn cache(&self) -> &Cache {
         &self.cache
+    }
+
+    /// Consumes the loader and returns its internal [`ResourceCache`].
+    pub fn into_cache(self) -> Cache {
+        self.cache
     }
 }
