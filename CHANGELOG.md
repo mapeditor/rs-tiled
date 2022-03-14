@@ -15,6 +15,9 @@ to use.
 - `Map::parse_file`: Use `Loader::load_tmx_map` instead.
 - `Tileset::parse_reader`: Use `Loader::load_tsx_tileset` instead.
 
+### Fixed
+- Fix message when a tileset is missing the `tilecount` attribute (#194).
+
 ## [0.10.0]
 As this release changes practically the entire interface of the crate, it is recommended that you
 check out the [examples](https://github.com/mapeditor/rs-tiled/tree/master/examples) instead of the

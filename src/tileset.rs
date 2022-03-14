@@ -151,7 +151,7 @@ impl Tileset {
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
             ],
-            Error::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
+            Error::MalformedAttributes("tileset must have a firstgid, tilecount, tilewidth, and tileheight with correct types".to_string())
         );
 
         let root_path = map_path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
