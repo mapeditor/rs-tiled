@@ -3,8 +3,6 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use xml::attribute::OwnedAttribute;
-use xml::reader::XmlEvent;
-use xml::EventReader;
 
 use crate::error::{Error, Result};
 use crate::image::Image;
@@ -99,27 +97,9 @@ impl Tileset {
     ///
     /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
     /// ```
+    #[deprecated(since = "0.10.1", note = "Use `Loader::parse_tsx_tileset` instead")]
     pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self> {
-        let mut tileset_parser = EventReader::new(reader);
-        loop {
-            match tileset_parser.next().map_err(Error::XmlDecodingError)? {
-                XmlEvent::StartElement {
-                    name, attributes, ..
-                } if name.local_name == "tileset" => {
-                    return Self::parse_external_tileset(
-                        &mut tileset_parser.into_iter(),
-                        &attributes,
-                        path.as_ref(),
-                    );
-                }
-                XmlEvent::EndDocument => {
-                    return Err(Error::PrematureEnd(
-                        "Tileset Document ended before map was parsed".to_string(),
-                    ))
-                }
-                _ => {}
-            }
-        }
+        crate::parse::xml::parse_tileset(reader, path.as_ref())
     }
 
     /// Gets the tile with the specified ID from the tileset.
@@ -216,7 +196,7 @@ impl Tileset {
         })
     }
 
-    fn parse_external_tileset(
+    pub(crate) fn parse_external_tileset(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         path: &Path,
