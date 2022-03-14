@@ -419,7 +419,3 @@ fn test_group_layers() {
         layer_tile_3.properties.get("key")
     );
 }
-
-mod libtest {
-
-}
