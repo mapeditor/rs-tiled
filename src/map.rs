@@ -70,7 +70,7 @@ impl Map {
     /// the library won't read from the filesystem if it is not required to do so.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
-    #[deprecated(since = "0.10.1", note = "Use `Loader::parse_tmx_map_from` instead")]
+    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tmx_map_from` instead")]
     pub fn parse_reader<R: Read>(
         reader: R,
         path: impl AsRef<Path>,
@@ -83,7 +83,7 @@ impl Map {
     /// files will be loaded relative to the path given.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
-    #[deprecated(since = "0.10.1", note = "Use `Loader::parse_tmx_map` instead")]
+    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tmx_map` instead")]
     pub fn parse_file(path: impl AsRef<Path>, cache: &mut impl ResourceCache) -> Result<Self> {
         let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
             path: path.as_ref().to_owned(),

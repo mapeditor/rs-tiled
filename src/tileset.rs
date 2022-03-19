@@ -97,7 +97,7 @@ impl Tileset {
     ///
     /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
     /// ```
-    #[deprecated(since = "0.10.1", note = "Use `Loader::parse_tsx_tileset` instead")]
+    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tsx_tileset_from` instead")]
     pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self> {
         crate::parse::xml::parse_tileset(reader, path.as_ref())
     }
