@@ -2,13 +2,24 @@ use std::{fs::File, io::Read, path::Path};
 
 use crate::{FilesystemResourceCache, Map, ResourceCache, Result, Tileset};
 
+/// A trait defining types that can load data from a [`ResourcePath`](crate::ResourcePath).
+/// 
+/// This trait should be implemented if you wish to load data from a virtual filesystem.
+/// 
+/// ## Example
+/// TODO
 pub trait ResourceReader {
+    /// The type of the resource that the reader provides. For example, for
+    /// [`FilesystemResourceReader`], this is defined as [`File`].
     type Resource: Read;
+    /// The type that is returned if [`read_from()`](Self::read_from()) fails. For example, for
+    /// [`FilesystemResourceReader`], this is defined as [`std::io::Error`].
     type Error: std::error::Error + 'static;
 
     fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error>;
 }
 
+/// A [`ResourceReader`] that reads from [`File`] handles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FilesystemResourceReader;
 
