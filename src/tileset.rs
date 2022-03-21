@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use xml::attribute::OwnedAttribute;
@@ -81,27 +80,6 @@ struct TilesetProperties {
 }
 
 impl Tileset {
-    /// Parses a tileset out of a reader hopefully containing the contents of a Tiled tileset.
-    /// Uses the `path` parameter as the root for any relative paths found in the tileset.
-    ///
-    /// ## Example
-    /// ```
-    /// use std::fs::File;
-    /// use std::path::PathBuf;
-    /// use std::io::BufReader;
-    /// use tiled::Tileset;
-    ///
-    /// let path = "assets/tilesheet.tsx";
-    /// let reader = BufReader::new(File::open(path).unwrap());
-    /// let tileset = Tileset::parse_reader(reader, path).unwrap();
-    ///
-    /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
-    /// ```
-    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tsx_tileset_from` instead")]
-    pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self> {
-        crate::parse::xml::parse_tileset(reader, path.as_ref())
-    }
-
     /// Gets the tile with the specified ID from the tileset.
     #[inline]
     pub fn get_tile(&self, id: TileId) -> Option<Tile> {

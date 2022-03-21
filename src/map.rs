@@ -1,6 +1,6 @@
 //! Structures related to Tiled maps.
 
-use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr, sync::Arc};
+use std::{collections::HashMap, fmt, path::Path, str::FromStr, sync::Arc};
 
 use xml::attribute::OwnedAttribute;
 
@@ -10,7 +10,7 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag, XmlEventResult},
-    EmbeddedParseResultType, Layer, ResourceCache,
+    EmbeddedParseResultType, Layer, ResourceCache, ResourceReader,
 };
 
 pub(crate) struct MapTilesetGid {
@@ -60,38 +60,6 @@ pub struct Map {
 }
 
 impl Map {
-    /// Parse a buffer hopefully containing the contents of a Tiled file and try to
-    /// parse it. This augments `parse_file` with a custom reader: some engines
-    /// (e.g. Amethyst) simply hand over a byte stream (and file location) for parsing,
-    /// in which case this function may be required.
-    ///
-    /// The path is used for external dependencies such as tilesets or images. It is required.
-    /// If the map if fully embedded and doesn't refer to external files, you may input an arbitrary path;
-    /// the library won't read from the filesystem if it is not required to do so.
-    ///
-    /// The tileset cache is used to store and refer to any tilesets found along the way.
-    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tmx_map_from` instead")]
-    pub fn parse_reader<R: Read>(
-        reader: R,
-        path: impl AsRef<Path>,
-        cache: &mut impl ResourceCache,
-    ) -> Result<Self> {
-        crate::parse::xml::parse_map(reader, path.as_ref(), cache)
-    }
-
-    /// Parse a file hopefully containing a Tiled map and try to parse it.  All external
-    /// files will be loaded relative to the path given.
-    ///
-    /// The tileset cache is used to store and refer to any tilesets found along the way.
-    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tmx_map` instead")]
-    pub fn parse_file(path: impl AsRef<Path>, cache: &mut impl ResourceCache) -> Result<Self> {
-        let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
-            path: path.as_ref().to_owned(),
-            err,
-        })?;
-        crate::parse::xml::parse_map(reader, path.as_ref(), cache)
-    }
-
     /// The TMX format version this map was saved to. Equivalent to the map file's `version`
     /// attribute.
     pub fn version(&self) -> &str {
@@ -131,6 +99,7 @@ impl Map {
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
         cache: &mut impl ResourceCache,
+        reader: &mut impl ResourceReader,
     ) -> Result<Map> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
@@ -163,8 +132,8 @@ impl Map {
                 let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
-                        let file = File::open(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || crate::parse::xml::parse_tileset(file, &tileset_path))?;
+                        let file = reader.read_from(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err: Box::new(err) })?;
+                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || crate::parse::xml::parse_tileset(&tileset_path, reader))?;
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
