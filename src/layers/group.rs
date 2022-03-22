@@ -90,10 +90,14 @@ map_wrapper!(
 
 impl<'map> GroupLayer<'map> {
     /// Returns an iterator over the layers present in this group in display order.
-    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
-        self.layers
+    /// ## Example
+    /// TODO
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer<'map>> + 'map {
+        let map: &'map crate::Map = self.map;
+        self.data
+            .layers
             .iter()
-            .map(move |layer| Layer::new(self.map, layer))
+            .map(move |layer| Layer::new(map, layer))
     }
     /// Gets a specific layer from the group by index.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
