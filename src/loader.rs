@@ -57,8 +57,9 @@ pub struct Loader<
     reader: Reader,
 }
 
-impl Loader<FilesystemResourceCache> {
-    /// Creates a new loader, creating a default ([`FilesystemResourceCache`]) resource cache in the process.
+impl Loader {
+    /// Creates a new loader, creating a default resource cache and reader
+    /// ([`FilesystemResourceCache`] & [`FilesystemResourceReader`] respectively) in the process.
     pub fn new() -> Self {
         Self {
             cache: FilesystemResourceCache::new(),
