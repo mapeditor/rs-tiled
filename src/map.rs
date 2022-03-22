@@ -132,7 +132,6 @@ impl Map {
                 let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
-                        let file = reader.read_from(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err: Box::new(err) })?;
                         let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || crate::parse::xml::parse_tileset(&tileset_path, reader))?;
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }

@@ -9,7 +9,7 @@ pub fn parse_map(
     reader: &mut impl ResourceReader,
     cache: &mut impl ResourceCache,
 ) -> Result<Map> {
-    let mut parser = EventReader::new(reader.read_from(path).map_err(|err| Error::CouldNotOpenFile {
+    let mut parser = EventReader::new(reader.read_from(path).map_err(|err| Error::ResourceLoadingError {
         path: path.to_owned(),
         err: Box::new(err),
     })?);

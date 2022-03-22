@@ -9,7 +9,7 @@ pub fn parse_tileset(path: &Path, reader: &mut impl ResourceReader) -> Result<Ti
         EventReader::new(
             reader
                 .read_from(path)
-                .map_err(|err| Error::CouldNotOpenFile {
+                .map_err(|err| Error::ResourceLoadingError {
                     path: path.to_owned(),
                     err: Box::new(err),
                 })?,
