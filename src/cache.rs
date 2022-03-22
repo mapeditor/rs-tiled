@@ -15,6 +15,7 @@ pub type ResourcePathBuf = PathBuf;
 /// [`ResourcePath`] to prevent loading them more than once. Normally you don't need to use this
 /// type yourself unless you want to create a custom caching solution to, for instance, integrate
 /// with your own.
+///
 /// If you simply want to load a map or tileset, use the [`Loader`](crate::Loader) type.
 pub trait ResourceCache {
     /// Obtains a tileset from the cache, if it exists.
@@ -22,15 +23,15 @@ pub trait ResourceCache {
     /// # Example
     /// ```
     /// use std::fs::File;
-    /// use tiled::{FilesystemResourceCache, ResourceCache, Tileset};
+    /// use tiled::{FilesystemResourceReader, Tileset, Loader, ResourceCache};
     /// # use tiled::Result;
     /// # fn main() -> Result<()> {
-    /// let mut cache = FilesystemResourceCache::new();
+    /// let mut loader = Loader::new();
     /// let path = "assets/tilesheet.tsx";
     ///
-    /// assert!(cache.get_tileset(path).is_none());
-    /// cache.get_or_try_insert_tileset_with(path.to_owned().into(), || Tileset::parse_reader(File::open(path).unwrap(), path))?;
-    /// assert!(cache.get_tileset(path).is_some());
+    /// assert!(loader.cache().get_tileset(path).is_none());
+    /// loader.load_tmx_map("assets/tiled_base64_external.tmx");
+    /// assert!(loader.cache().get_tileset(path).is_some());
     /// # Ok(())
     /// # }
     /// ```
@@ -40,6 +41,11 @@ pub trait ResourceCache {
     /// result, it will:
     /// - Insert the object into the cache, if the result was [`Ok`].
     /// - Return the error and leave the cache intact, if the result was [`Err`].
+    ///
+    /// ## Note
+    /// This function is normally only used internally; there are not many instances where it is
+    /// callable outside of the library implementation, since the cache is normally owned by the
+    /// loader anyways.
     fn get_or_try_insert_tileset_with<F, E>(
         &mut self,
         path: ResourcePathBuf,
@@ -49,14 +55,14 @@ pub trait ResourceCache {
         F: FnOnce() -> Result<Tileset, E>;
 }
 
-/// A cache that identifies resources by their path in the user's filesystem.
+/// A cache that identifies resources by their path, storing a map of them.
 #[derive(Debug)]
-pub struct FilesystemResourceCache {
+pub struct DefaultResourceCache {
     tilesets: HashMap<ResourcePathBuf, Arc<Tileset>>,
 }
 
-impl FilesystemResourceCache {
-    /// Creates an empty [`FilesystemResourceCache`].
+impl DefaultResourceCache {
+    /// Creates an empty [`DefaultResourceCache`].
     pub fn new() -> Self {
         Self {
             tilesets: HashMap::new(),
@@ -64,7 +70,7 @@ impl FilesystemResourceCache {
     }
 }
 
-impl ResourceCache for FilesystemResourceCache {
+impl ResourceCache for DefaultResourceCache {
     fn get_tileset(&self, path: impl AsRef<ResourcePath>) -> Option<Arc<Tileset>> {
         self.tilesets.get(path.as_ref()).map(Clone::clone)
     }
