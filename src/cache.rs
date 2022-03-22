@@ -15,6 +15,7 @@ pub type ResourcePathBuf = PathBuf;
 /// [`ResourcePath`] to prevent loading them more than once. Normally you don't need to use this
 /// type yourself unless you want to create a custom caching solution to, for instance, integrate
 /// with your own.
+/// 
 /// If you simply want to load a map or tileset, use the [`Loader`](crate::Loader) type.
 pub trait ResourceCache {
     /// Obtains a tileset from the cache, if it exists.
@@ -54,7 +55,7 @@ pub trait ResourceCache {
         F: FnOnce() -> Result<Tileset, E>;
 }
 
-/// A cache that identifies resources by their path in the user's filesystem.
+/// A cache that identifies resources by their path, storing a map of them.
 #[derive(Debug)]
 pub struct FilesystemResourceCache {
     tilesets: HashMap<ResourcePathBuf, Arc<Tileset>>,

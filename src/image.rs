@@ -64,7 +64,6 @@ pub struct Image {
     /// Check the assets/tiled_relative_paths.tmx file at the crate root to see the structure of the
     /// file this example is referring to.
     // TODO: Embedded images
-    // TODO: Figure out how to serve crate users paths in a better way
     pub source: PathBuf,
     /// The width in pixels of the image.
     pub width: i32,

@@ -7,7 +7,7 @@ use crate::{FilesystemResourceCache, Map, ResourceCache, Result, Tileset};
 /// This trait should be implemented if you wish to load data from a virtual filesystem.
 /// 
 /// ## Example
-/// TODO
+/// TODO: ResourceReader example
 pub trait ResourceReader {
     /// The type of the resource that the reader provides. For example, for
     /// [`FilesystemResourceReader`], this is defined as [`File`].
@@ -43,6 +43,9 @@ impl ResourceReader for FilesystemResourceReader {
 ///
 /// Internally, it holds a [`ResourceCache`] that, as its name implies, caches intermediate loading
 /// artifacts, most notably map tilesets.
+/// 
+/// It also contains a [`ResourceReader`] which is the object in charge of providing read handles
+/// to files via a [`ResourcePath`](crate::ResourcePath).
 ///
 /// ## Reasoning
 /// This type is used for loading operations because they require a [`ResourceCache`] for
