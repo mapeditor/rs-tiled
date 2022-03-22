@@ -61,7 +61,7 @@ impl InfiniteTileLayerData {
     ///
     /// If the position given is invalid or the position is empty, this function will return [`None`].
     ///
-    /// If you want to get a [`Tile`](`crate::Tile`) instead, use [`InfiniteTileLayer::get_tile()`] instead.
+    /// If you want to get a [`Tile`](`crate::Tile`) instead, use [`InfiniteTileLayer::get_tile()`].
     pub fn get_tile_data(&self, x: i32, y: i32) -> Option<&LayerTileData> {
         let chunk_pos = tile_to_chunk_pos(x, y);
         self.chunks
