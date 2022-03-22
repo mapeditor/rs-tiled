@@ -16,6 +16,7 @@ pub trait ResourceReader {
     /// [`FilesystemResourceReader`], this is defined as [`std::io::Error`].
     type Error: std::error::Error + 'static;
 
+    /// Try to return a reader object from a path into the resources filesystem.
     fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error>;
 }
 
@@ -67,14 +68,14 @@ impl Loader<FilesystemResourceCache> {
 }
 
 impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
-    /// Creates a new loader using a specific resource cache.
+    /// Creates a new loader using a specific resource cache and reader.
     ///
     /// ## Example
     /// ```
     /// # fn main() -> tiled::Result<()> {
     /// use std::{sync::Arc, path::Path};
     ///
-    /// use tiled::{Loader, ResourceCache};
+    /// use tiled::{Loader, ResourceCache, FilesystemResourceReader};
     ///
     /// /// An example resource cache that doesn't actually cache any resources at all.
     /// struct NoopResourceCache;
@@ -99,7 +100,7 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
     ///     }
     /// }
     ///
-    /// let mut loader = Loader::with_cache(NoopResourceCache);
+    /// let mut loader = Loader::with_cache_and_reader(NoopResourceCache, FilesystemResourceReader);
     ///
     /// let map = loader.load_tmx_map("assets/tiled_base64_external.tmx")?;
     ///
@@ -129,10 +130,11 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
     /// will be loaded relative to the path given.
     ///
     /// Unless you specifically want to load a tileset, you won't need to call this function. If
-    /// you are trying to load a map, simply use [`Loader::load_tmx_map`] or
-    /// [`Loader::load_tmx_map_from`].
-    ///
-    /// If you need to parse a reader object instead, use [Loader::load_tsx_tileset_from()].
+    /// you are trying to load a map, simply use [`Loader::load_tmx_map`].
+    /// 
+    /// ## Note
+    /// This function will **not** cache the tileset inside the internal [`ResourceCache`], since
+    /// in this context it is not an intermediate object.
     pub fn load_tsx_tileset(&mut self, path: impl AsRef<Path>) -> Result<Tileset> {
         crate::parse::xml::parse_tileset(path.as_ref(), &mut self.reader)
     }

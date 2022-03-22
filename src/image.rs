@@ -31,10 +31,7 @@ pub struct Image {
     /// use tiled::*;
     ///
     /// # fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    /// let map = Map::parse_file(
-    ///     "assets/folder/tiled_relative_paths.tmx",
-    ///     &mut FilesystemResourceCache::new(),
-    /// )?;
+    /// let map = Loader::new().load_tmx_map("assets/folder/tiled_relative_paths.tmx")?;
     ///
     /// let image_layer = match map
     ///     .layers()

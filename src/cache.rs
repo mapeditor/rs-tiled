@@ -22,15 +22,15 @@ pub trait ResourceCache {
     /// # Example
     /// ```
     /// use std::fs::File;
-    /// use tiled::{FilesystemResourceCache, ResourceCache, Tileset};
+    /// use tiled::{FilesystemResourceReader, Tileset, Loader, ResourceCache};
     /// # use tiled::Result;
     /// # fn main() -> Result<()> {
-    /// let mut cache = FilesystemResourceCache::new();
+    /// let mut loader = Loader::new();
     /// let path = "assets/tilesheet.tsx";
     ///
-    /// assert!(cache.get_tileset(path).is_none());
-    /// cache.get_or_try_insert_tileset_with(path.to_owned().into(), || Tileset::parse_reader(File::open(path).unwrap(), path))?;
-    /// assert!(cache.get_tileset(path).is_some());
+    /// assert!(loader.cache().get_tileset(path).is_none());
+    /// loader.load_tmx_map("assets/tiled_base64_external.tmx");
+    /// assert!(loader.cache().get_tileset(path).is_some());
     /// # Ok(())
     /// # }
     /// ```
@@ -40,6 +40,11 @@ pub trait ResourceCache {
     /// result, it will:
     /// - Insert the object into the cache, if the result was [`Ok`].
     /// - Return the error and leave the cache intact, if the result was [`Err`].
+    /// 
+    /// ## Note
+    /// This function is normally only used internally; there are not many instances where it is 
+    /// callable outside of the library implementation, since the cache is normally owned by the
+    /// loader anyways.
     fn get_or_try_insert_tileset_with<F, E>(
         &mut self,
         path: ResourcePathBuf,
