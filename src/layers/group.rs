@@ -91,7 +91,27 @@ map_wrapper!(
 impl<'map> GroupLayer<'map> {
     /// Returns an iterator over the layers present in this group in display order.
     /// ## Example
-    /// TODO
+    /// ```
+    /// use tiled::Layer;
+    /// # use tiled::Loader;
+    ///
+    /// # fn main() {
+    /// # let map = Loader::new()
+    /// #     .load_tmx_map("assets/tiled_group_layers.tmx")
+    /// #     .unwrap();
+    /// #
+    /// let nested_layers: Vec<Layer> = map
+    ///     .layers()
+    ///     .filter_map(|layer| match layer.layer_type() {
+    ///         tiled::LayerType::GroupLayer(layer) => Some(layer),
+    ///         _ => None,
+    ///     })
+    ///     .flat_map(|layer| layer.layers())
+    ///     .collect();
+    ///
+    /// dbg!(nested_layers);
+    /// # }
+    /// ```
     pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer<'map>> + 'map {
         let map: &'map crate::Map = self.map;
         self.data

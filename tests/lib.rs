@@ -419,27 +419,3 @@ fn test_group_layers() {
         layer_tile_3.properties.get("key")
     );
 }
-
-mod m {
-    use tiled::Loader;
-
-    fn main() {
-        struct Renderer;
-        impl Renderer {
-            fn render(&self, _: tiled::TileLayer) {}
-        }
-        let my_renderer = Renderer;
-        let map = Loader::new()
-            .load_tmx_map("assets/tiled_group_layers.tmx")
-            .unwrap();
-
-        let tile_layers = map.layers().filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::TileLayer(layer) => Some(layer),
-            _ => None,
-        });
-
-        for layer in tile_layers {
-            my_renderer.render(layer);
-        }
-    }
-}
