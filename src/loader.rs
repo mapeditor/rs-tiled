@@ -1,11 +1,11 @@
 use std::{fs::File, io::Read, path::Path};
 
-use crate::{FilesystemResourceCache, Map, ResourceCache, Result, Tileset};
+use crate::{DefaultResourceCache, Map, ResourceCache, Result, Tileset};
 
 /// A trait defining types that can load data from a [`ResourcePath`](crate::ResourcePath).
-/// 
+///
 /// This trait should be implemented if you wish to load data from a virtual filesystem.
-/// 
+///
 /// ## Example
 /// TODO: ResourceReader example
 pub trait ResourceReader {
@@ -43,7 +43,7 @@ impl ResourceReader for FilesystemResourceReader {
 ///
 /// Internally, it holds a [`ResourceCache`] that, as its name implies, caches intermediate loading
 /// artifacts, most notably map tilesets.
-/// 
+///
 /// It also contains a [`ResourceReader`] which is the object in charge of providing read handles
 /// to files via a [`ResourcePath`](crate::ResourcePath).
 ///
@@ -53,7 +53,7 @@ impl ResourceReader for FilesystemResourceReader {
 /// loading more than one object is required.
 #[derive(Debug, Clone)]
 pub struct Loader<
-    Cache: ResourceCache = FilesystemResourceCache,
+    Cache: ResourceCache = DefaultResourceCache,
     Reader: ResourceReader = FilesystemResourceReader,
 > {
     cache: Cache,
@@ -62,10 +62,10 @@ pub struct Loader<
 
 impl Loader {
     /// Creates a new loader, creating a default resource cache and reader
-    /// ([`FilesystemResourceCache`] & [`FilesystemResourceReader`] respectively) in the process.
+    /// ([`DefaultResourceCache`] & [`FilesystemResourceReader`] respectively) in the process.
     pub fn new() -> Self {
         Self {
-            cache: FilesystemResourceCache::new(),
+            cache: DefaultResourceCache::new(),
             reader: FilesystemResourceReader::new(),
         }
     }
@@ -135,7 +135,7 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
     ///
     /// Unless you specifically want to load a tileset, you won't need to call this function. If
     /// you are trying to load a map, simply use [`Loader::load_tmx_map`].
-    /// 
+    ///
     /// ## Note
     /// This function will **not** cache the tileset inside the internal [`ResourceCache`], since
     /// in this context it is not an intermediate object.
