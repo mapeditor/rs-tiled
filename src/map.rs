@@ -114,6 +114,31 @@ impl Map {
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
+    /// 
+    /// ## Example
+    /// ```
+    /// # use tiled::Loader;
+    /// # 
+    /// # fn main() {
+    /// # struct Renderer;
+    /// # impl Renderer {
+    /// #     fn render(&self, _: tiled::TileLayer) {}
+    /// # }
+    /// # let my_renderer = Renderer;
+    /// # let map = Loader::new()
+    /// #     .load_tmx_map("assets/tiled_group_layers.tmx")
+    /// #     .unwrap();
+    /// #
+    /// let tile_layers = map.layers().filter_map(|layer| match layer.layer_type() {
+    ///     tiled::LayerType::TileLayer(layer) => Some(layer),
+    ///     _ => None,
+    /// });
+    ///
+    /// for layer in tile_layers {
+    ///     my_renderer.render(layer);
+    /// }
+    /// # }
+    /// ```
     #[inline]
     pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
         self.layers.iter().map(move |layer| Layer::new(self, layer))
