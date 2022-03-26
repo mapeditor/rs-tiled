@@ -164,6 +164,7 @@ impl<'map> InfiniteTileLayer<'map> {
     /// If the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data
-            .get_tile_data(x, y).map(|data| LayerTile::new(self.map, data))
+            .get_tile_data(x, y)
+            .map(|data| LayerTile::new(self.map, data))
     }
 }

@@ -114,7 +114,9 @@ fn main() {
     loop {
         while let Some(event) = window.poll_event() {
             use sfml::window::Event;
-            if event == Event::Closed { return; }
+            if event == Event::Closed {
+                return;
+            }
         }
 
         let this_frame_time = std::time::Instant::now();
