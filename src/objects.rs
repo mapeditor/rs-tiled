@@ -105,8 +105,8 @@ impl ObjectData {
         let height = h.unwrap_or(0f32);
         let rotation = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
-        let name = n.unwrap_or_else(|| String::new());
-        let obj_type = t.unwrap_or_else(|| String::new());
+        let name = n.unwrap_or_else(String::new);
+        let obj_type = t.unwrap_or_else(String::new);
         let mut shape = None;
         let mut properties = HashMap::new();
 
@@ -161,7 +161,7 @@ impl ObjectData {
         let s = get_attrs!(
             attrs,
             required: [
-                ("points", points, |v| Some(v)),
+                ("points", points, Some),
             ],
             Error::MalformedAttributes("A polyline must have points".to_string())
         );
@@ -173,12 +173,12 @@ impl ObjectData {
         let s = get_attrs!(
             attrs,
             required: [
-                ("points", points, |v| Some(v)),
+                ("points", points, Some),
             ],
             Error::MalformedAttributes("A polygon must have points".to_string())
         );
         let points = ObjectData::parse_points(s)?;
-        Ok(ObjectShape::Polygon { points: points })
+        Ok(ObjectShape::Polygon { points })
     }
 
     fn parse_points(s: String) -> Result<Vec<(f32, f32)>> {

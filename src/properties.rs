@@ -21,7 +21,11 @@ impl FromStr for Color {
     type Err = ();
 
     fn from_str(s: &str) -> std::result::Result<Color, Self::Err> {
-        let s = if s.starts_with("#") { &s[1..] } else { s };
+        let s = if let Some(stripped) = s.strip_prefix('#') {
+            stripped
+        } else {
+            s
+        };
         match s.len() {
             6 => {
                 let r = u8::from_str_radix(&s[0..2], 16);
@@ -103,7 +107,7 @@ impl PropertyValue {
                 }),
             },
             "color" if value.len() > 1 => Color::from_str(&value)
-                .map(|color| PropertyValue::ColorValue(color))
+                .map(PropertyValue::ColorValue)
                 .map_err(|_| Error::InvalidPropertyValue {
                     description: "Couldn't parse color".to_string(),
                 }),
@@ -134,15 +138,15 @@ pub(crate) fn parse_properties(
             let ((t, v_attr), k) = get_attrs!(
                 attrs,
                 optionals: [
-                    ("type", property_type, |v| Some(v)),
-                    ("value", value, |v| Some(v)),
+                    ("type", property_type, Some),
+                    ("value", value, Some),
                 ],
                 required: [
-                    ("name", key, |v| Some(v)),
+                    ("name", key, Some),
                 ],
                 Error::MalformedAttributes("property must have a name and a value".to_string())
             );
-            let t = t.unwrap_or("string".into());
+            let t = t.unwrap_or_else(|| "string".to_owned());
 
             let v: String = match v_attr {
                 Some(val) => val,

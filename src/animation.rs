@@ -30,8 +30,8 @@ impl Frame {
             Error::MalformedAttributes("A frame must have tileid and duration".to_string())
         );
         Ok(Frame {
-            tile_id: tile_id,
-            duration: duration,
+            tile_id,
+            duration,
         })
     }
 }

@@ -164,7 +164,7 @@ impl Map {
                 ("infinite", infinite, |v:String| Some(v == "1")),
             ],
             required: [
-                ("version", version, |v| Some(v)),
+                ("version", version, Some),
                 ("orientation", orientation, |v:String| v.parse().ok()),
                 ("width", width, |v:String| v.parse().ok()),
                 ("height", height, |v:String| v.parse().ok()),

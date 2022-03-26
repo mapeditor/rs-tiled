@@ -134,7 +134,7 @@ impl Tileset {
 
     fn parse_xml_embedded(
         parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: &Vec<OwnedAttribute>,
+        attrs: &[OwnedAttribute],
         map_path: &Path,
     ) -> Result<EmbeddedParseResult> {
         let ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height)) = get_attrs!(
@@ -143,11 +143,11 @@ impl Tileset {
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
                 ("columns", columns, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
+                ("name", name, Some),
             ],
            required: [
                 ("tilecount", tilecount, |v:String| v.parse().ok()),
-                ("firstgid", first_gid, |v:String| v.parse().ok().map(|n| Gid(n))),
+                ("firstgid", first_gid, |v:String| v.parse().ok().map(Gid)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
             ],
@@ -176,14 +176,14 @@ impl Tileset {
     }
 
     fn parse_xml_reference(
-        attrs: &Vec<OwnedAttribute>,
+        attrs: &[OwnedAttribute],
         map_path: &Path,
     ) -> Result<EmbeddedParseResult> {
         let (first_gid, source) = get_attrs!(
             attrs,
             required: [
-                ("firstgid", first_gid, |v:String| v.parse().ok().map(|n| Gid(n))),
-                ("source", name, |v| Some(v)),
+                ("firstgid", first_gid, |v:String| v.parse().ok().map(Gid)),
+                ("source", name, Some),
             ],
             Error::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
         );
@@ -198,7 +198,7 @@ impl Tileset {
 
     pub(crate) fn parse_external_tileset(
         parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: &Vec<OwnedAttribute>,
+        attrs: &[OwnedAttribute],
         path: &Path,
     ) -> Result<Tileset> {
         let ((spacing, margin, columns, name), (tilecount, tile_width, tile_height)) = get_attrs!(
@@ -207,7 +207,7 @@ impl Tileset {
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
                 ("columns", columns, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
+                ("name", name, Some),
             ],
             required: [
                 ("tilecount", tilecount, |v:String| v.parse().ok()),
@@ -296,9 +296,11 @@ impl Tileset {
     ) -> Result<u32> {
         image
             .as_ref()
-            .ok_or(Error::MalformedAttributes(
-                "No <image> nor columns attribute in <tileset>".to_string(),
-            ))
-            .and_then(|image| Ok((image.width as u32 - margin + spacing) / (tile_width + spacing)))
+            .map(|image| (image.width as u32 - margin + spacing) / (tile_width + spacing))
+            .ok_or_else(|| {
+                Error::MalformedAttributes(
+                    "No <image> nor columns attribute in <tileset>".to_string(),
+                )
+            })
     }
 }

@@ -17,7 +17,7 @@ use tiled::{FiniteTileLayer, Loader, Map};
 use tilesheet::Tilesheet;
 
 /// A path to the map to display.
-const MAP_PATH: &'static str = "assets/tiled_base64_external.tmx";
+const MAP_PATH: &str = "assets/tiled_base64_external.tmx";
 
 /// A [Map] wrapper which also contains graphical information such as the tileset texture or the layer meshes.
 ///
@@ -85,8 +85,8 @@ impl Drawable for Level {
         target: &mut dyn RenderTarget,
         states: &sfml::graphics::RenderStates<'texture, 'shader, 'shader_texture>,
     ) {
-        let mut states = states.clone();
-        states.set_texture(Some(&self.tilesheet.texture()));
+        let mut states = *states;
+        states.set_texture(Some(self.tilesheet.texture()));
         for mesh in self.layers.iter() {
             target.draw_with_renderstates(mesh, &states);
         }
@@ -114,10 +114,7 @@ fn main() {
     loop {
         while let Some(event) = window.poll_event() {
             use sfml::window::Event;
-            match event {
-                Event::Closed => return,
-                _ => (),
-            }
+            if event == Event::Closed { return; }
         }
 
         let this_frame_time = std::time::Instant::now();
