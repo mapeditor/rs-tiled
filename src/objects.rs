@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use xml::attribute::OwnedAttribute;
 
@@ -7,7 +7,7 @@ use crate::{
     properties::{parse_properties, Properties},
     template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, ResourceCache,
+    LayerTile, LayerTileData, MapTilesetGid, ResourceCache, Tileset,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -43,8 +43,7 @@ impl ObjectData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
-        templates: &mut Vec<Template>,
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
         base_path: &Path,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData, TiledError> {
@@ -56,7 +55,7 @@ impl ObjectData {
             optionals: [
                 ("id", id, |v:String| v.parse().ok()),
                 ("gid", tile, |v:String| v.parse().ok()
-                                            .and_then(|bits| LayerTileData::from_bits(bits, tilesets?, for_template))),
+                                            .and_then(|bits| LayerTileData::from_bits(bits, tilesets?, for_tileset.as_ref().cloned()))),
                 ("x", x, |v:String| v.parse().ok()),
                 ("y", y, |v:String| v.parse().ok()),
                 ("name", name, |v:String| v.parse().ok()),
@@ -72,16 +71,15 @@ impl ObjectData {
         );
 
         // If the template attribute is there, we need to go fetch the template file
-        let template_id = if let Some(template) = template {
+        let template = if let Some(template) = template {
             let s: String = template;
             let parent_dir = base_path.parent().ok_or(TiledError::PathIsNotFile)?;
             let template_path = parent_dir.join(Path::new(&s));
 
-            let template_id =
-                Template::parse_and_append_template(&template_path, templates, cache)?;
+            let template = Template::parse_template(&template_path, cache)?;
 
             // The template sets the default values for the object
-            if let Some(obj) = &templates[template_id].object {
+            if let Some(obj) = &template.object {
                 x.get_or_insert(obj.x);
                 y.get_or_insert(obj.y);
                 v.get_or_insert(obj.visible);
@@ -91,11 +89,11 @@ impl ObjectData {
                 id.get_or_insert(obj.id);
                 n.get_or_insert(obj.name.clone());
                 t.get_or_insert(obj.obj_type.clone());
-                if let Some(templ_tile) = obj.tile {
+                if let Some(templ_tile) = obj.tile.clone() {
                     tile.get_or_insert(templ_tile);
                 }
             };
-            Some(template_id)
+            Some(template)
         } else {
             None
         };
@@ -142,8 +140,8 @@ impl ObjectData {
 
         // Possibly copy properties from the template into the object
         // Any that already exist in the object's map don't get copied over
-        if let Some(id) = template_id.as_ref() {
-            if let Some(obj) = &templates[*id].object {
+        if let Some(templ) = template {
+            if let Some(obj) = &templ.object {
                 for (k, v) in &obj.properties {
                     if !properties.contains_key(k) {
                         properties.insert(k.clone(), v.clone());

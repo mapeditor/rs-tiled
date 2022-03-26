@@ -1,32 +1,32 @@
-use std::{convert::TryInto, io::Read};
+use std::{convert::TryInto, io::Read, sync::Arc};
 
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, LayerTileData, MapTilesetGid, TiledError};
+use crate::{util::XmlEventResult, LayerTileData, MapTilesetGid, TiledError, Tileset};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,
     compression: Option<String>,
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
-    for_template: Option<usize>,
+    for_tileset: Option<Arc<Tileset>>,
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     match (encoding.as_deref(), compression.as_deref()) {
-        (Some("csv"), None) => decode_csv(parser, tilesets, for_template),
+        (Some("csv"), None) => decode_csv(parser, tilesets, for_tileset),
 
         (Some("base64"), None) => {
-            parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets, for_template))
+            parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets, for_tileset))
         }
         (Some("base64"), Some("zlib")) => parse_base64(parser)
             .and_then(|data| process_decoder(libflate::zlib::Decoder::new(&data[..])))
-            .map(|v| convert_to_tiles(&v, tilesets, for_template)),
+            .map(|v| convert_to_tiles(&v, tilesets, for_tileset)),
         (Some("base64"), Some("gzip")) => parse_base64(parser)
             .and_then(|data| process_decoder(libflate::gzip::Decoder::new(&data[..])))
-            .map(|v| convert_to_tiles(&v, tilesets, for_template)),
+            .map(|v| convert_to_tiles(&v, tilesets, for_tileset)),
         #[cfg(feature = "zstd")]
         (Some("base64"), Some("zstd")) => parse_base64(parser)
             .and_then(|data| process_decoder(zstd::stream::read::Decoder::with_buffer(&data[..])))
-            .map(|v| convert_to_tiles(&v, tilesets, for_template)),
+            .map(|v| convert_to_tiles(&v, tilesets, for_tileset)),
 
         _ => Err(TiledError::InvalidEncodingFormat {
             encoding,
@@ -63,7 +63,7 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>, Tiled
 fn decode_csv(
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
-    for_template: Option<usize>,
+    for_tileset: Option<Arc<Tileset>>,
 ) -> Result<Vec<Option<LayerTileData>>, TiledError> {
     while let Some(next) = parser.next() {
         match next.map_err(TiledError::XmlDecodingError)? {
@@ -71,7 +71,9 @@ fn decode_csv(
                 let tiles = s
                     .split(',')
                     .map(|v| v.trim().parse().unwrap())
-                    .map(|bits| LayerTileData::from_bits(bits, tilesets, for_template))
+                    .map(|bits| {
+                        LayerTileData::from_bits(bits, tilesets, for_tileset.as_ref().cloned())
+                    })
                     .collect();
                 return Ok(tiles);
             }
@@ -87,12 +89,12 @@ fn decode_csv(
 fn convert_to_tiles(
     data: &[u8],
     tilesets: &[MapTilesetGid],
-    for_template: Option<usize>,
+    for_tileset: Option<Arc<Tileset>>,
 ) -> Vec<Option<LayerTileData>> {
     data.chunks_exact(4)
         .map(|chunk| {
             let bits = u32::from_le_bytes(chunk.try_into().unwrap());
-            LayerTileData::from_bits(bits, tilesets, for_template)
+            LayerTileData::from_bits(bits, tilesets, for_tileset.as_ref().cloned())
         })
         .collect()
 }

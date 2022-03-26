@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use xml::attribute::OwnedAttribute;
 
@@ -18,16 +18,16 @@ pub use infinite::*;
 /// The location of the tileset this tile is in
 ///
 /// Tilesets can be located in either one of the map's tilesets, or a tileset specified by a template.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) enum TilesetLocation {
     /// Index into the Map's tileset list, guaranteed to be a valid index of the map tileset container
     Map(usize),
-    /// Index into the Map's template list
-    Template(usize),
+    /// Arc of the tileset itself if and only if this is location is from a template
+    Template(Arc<Tileset>),
 }
 
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct LayerTileData {
     /// A valid TilesetLocation that points to a tileset that **may or may not contain** this tile.
     tileset_location: TilesetLocation,
@@ -50,7 +50,7 @@ impl LayerTileData {
     pub(crate) fn from_bits(
         bits: u32,
         tilesets: &[MapTilesetGid],
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
     ) -> Option<Self> {
         let flags = bits & Self::ALL_FLIP_FLAGS;
         let gid = Gid(bits & !Self::ALL_FLIP_FLAGS);
@@ -65,9 +65,13 @@ impl LayerTileData {
             let id = gid.0 - tileset.first_gid.0;
 
             Some(Self {
-                tileset_location: match for_template {
+                tileset_location: match for_tileset {
                     None => TilesetLocation::Map(tileset_index),
-                    Some(index) => TilesetLocation::Template(index),
+                    Some(template_tileset) => {
+                        // If we have an override for the tileset, it must be the tileset we found from get_tileset_for_gid
+                        assert_eq!(tileset.tileset, template_tileset);
+                        TilesetLocation::Template(template_tileset)
+                    }
                 },
                 id,
                 flip_h,
@@ -90,7 +94,7 @@ impl TileLayerData {
         attrs: Vec<OwnedAttribute>,
         infinite: bool,
         tilesets: &[MapTilesetGid],
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
     ) -> Result<(Self, Properties), TiledError> {
         let ((), (width, height)) = get_attrs!(
             attrs,
@@ -107,9 +111,9 @@ impl TileLayerData {
         parse_tag!(parser, "layer", {
             "data" => |attrs| {
                 if infinite {
-                    result = Self::Infinite(InfiniteTileLayerData::new(parser, attrs, tilesets, for_template)?);
+                    result = Self::Infinite(InfiniteTileLayerData::new(parser, attrs, tilesets, for_tileset.as_ref().cloned())?);
                 } else {
-                    result = Self::Finite(FiniteTileLayerData::new(parser, attrs, width, height, tilesets, for_template)?);
+                    result = Self::Finite(FiniteTileLayerData::new(parser, attrs, width, height, tilesets, for_tileset.as_ref().cloned())?);
                 }
                 Ok(())
             },
@@ -132,10 +136,10 @@ impl<'map> LayerTile<'map> {
     }
     /// Get a reference to the layer tile's referenced tileset.
     pub fn get_tileset(&self) -> &'map Tileset {
-        match self.data.tileset_location {
+        match &self.data.tileset_location {
             // SAFETY: `tileset_index` is guaranteed to be valid
-            TilesetLocation::Map(n) => &self.map.tilesets()[n],
-            TilesetLocation::Template(t) => &self.map.templates()[t].tileset.as_ref().unwrap(),
+            TilesetLocation::Map(n) => &self.map.tilesets()[*n],
+            TilesetLocation::Template(t) => &t,
         }
     }
 

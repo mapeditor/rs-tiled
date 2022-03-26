@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, map_wrapper, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, TiledError,
+    LayerTile, LayerTileData, MapTilesetGid, TiledError, Tileset,
 };
 
 use super::util::parse_data_line;
@@ -31,7 +33,7 @@ impl FiniteTileLayerData {
         width: u32,
         height: u32,
         tilesets: &[MapTilesetGid],
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self, TiledError> {
         let ((e, c), ()) = get_attrs!(
             attrs,
@@ -43,7 +45,7 @@ impl FiniteTileLayerData {
             TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
         );
 
-        let tiles = parse_data_line(e, c, parser, tilesets, for_template)?;
+        let tiles = parse_data_line(e, c, parser, tilesets, for_tileset)?;
 
         Ok(Self {
             width,

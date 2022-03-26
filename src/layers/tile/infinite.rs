@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{floor_div, get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, TiledError,
+    LayerTile, LayerTileData, MapTilesetGid, TiledError, Tileset,
 };
 
 use super::util::parse_data_line;
@@ -25,7 +25,7 @@ impl InfiniteTileLayerData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tilesets: &[MapTilesetGid],
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self, TiledError> {
         let ((e, c), ()) = get_attrs!(
             attrs,
@@ -40,7 +40,7 @@ impl InfiniteTileLayerData {
         let mut chunks = HashMap::<(i32, i32), Chunk>::new();
         parse_tag!(parser, "data", {
             "chunk" => |attrs| {
-                let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets, for_template)?;
+                let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets, for_tileset.as_ref().cloned())?;
                 for x in chunk.x..chunk.x + chunk.width as i32 {
                     for y in chunk.y..chunk.y + chunk.height as i32 {
                         let chunk_pos = tile_to_chunk_pos(x, y);
@@ -49,7 +49,7 @@ impl InfiniteTileLayerData {
                         let internal_pos = (x - chunk.x, y - chunk.y);
                         let internal_index = (internal_pos.0 + internal_pos.1 * chunk.width as i32) as usize;
 
-                        chunks.entry(chunk_pos).or_insert_with(Chunk::new).tiles[chunk_index] = chunk.tiles[internal_index];
+                        chunks.entry(chunk_pos).or_insert_with(Chunk::new).tiles[chunk_index] = chunk.tiles[internal_index].clone();
                     }
                 }
                 Ok(())
@@ -93,8 +93,9 @@ impl Chunk {
     pub const TILE_COUNT: usize = Self::WIDTH as usize * Self::HEIGHT as usize;
 
     pub(crate) fn new() -> Self {
+        const INIT: Option<LayerTileData> = None;
         Self {
-            tiles: Box::new([None; Self::TILE_COUNT]),
+            tiles: Box::new([INIT; Self::TILE_COUNT]),
         }
     }
 }
@@ -119,7 +120,7 @@ impl InternalChunk {
         encoding: Option<String>,
         compression: Option<String>,
         tilesets: &[MapTilesetGid],
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self, TiledError> {
         let ((), (x, y, width, height)) = get_attrs!(
             attrs,
@@ -133,7 +134,7 @@ impl InternalChunk {
             TiledError::MalformedAttributes("chunk must have x, y, width & height attributes".to_string())
         );
 
-        let tiles = parse_data_line(encoding, compression, parser, tilesets, for_template)?;
+        let tiles = parse_data_line(encoding, compression, parser, tilesets, for_tileset)?;
 
         Ok(InternalChunk {
             x,

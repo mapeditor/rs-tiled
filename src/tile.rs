@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use xml::attribute::OwnedAttribute;
 
@@ -8,7 +8,6 @@ use crate::{
     image::Image,
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
-    template::Template,
     util::{get_attrs, parse_tag, XmlEventResult},
     ResourceCache, Tileset,
 };
@@ -76,8 +75,7 @@ impl TileData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
-        templates: &mut Vec<Template>,
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<(TileId, TileData), TiledError> {
         let ((tile_type, probability), id) = get_attrs!(
@@ -106,7 +104,7 @@ impl TileData {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, templates, for_template, path_relative_to, cache)?.0);
+                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, for_tileset.as_ref().cloned(), path_relative_to, cache)?.0);
                 Ok(())
             },
             "animation" => |_| {

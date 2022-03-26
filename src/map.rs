@@ -8,7 +8,7 @@ use crate::{
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
     util::{get_attrs, parse_tag, XmlEventResult},
-    EmbeddedParseResultType, Layer, ResourceCache, Template,
+    EmbeddedParseResultType, Layer, ResourceCache,
 };
 
 pub(crate) struct MapTilesetGid {
@@ -34,8 +34,6 @@ pub struct Map {
     tilesets: Vec<Arc<Tileset>>,
     /// The layers present in this map.
     layers: Vec<LayerData>,
-    /// All templates reachable by this map.
-    templates: Vec<Template>,
     /// The custom properties of this map.
     pub properties: Properties,
     /// The background color of this map, if any.
@@ -104,11 +102,6 @@ impl Map {
     /// Get a reference to the map's tilesets.
     pub fn tilesets(&self) -> &[Arc<Tileset>] {
         self.tilesets.as_ref()
-    }
-
-    /// Get a reference to the map's templates.
-    pub(crate) fn templates(&self) -> &[Template] {
-        self.templates.as_ref()
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
@@ -186,14 +179,14 @@ impl Map {
 
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
-                let res = Tileset::parse_xml_in_map(parser, attrs, map_path, &mut templates, None, cache)?;
+                let res = Tileset::parse_xml_in_map(parser, attrs, map_path, None, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let tileset = if let Some(ts) = cache.get_tileset(&tileset_path) {
                             ts
                         } else {
                             let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                            let tileset = Arc::new(Tileset::parse_with_template_list(file, &tileset_path, cache, &mut templates, None)?);
+                            let tileset = Arc::new(Tileset::parse_with_template_list(file, &tileset_path, cache, None)?);
                             cache.insert_tileset(tileset_path.clone(), tileset.clone());
                             tileset
                         };
@@ -278,7 +271,6 @@ impl Map {
             tile_width: tw,
             tile_height: th,
             tilesets,
-            templates,
             layers,
             properties,
             background_color: c,

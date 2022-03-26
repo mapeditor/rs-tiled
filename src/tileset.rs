@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use xml::attribute::OwnedAttribute;
 use xml::reader::XmlEvent;
@@ -9,7 +10,6 @@ use xml::EventReader;
 use crate::error::TiledError;
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
-use crate::template::Template;
 use crate::tile::Tile;
 use crate::{util::*, Gid, ResourceCache, TileData};
 
@@ -86,7 +86,7 @@ impl Tileset {
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
-        Tileset::parse_with_template_list(reader, path, cache, &mut vec![], None)
+        Tileset::parse_with_template_list(reader, path, cache, None)
     }
 
     /// Parse a tileset from a reader, but updates a list of templates
@@ -96,8 +96,7 @@ impl Tileset {
         reader: R,
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
-        templates: &mut Vec<Template>,
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self, TiledError> {
         let mut tileset_parser = EventReader::new(reader);
         loop {
@@ -112,8 +111,7 @@ impl Tileset {
                         &mut tileset_parser.into_iter(),
                         &attributes,
                         path.as_ref(),
-                        templates,
-                        for_template,
+                        for_tileset,
                         cache,
                     );
                 }
@@ -138,8 +136,7 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path, // Template or Map file
-        templates: &mut Vec<Template>,
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult, TiledError> {
         Tileset::parse_xml_embedded(parser, &attrs, map_path, templates, for_template, cache)
@@ -156,8 +153,7 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         map_path: &Path, // Template or Map file
-        templates: &mut Vec<Template>,
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult, TiledError> {
         let ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height)) = get_attrs!(
@@ -194,8 +190,7 @@ impl Tileset {
                 tile_height,
                 tile_width,
             },
-            templates,
-            for_template,
+            for_tileset,
             cache,
         )
         .map(|tileset| EmbeddedParseResult {
@@ -233,8 +228,7 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &Vec<OwnedAttribute>,
         path: &Path,
-        templates: &mut Vec<Template>,
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<Tileset, TiledError> {
         let ((spacing, margin, columns, name), (tilecount, tile_width, tile_height)) = get_attrs!(
@@ -267,8 +261,7 @@ impl Tileset {
                 tile_height,
                 tile_width,
             },
-            templates,
-            for_template,
+            for_tileset,
             cache,
         )
     }
@@ -276,8 +269,7 @@ impl Tileset {
     fn finish_parsing_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         prop: TilesetProperties,
-        templates: &mut Vec<Template>,
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<Tileset, TiledError> {
         let mut image = Option::None;

@@ -19,6 +19,6 @@ pub use layers::*;
 pub use map::*;
 pub use objects::*;
 pub use properties::*;
-pub(crate) use template::*;
+pub use template::*;
 pub use tile::*;
 pub use tileset::*;

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use crate::{
     error::TiledError,
@@ -6,7 +6,7 @@ use crate::{
     properties::{parse_properties, Properties},
     template::Template,
     util::*,
-    Layer, Map, MapTilesetGid, ResourceCache,
+    Layer, Map, MapTilesetGid, ResourceCache, Tileset,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -21,7 +21,7 @@ impl GroupLayerData {
         map_path: &Path,
         tilesets: &[MapTilesetGid],
         templates: &mut Vec<Template>,
-        for_template: Option<usize>,
+        for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<(Self, Properties), TiledError> {
         let mut properties = HashMap::new();
@@ -36,7 +36,7 @@ impl GroupLayerData {
                     map_path,
                     tilesets,
                     templates,
-                    for_template,
+                    for_tileset.as_ref().cloned(),
                     cache
                 )?);
                 Ok(())
@@ -50,7 +50,7 @@ impl GroupLayerData {
                     map_path,
                     tilesets,
                     templates,
-                    for_template,
+                    for_tileset.as_ref().cloned(),
                     cache
                 )?);
                 Ok(())
@@ -64,7 +64,7 @@ impl GroupLayerData {
                     map_path,
                     tilesets,
                     templates,
-                    for_template,
+                    for_tileset.as_ref().cloned(),
                     cache
                 )?);
                 Ok(())
@@ -78,7 +78,7 @@ impl GroupLayerData {
                     map_path,
                     tilesets,
                     templates,
-                    for_template,
+                    for_tileset.as_ref().cloned(),
                     cache
                 )?);
                 Ok(())
