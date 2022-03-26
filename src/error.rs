@@ -24,7 +24,7 @@ pub enum Error {
         /// The path to the file that was unable to be opened.
         path: PathBuf,
         /// The error that occured when trying to open the file.
-        err: Box<dyn std::error::Error>,
+        err: Box<dyn std::error::Error + Send + Sync + 'static>,
     },
     /// There was an invalid tile in the map parsed.
     InvalidTileFound,
