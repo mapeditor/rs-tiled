@@ -4,11 +4,7 @@ use xml::{reader::XmlEvent, EventReader};
 
 use crate::{Error, Map, ResourceCache, Result};
 
-pub fn parse_map(
-    reader: impl Read,
-    path: &Path,
-    cache: &mut impl ResourceCache,
-) -> Result<Map> {
+pub fn parse_map(reader: impl Read, path: &Path, cache: &mut impl ResourceCache) -> Result<Map> {
     let mut parser = EventReader::new(reader);
     loop {
         match parser.next().map_err(Error::XmlDecodingError)? {
@@ -16,12 +12,7 @@ pub fn parse_map(
                 name, attributes, ..
             } => {
                 if name.local_name == "map" {
-                    return Map::parse_xml(
-                        &mut parser.into_iter(),
-                        attributes,
-                        path,
-                        cache,
-                    );
+                    return Map::parse_xml(&mut parser.into_iter(), attributes, path, cache);
                 }
             }
             XmlEvent::EndDocument => {

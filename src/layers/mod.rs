@@ -2,12 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{
-    error::{Result},
-    properties::Properties,
-    util::*,
-    Color, Map, MapTilesetGid,
-};
+use crate::{error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid};
 
 mod image;
 pub use image::*;

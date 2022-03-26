@@ -114,11 +114,11 @@ impl Map {
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
-    /// 
+    ///
     /// ## Example
     /// ```
     /// # use tiled::Loader;
-    /// # 
+    /// #
     /// # fn main() {
     /// # struct Renderer;
     /// # impl Renderer {
