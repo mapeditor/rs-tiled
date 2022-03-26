@@ -63,5 +63,5 @@ jobs:
         override: true
         components: clippy
 
-    - name: Run cargo clippy --all-targets --package tiled -- -D warnings
-      run: cargo clippy --all-targets --package tiled -- -D warnings
+    - name: Run cargo clippy --all-targets --package tiled
+      run: cargo clippy --all-targets --package tiled
