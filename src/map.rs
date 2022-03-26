@@ -175,7 +175,6 @@ impl Map {
         let mut layers = Vec::new();
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
-        let mut templates = Vec::new();
 
         parse_tag!(parser, "map", {
             "tileset" => |attrs| {
@@ -206,7 +205,6 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
-                    &mut templates,
                     None,
                     cache
                 )?);
@@ -220,7 +218,6 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
-                    &mut templates,
                     None,
                     cache
                 )?);
@@ -234,7 +231,6 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
-                    &mut templates,
                     None,
                     cache
                 )?);
@@ -248,7 +244,6 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
-                    &mut templates,
                     None,
                     cache
                 )?);

@@ -105,9 +105,6 @@ impl Template {
             },
         });
 
-        Ok(Arc::new(Template {
-            tileset,
-            object,
-        }))
+        Ok(Arc::new(Template { tileset, object }))
     }
 }

@@ -4,7 +4,6 @@ use crate::{
     error::TiledError,
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Properties},
-    template::Template,
     util::*,
     Layer, Map, MapTilesetGid, ResourceCache, Tileset,
 };
@@ -20,7 +19,6 @@ impl GroupLayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
-        templates: &mut Vec<Template>,
         for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<(Self, Properties), TiledError> {
@@ -35,7 +33,6 @@ impl GroupLayerData {
                     infinite,
                     map_path,
                     tilesets,
-                    templates,
                     for_tileset.as_ref().cloned(),
                     cache
                 )?);
@@ -49,7 +46,6 @@ impl GroupLayerData {
                     infinite,
                     map_path,
                     tilesets,
-                    templates,
                     for_tileset.as_ref().cloned(),
                     cache
                 )?);
@@ -63,7 +59,6 @@ impl GroupLayerData {
                     infinite,
                     map_path,
                     tilesets,
-                    templates,
                     for_tileset.as_ref().cloned(),
                     cache
                 )?);
@@ -77,7 +72,6 @@ impl GroupLayerData {
                     infinite,
                     map_path,
                     tilesets,
-                    templates,
                     for_tileset.as_ref().cloned(),
                     cache
                 )?);

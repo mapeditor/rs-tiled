@@ -3,8 +3,8 @@ use std::{path::Path, sync::Arc};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::TiledError, properties::Properties, template::Template, util::*, Color, Map,
-    MapTilesetGid, ResourceCache, Tileset,
+    error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid, ResourceCache,
+    Tileset,
 };
 
 mod image;
@@ -55,7 +55,6 @@ impl LayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
-        templates: &mut Vec<Template>,
         for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<Self, TiledError> {
@@ -103,15 +102,8 @@ impl LayerData {
                 (LayerDataType::ImageLayer(ty), properties)
             }
             LayerTag::GroupLayer => {
-                let (ty, properties) = GroupLayerData::new(
-                    parser,
-                    infinite,
-                    map_path,
-                    tilesets,
-                    templates,
-                    for_tileset,
-                    cache,
-                )?;
+                let (ty, properties) =
+                    GroupLayerData::new(parser, infinite, map_path, tilesets, for_tileset, cache)?;
                 (LayerDataType::GroupLayer(ty), properties)
             }
         };
