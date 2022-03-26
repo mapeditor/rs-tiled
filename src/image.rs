@@ -39,7 +39,7 @@ pub struct Image {
     ///     .unwrap()
     ///     .layer_type()
     /// {
-    ///     LayerType::ImageLayer(layer) => layer,
+    ///     LayerType::Image(layer) => layer,
     ///     _ => panic!(),
     /// };
     ///

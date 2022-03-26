@@ -30,7 +30,7 @@ impl GroupLayerData {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::TileLayer,
+                    LayerTag::Tile,
                     infinite,
                     map_path,
                     &tilesets,
@@ -41,7 +41,7 @@ impl GroupLayerData {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::ImageLayer,
+                    LayerTag::Image,
                     infinite,
                     map_path,
                     &tilesets,
@@ -52,7 +52,7 @@ impl GroupLayerData {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::ObjectLayer,
+                    LayerTag::Object,
                     infinite,
                     map_path,
                     &tilesets,
@@ -63,7 +63,7 @@ impl GroupLayerData {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::GroupLayer,
+                    LayerTag::Group,
                     infinite,
                     map_path,
                     &tilesets,

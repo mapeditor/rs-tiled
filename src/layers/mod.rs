@@ -2,12 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{
-    error::{Result},
-    properties::Properties,
-    util::*,
-    Color, Map, MapTilesetGid,
-};
+use crate::{error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid};
 
 mod image;
 pub use image::*;
@@ -20,18 +15,18 @@ pub use group::*;
 
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) enum LayerDataType {
-    TileLayer(TileLayerData),
-    ObjectLayer(ObjectLayerData),
-    ImageLayer(ImageLayerData),
-    GroupLayer(GroupLayerData),
+    Tile(TileLayerData),
+    Object(ObjectLayerData),
+    Image(ImageLayerData),
+    Group(GroupLayerData),
 }
 
 #[derive(Clone, Copy)]
 pub(crate) enum LayerTag {
-    TileLayer,
-    ObjectLayer,
-    ImageLayer,
-    GroupLayer,
+    Tile,
+    Object,
+    Image,
+    Group,
 }
 
 /// The raw data of a [`Layer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -91,21 +86,21 @@ impl LayerData {
         );
 
         let (ty, properties) = match tag {
-            LayerTag::TileLayer => {
+            LayerTag::Tile => {
                 let (ty, properties) = TileLayerData::new(parser, attrs, infinite, tilesets)?;
-                (LayerDataType::TileLayer(ty), properties)
+                (LayerDataType::Tile(ty), properties)
             }
-            LayerTag::ObjectLayer => {
+            LayerTag::Object => {
                 let (ty, properties) = ObjectLayerData::new(parser, attrs, Some(tilesets))?;
-                (LayerDataType::ObjectLayer(ty), properties)
+                (LayerDataType::Object(ty), properties)
             }
-            LayerTag::ImageLayer => {
+            LayerTag::Image => {
                 let (ty, properties) = ImageLayerData::new(parser, map_path)?;
-                (LayerDataType::ImageLayer(ty), properties)
+                (LayerDataType::Image(ty), properties)
             }
-            LayerTag::GroupLayer => {
+            LayerTag::Group => {
                 let (ty, properties) = GroupLayerData::new(parser, infinite, map_path, tilesets)?;
-                (LayerDataType::GroupLayer(ty), properties)
+                (LayerDataType::Group(ty), properties)
             }
         };
 
@@ -142,22 +137,22 @@ impl<'map> Layer<'map> {
 #[derive(Debug)]
 pub enum LayerType<'map> {
     /// A tile layer; Also see [`TileLayer`].
-    TileLayer(TileLayer<'map>),
+    Tile(TileLayer<'map>),
     /// An object layer (also called object group); Also see [`ObjectLayer`].
-    ObjectLayer(ObjectLayer<'map>),
+    Object(ObjectLayer<'map>),
     /// An image layer; Also see [`ImageLayer`].
-    ImageLayer(ImageLayer<'map>),
+    Image(ImageLayer<'map>),
     /// A group layer; Also see [`GroupLayer`].
-    GroupLayer(GroupLayer<'map>),
+    Group(GroupLayer<'map>),
 }
 
 impl<'map> LayerType<'map> {
     fn new(map: &'map Map, data: &'map LayerDataType) -> Self {
         match data {
-            LayerDataType::TileLayer(data) => Self::TileLayer(TileLayer::new(map, data)),
-            LayerDataType::ObjectLayer(data) => Self::ObjectLayer(ObjectLayer::new(map, data)),
-            LayerDataType::ImageLayer(data) => Self::ImageLayer(ImageLayer::new(map, data)),
-            LayerDataType::GroupLayer(data) => Self::GroupLayer(GroupLayer::new(map, data)),
+            LayerDataType::Tile(data) => Self::Tile(TileLayer::new(map, data)),
+            LayerDataType::Object(data) => Self::Object(ObjectLayer::new(map, data)),
+            LayerDataType::Image(data) => Self::Image(ImageLayer::new(map, data)),
+            LayerDataType::Group(data) => Self::Group(GroupLayer::new(map, data)),
         }
     }
 }

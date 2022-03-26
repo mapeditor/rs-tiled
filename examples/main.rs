@@ -13,7 +13,7 @@ fn main() {
         print!("Layer \"{}\":\n\t", layer.name);
 
         match layer.layer_type() {
-            tiled::LayerType::TileLayer(layer) => match layer {
+            tiled::LayerType::Tile(layer) => match layer {
                 tiled::TileLayer::Finite(data) => println!(
                     "Finite tile layer with width = {} and height = {}; ID of tile @ (0,0): {}",
                     data.width(),
@@ -29,10 +29,10 @@ fn main() {
                     )
                 }
             },
-            tiled::LayerType::ObjectLayer(layer) => {
+            tiled::LayerType::Object(layer) => {
                 println!("Object layer with {} objects", layer.objects().len())
             }
-            tiled::LayerType::ImageLayer(layer) => {
+            tiled::LayerType::Image(layer) => {
                 println!(
                     "Image layer with {}",
                     match &layer.image {
@@ -42,7 +42,7 @@ fn main() {
                     }
                 )
             }
-            tiled::LayerType::GroupLayer(layer) => {
+            tiled::LayerType::Group(layer) => {
                 println!("Group layer with {} sublayers", layer.layers().len())
             }
         }

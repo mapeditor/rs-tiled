@@ -6,7 +6,7 @@ use tiled::{
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
     match layer.layer_type() {
-        LayerType::TileLayer(x) => x,
+        LayerType::Tile(x) => x,
         _ => panic!("Not a tile layer"),
     }
 }
@@ -20,14 +20,14 @@ fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
 
 fn as_object_layer<'map>(layer: Layer<'map>) -> ObjectLayer<'map> {
     match layer.layer_type() {
-        LayerType::ObjectLayer(x) => x,
+        LayerType::Object(x) => x,
         _ => panic!("Not an object layer"),
     }
 }
 
 fn as_group_layer<'map>(layer: Layer<'map>) -> GroupLayer<'map> {
     match layer.layer_type() {
-        LayerType::GroupLayer(x) => x,
+        LayerType::Group(x) => x,
         _ => panic!("Not a group layer"),
     }
 }
@@ -161,7 +161,7 @@ fn test_image_layers() {
         .unwrap();
     assert_eq!(r.layers().len(), 2);
     let mut image_layers = r.layers().map(|layer| {
-        if let LayerType::ImageLayer(img) = layer.layer_type() {
+        if let LayerType::Image(img) = layer.layer_type() {
             (img, layer)
         } else {
             panic!("Found layer that isn't an image layer")
