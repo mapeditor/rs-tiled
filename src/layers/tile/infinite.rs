@@ -30,8 +30,8 @@ impl InfiniteTileLayerData {
         let (e, c) = get_attrs!(
             attrs,
             optionals: [
-                ("encoding", encoding, |v| Some(v)),
-                ("compression", compression, |v| Some(v)),
+                ("encoding", encoding, Some),
+                ("compression", compression, Some),
             ]
         );
 
@@ -165,6 +165,6 @@ impl<'map> InfiniteTileLayer<'map> {
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data
             .get_tile_data(x, y)
-            .and_then(|data| Some(LayerTile::new(self.map, data)))
+            .map(|data| LayerTile::new(self.map, data))
     }
 }

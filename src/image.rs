@@ -89,7 +89,7 @@ impl Image {
                 ("trans", trans, |v:String| v.parse().ok()),
             ],
             required: [
-                ("source", source, |v| Some(v)),
+                ("source", source, Some),
                 ("width", width, |v:String| v.parse().ok()),
                 ("height", height, |v:String| v.parse().ok()),
             ],

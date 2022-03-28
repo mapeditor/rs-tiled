@@ -2,12 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{
-    error::{Result},
-    properties::Properties,
-    util::*,
-    Color, Map, MapTilesetGid,
-};
+use crate::{error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid};
 
 mod image;
 pub use image::*;
@@ -85,7 +80,7 @@ impl LayerData {
                 ("offsety", offset_y, |v:String| v.parse().ok()),
                 ("parallaxx", parallax_x, |v:String| v.parse().ok()),
                 ("parallaxy", parallax_y, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
+                ("name", name, Some),
                 ("id", id, |v:String| v.parse().ok()),
             ]
         );

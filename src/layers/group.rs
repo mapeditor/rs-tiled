@@ -33,7 +33,7 @@ impl GroupLayerData {
                     LayerTag::TileLayer,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
                 )?);
                 Ok(())
             },
@@ -44,7 +44,7 @@ impl GroupLayerData {
                     LayerTag::ImageLayer,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
                 )?);
                 Ok(())
             },
@@ -55,7 +55,7 @@ impl GroupLayerData {
                     LayerTag::ObjectLayer,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
                 )?);
                 Ok(())
             },
@@ -66,7 +66,7 @@ impl GroupLayerData {
                     LayerTag::GroupLayer,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
                 )?);
                 Ok(())
             },

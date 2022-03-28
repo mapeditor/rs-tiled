@@ -127,7 +127,7 @@ fn test_infinite_tileset() {
         assert_eq!(inf.get_tile(5, 36).unwrap().id(), 73);
         assert_eq!(inf.get_tile(15, 15).unwrap().id(), 22);
     } else {
-        assert!(false, "It is wrongly recognised as a finite map");
+        panic!("It is wrongly recognised as a finite map");
     }
     if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(0).unwrap()) {
         // NW corner
@@ -150,7 +150,7 @@ fn test_infinite_tileset() {
         assert!(inf.get_tile(32, 47).is_none());
         assert!(inf.get_tile(31, 48).is_none());
     } else {
-        assert!(false, "It is wrongly recognised as a finite map");
+        panic!("It is wrongly recognised as a finite map");
     }
 }
 
@@ -183,7 +183,7 @@ fn test_image_layers() {
             .0
             .image
             .as_ref()
-            .expect(&format!("{}'s image shouldn't be None", second.1.name));
+            .unwrap_or_else(|| panic!("{}'s image shouldn't be None", second.1.name));
         assert_eq!(image.source, PathBuf::from("assets/tilesheet.png"));
         assert_eq!(image.width, 448);
         assert_eq!(image.height, 192);

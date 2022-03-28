@@ -68,7 +68,7 @@ impl<'map> ObjectLayer<'map> {
 
     /// Returns an iterator over the objects present in this layer, in the order they were declared
     /// in in the TMX file.
-    /// 
+    ///
     /// ## Example
     /// ```
     /// # use tiled::Loader;
@@ -78,7 +78,7 @@ impl<'map> ObjectLayer<'map> {
     /// # let map = Loader::new()
     /// #     .load_tmx_map("assets/tiled_group_layers.tmx")
     /// #     .unwrap();
-    /// # 
+    /// #
     /// let spawnpoints: Vec<Object> = map
     ///     .layers()
     ///     .filter_map(|layer| match layer.layer_type() {
