@@ -2,7 +2,6 @@ mod map;
 
 use ggez::{event::{self, MouseButton}, Context, GameResult, graphics::{self, DrawParam}, input, mint::Point2};
 use map::MapHandler;
-use tiled::{Map, FilesystemResourceCache};
 
 fn main() -> GameResult {
     // init ggez
@@ -35,8 +34,8 @@ impl Game {
         graphics::set_default_filter(ctx, graphics::FilterMode::Nearest);
 
         // load the map
-        let mut cache = FilesystemResourceCache::new();
-        let map = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
+        let mut loader = tiled::Loader::new();
+        let map = loader.load_tmx_map("assets/tiled_base64_external.tmx").unwrap();
 
         let map_handler = MapHandler::new(map, ctx).unwrap();
 
