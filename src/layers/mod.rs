@@ -2,9 +2,7 @@ use std::path::Path;
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{
-    error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid, MapWrapper,
-};
+use crate::{error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid};
 
 mod image;
 pub use image::*;
@@ -31,22 +29,39 @@ pub(crate) enum LayerTag {
     GroupLayer,
 }
 
+/// The raw data of a [`Layer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(Clone, PartialEq, Debug)]
 pub struct LayerData {
+    /// The layer's name, set arbitrarily by the user.
     pub name: String,
-    pub id: u32,
+    id: u32,
+    /// Whether this layer should be visible or not.
     pub visible: bool,
+    /// The layer's x offset (in pixels).
     pub offset_x: f32,
+    /// The layer's y offset (in pixels).
     pub offset_y: f32,
+    /// The layer's x parallax factor.
     pub parallax_x: f32,
+    /// The layer's y parallax factor.
     pub parallax_y: f32,
+    /// The layer's opacity.
     pub opacity: f32,
+    /// The layer's tint color.
     pub tint_color: Option<Color>,
+    /// The layer's custom properties, as arbitrarily set by the user.
     pub properties: Properties,
-    pub(crate) layer_type: LayerDataType,
+    layer_type: LayerDataType,
 }
 
 impl LayerData {
+    /// Get the layer's id. Unique within the parent map. Valid only if greater than 0. Defaults to
+    /// 0 if the layer was loaded from a file that didn't have the attribute present.
+    #[inline]
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
@@ -54,11 +69,8 @@ impl LayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
-    ) -> Result<Self, TiledError> {
-        let (
-            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id),
-            (),
-        ) = get_attrs!(
+    ) -> Result<Self> {
+        let (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id) = get_attrs!(
             attrs,
             optionals: [
                 ("opacity", opacity, |v:String| v.parse().ok()),
@@ -68,13 +80,9 @@ impl LayerData {
                 ("offsety", offset_y, |v:String| v.parse().ok()),
                 ("parallaxx", parallax_x, |v:String| v.parse().ok()),
                 ("parallaxy", parallax_y, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
+                ("name", name, Some),
                 ("id", id, |v:String| v.parse().ok()),
-            ],
-            required: [
-            ],
-
-            TiledError::MalformedAttributes("layer parsing error, no id attribute found".to_string())
+            ]
         );
 
         let (ty, properties) = match tag {
@@ -112,19 +120,29 @@ impl LayerData {
     }
 }
 
-pub type Layer<'map> = MapWrapper<'map, LayerData>;
+map_wrapper!(
+    #[doc = "A generic map layer, accessed via [`Map::layers()`]."]
+    Layer => LayerData
+);
 
 impl<'map> Layer<'map> {
     /// Get the layer's type.
+    #[inline]
     pub fn layer_type(&self) -> LayerType<'map> {
-        LayerType::new(self.map(), &self.data().layer_type)
+        LayerType::new(self.map, &self.data.layer_type)
     }
 }
 
+/// Represents some kind of map layer.
+#[derive(Debug)]
 pub enum LayerType<'map> {
+    /// A tile layer; Also see [`TileLayer`].
     TileLayer(TileLayer<'map>),
+    /// An object layer (also called object group); Also see [`ObjectLayer`].
     ObjectLayer(ObjectLayer<'map>),
+    /// An image layer; Also see [`ImageLayer`].
     ImageLayer(ImageLayer<'map>),
+    /// A group layer; Also see [`GroupLayer`].
     GroupLayer(GroupLayer<'map>),
 }
 

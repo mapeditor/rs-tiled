@@ -13,11 +13,11 @@ use sfml::{
     window::{ContextSettings, Key, Style},
 };
 use std::{env, path::PathBuf, time::Duration};
-use tiled::{FilesystemResourceCache, FiniteTileLayer, Map};
+use tiled::{FiniteTileLayer, Loader, Map};
 use tilesheet::Tilesheet;
 
 /// A path to the map to display.
-const MAP_PATH: &'static str = "assets/tiled_base64_external.tmx";
+const MAP_PATH: &str = "assets/tiled_base64_external.tmx";
 
 /// A [Map] wrapper which also contains graphical information such as the tileset texture or the layer meshes.
 ///
@@ -65,16 +65,12 @@ impl Level {
 
 /// Generates a vertex mesh from a tile layer for rendering.
 fn generate_mesh(layer: &FiniteTileLayer, tilesheet: &Tilesheet) -> QuadMesh {
-    let (width, height) = (
-        layer.data().width() as usize,
-        layer.data().height() as usize,
-    );
+    let (width, height) = (layer.width() as usize, layer.height() as usize);
     let mut mesh = QuadMesh::with_capacity(width * height);
     for x in 0..width as i32 {
         for y in 0..height as i32 {
-            // TODO: `FiniteTileLayer` for getting tiles directly from finite tile layers?
             if let Some(tile) = layer.get_tile(x, y) {
-                let uv = tilesheet.tile_rect(tile.id);
+                let uv = tilesheet.tile_rect(tile.id());
                 mesh.add_quad(Vector2f::new(x as f32, y as f32), 1., uv);
             }
         }
@@ -89,8 +85,8 @@ impl Drawable for Level {
         target: &mut dyn RenderTarget,
         states: &sfml::graphics::RenderStates<'texture, 'shader, 'shader_texture>,
     ) {
-        let mut states = states.clone();
-        states.set_texture(Some(&self.tilesheet.texture()));
+        let mut states = *states;
+        states.set_texture(Some(self.tilesheet.texture()));
         for mesh in self.layers.iter() {
             target.draw_with_renderstates(mesh, &states);
         }
@@ -98,17 +94,17 @@ impl Drawable for Level {
 }
 
 fn main() {
-    let mut cache = FilesystemResourceCache::new();
+    let mut loader = Loader::new();
 
-    let map = Map::parse_file(
-        PathBuf::from(
-            env::var("CARGO_MANIFEST_DIR")
-                .expect("To run the example, use `cargo run --example sfml`"),
+    let map = loader
+        .load_tmx_map(
+            PathBuf::from(
+                env::var("CARGO_MANIFEST_DIR")
+                    .expect("To run the example, use `cargo run --example sfml`"),
+            )
+            .join(MAP_PATH),
         )
-        .join(MAP_PATH),
-        &mut cache,
-    )
-    .unwrap();
+        .unwrap();
     let level = Level::from_map(map);
 
     let mut window = create_window();
@@ -118,9 +114,8 @@ fn main() {
     loop {
         while let Some(event) = window.poll_event() {
             use sfml::window::Event;
-            match event {
-                Event::Closed => return,
-                _ => (),
+            if event == Event::Closed {
+                return;
             }
         }
 

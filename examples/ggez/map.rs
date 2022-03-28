@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use ggez::{graphics::{self, spritebatch::SpriteBatch, DrawParam}, Context, GameResult};
-use tiled::{TileLayer, Tileset};
+use tiled::TileLayer;
 
 pub struct MapHandler {
     map: tiled::Map,
@@ -84,8 +84,8 @@ impl MapHandler {
         for l in self.map.layers() {
             match &l.layer_type() {
                 tiled::LayerType::ObjectLayer(ol) => {
-                    for o in &ol.data().objects {
-                        Self::draw_object(o, ctx, draw_param.clone())?;
+                    for o in ol.objects() {
+                        Self::draw_object(&o, ctx, draw_param.clone())?;
                     }
                 }
                 _ => {},
@@ -100,7 +100,7 @@ impl MapHandler {
 
         let tile_layers = self.map.layers().filter_map(|l| {
             match l.layer_type() {
-                tiled::LayerType::TileLayer(tl) => Some((l.data(), tl)),
+                tiled::LayerType::TileLayer(tl) => Some((l, tl)),
                 _ => None,
             }
         });
@@ -119,8 +119,8 @@ impl MapHandler {
                         }
                     }
                     
-                    let width = d.data().width();
-                    let height = d.data().height();
+                    let width = d.width();
+                    let height = d.height();
 
                     let secs_since_start = ggez::timer::time_since_start(ctx).as_secs_f32();
 
@@ -129,7 +129,7 @@ impl MapHandler {
                         for y in 0..height as i32 {
                             if let Some(tile) = d.get_tile(x, y) {
                                 // get tile's rectangle in the tileset texture
-                                let ts = tile.tileset;
+                                let ts = tile.get_tileset();
                                 if let Some((batch, ts_size)) = ts_sizes_and_batches.get_mut(&ts.name) {
                                     let mut dx = x as f32 * self.map.tile_width as f32 + parallax_pan.0 * (layer.parallax_x - 1.0);
                                     let mut dy = y as f32 * self.map.tile_height as f32 + parallax_pan.1 * (layer.parallax_y - 1.0);
@@ -142,7 +142,7 @@ impl MapHandler {
                                     batch.add(
                                         DrawParam::default()
                                             .src(
-                                                get_tile_rect(tile.tileset, tile.id, ts_size.0, ts_size.1)
+                                                get_tile_rect(ts, tile.id(), ts_size.0, ts_size.1)
                                             )
                                             .dest([
                                                 dx,

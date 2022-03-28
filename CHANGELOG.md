@@ -5,45 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.2]
 ### Added
-- `Tileset::source` for obtaining where the tileset actually came from.
-- `Tileset::columns`.
-- `Color::alpha`.
-- `Layer::id`, `Layer::width`, `Layer::height`, `Layer::parallax_x` and `Layer::parallax_y`.
-- Support for 'object'-type properties.
+- `TileLayer::width` & `TileLayer::height` for ergonomic access of width/height.
+- `FiniteTileLayerData::get_tile_data`, `InfiniteTileLayerData::get_tile_data`.
+
+## [0.10.1]
+### Added
+- `Loader` type for loading map and tileset files without having to necessarily mention the cache
+to use.
+
+### Deprecated
+- `Map::parse_reader`: Use `Loader::parse_tmx_map_from` instead.
+- `Map::parse_file`: Use `Loader::load_tmx_map` instead.
+- `Tileset::parse_reader`: Use `Loader::load_tsx_tileset` instead.
+
+### Fixed
+- Fix message when a tileset is missing the `tilecount` attribute (#194).
+
+## [0.10.0]
+As this release changes practically the entire interface of the crate, it is recommended that you
+check out the [examples](https://github.com/mapeditor/rs-tiled/tree/master/examples) instead of the
+changelog if you are migrating from an older version.
+
+### Added
+- Documentation to all crate items.
+- Group layer support.
+- Layer ID parsing.
+- Object property parsing.
 - Support for multiline string properties.
-- Documentation for map members.
-- Tests for `tiled_base64_zstandard.tmx`.
-- `.gitattributes` for line ending consistency.
-- MIT license file.
+- SFML example.
+- `Result` type.
+- `Layer::parallax_x` & `Layer::parallax_y`.
+- `Tileset::columns`.
+- Missing derive and inline attributes.
+- Tests for `zstd`-compressed files.
+
 
 ### Changed
 - **Set the minimum Tiled TMX version to 0.13.**
+- Refactor crate interface and internals to be more consistent, sound and easy to use.
+- Hide GIDs as internal data; Provide a cleaner API.
+- Contain all layer types in an enum as opposed to different containers.
+- Rename `TiledError` to `Error`.
 - `Tileset::tilecount` is no longer optional.
-- `Layer` has been renamed to `TileLayer`, and the original `Layer` structure is now used
-  for common data from all layer types.
-- `Map` now has a single `layers` member which contains layers of all types in order.
-- Layer members that are common between types (i.e. `id`, `name`, `visible`, `opacity`, `offset_x`,
-  `offset_y` and `properties`) have been moved into `Layer`.
-- `ObjectGroup` has been renamed to `ObjectLayer`.
-- `parse_file`, `parse` -> `Map::parse_file` with optional path.
-- `parse_with_path` -> `Map::parse_reader`.
-- `parse_tileset` -> `Tileset::parse`.
-- All mentions of `Colour` have been changed to `Color` for consistency with the Tiled dataformat.
-- `Layer::tiles` changed from `Vec<Vec<LayerTile>>` to `Vec<LayerTile>`.
-- Tile now has `image` instead of `images`. ([Issue comment](https://github.com/mapeditor/rs-tiled/issues/103#issuecomment-940773123))
-- Tileset now has `image` instead of `images`.
-- `Image::source` is now a `PathBuf` instead of a `String`.
-- Functions that took in `&Path` now take `impl AsRef<Path>`.
-- Refactored internals.
-- Fixed library warnings.
-- Bumped `zstd` to `0.9`.
-- Fixed markdown formatting in the `CONTRIBUTORS` file.
+- Improve errors.
+- Use `Color` type in color properties.
+- Rename "colour"-related appareances to "color".
+- Use `impl AsRef<Path>` where appropiate.
+- Change `Tileset::image` to be a single image at most instead of a vector.
+- Update README.
+- Make layer and tileset names optional, defaulting to an empty string.
+- Reorganize crate internally.
+- Update `zstd` to `0.9`.
 
 ### Fixed
-- `Color` parsing.
+- Color parsing issues: #148
 
+### Removed
+- `Layer::layer_index`, as all layer types are now stored in a common container.
+- `Map::source`, since it is known from where the load function was called.
 
 ## [0.9.5] - 2021-05-02
 ### Added

@@ -1,9 +1,11 @@
-use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, sync::Arc, str::FromStr};
+//! Structures related to Tiled maps.
 
-use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
+use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr, sync::Arc};
+
+use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::TiledError,
+    error::{Error, Result},
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
@@ -19,16 +21,32 @@ pub(crate) struct MapTilesetGid {
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Map {
-    /// The TMX format version this map was saved to.
-    pub version: String,
+    version: String,
+    /// The way tiles are laid out in the map.
     pub orientation: Orientation,
     /// Width of the map, in tiles.
+    ///
+    /// ## Note
+    /// There is no guarantee that this value will be the same as the width from its tile layers.
     pub width: u32,
     /// Height of the map, in tiles.
+    ///
+    /// ## Note
+    /// There is no guarantee that this value will be the same as the height from its tile layers.
     pub height: u32,
     /// Tile width, in pixels.
+    ///
+    /// ## Note
+    /// This value along with [`Self::tile_height`] determine the general size of the map, and
+    /// individual tiles may have different sizes. As such, there is no guarantee that this value
+    /// will be the same as the one from the tilesets the map is using.
     pub tile_width: u32,
     /// Tile height, in pixels.
+    ///
+    /// ## Note
+    /// This value along with [`Self::tile_width`] determine the general size of the map, and
+    /// individual tiles may have different sizes. As such, there is no guarantee that this value
+    /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
     /// The tilesets present on this map.
     tilesets: Vec<Arc<Tileset>>,
@@ -38,7 +56,7 @@ pub struct Map {
     pub properties: Properties,
     /// The background color of this map, if any.
     pub background_color: Option<Color>,
-    pub infinite: bool,
+    infinite: bool,
 }
 
 impl Map {
@@ -52,61 +70,78 @@ impl Map {
     /// the library won't read from the filesystem if it is not required to do so.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
+    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tmx_map_from` instead")]
     pub fn parse_reader<R: Read>(
         reader: R,
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
-    ) -> Result<Self, TiledError> {
-        let mut parser = EventReader::new(reader);
-        loop {
-            match parser.next().map_err(TiledError::XmlDecodingError)? {
-                XmlEvent::StartElement {
-                    name, attributes, ..
-                } => {
-                    if name.local_name == "map" {
-                        return Self::parse_xml(
-                            &mut parser.into_iter(),
-                            attributes,
-                            path.as_ref(),
-                            cache,
-                        );
-                    }
-                }
-                XmlEvent::EndDocument => {
-                    return Err(TiledError::PrematureEnd(
-                        "Document ended before map was parsed".to_string(),
-                    ))
-                }
-                _ => {}
-            }
-        }
+    ) -> Result<Self> {
+        crate::parse::xml::parse_map(reader, path.as_ref(), cache)
     }
 
     /// Parse a file hopefully containing a Tiled map and try to parse it.  All external
     /// files will be loaded relative to the path given.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
-    pub fn parse_file(
-        path: impl AsRef<Path>,
-        cache: &mut impl ResourceCache,
-    ) -> Result<Self, TiledError> {
-        let reader = File::open(path.as_ref()).map_err(|err| TiledError::CouldNotOpenFile {
+    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tmx_map` instead")]
+    pub fn parse_file(path: impl AsRef<Path>, cache: &mut impl ResourceCache) -> Result<Self> {
+        let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
             path: path.as_ref().to_owned(),
             err,
         })?;
-        Self::parse_reader(reader, path.as_ref(), cache)
+        crate::parse::xml::parse_map(reader, path.as_ref(), cache)
+    }
+
+    /// The TMX format version this map was saved to. Equivalent to the map file's `version`
+    /// attribute.
+    pub fn version(&self) -> &str {
+        self.version.as_ref()
+    }
+
+    /// Whether this map is infinite. An infinite map has no fixed size and can grow in all
+    /// directions. Its layer data is stored in chunks. This value determines whether the map's
+    /// tile layers are [`FiniteTileLayer`](crate::FiniteTileLayer)s or [`crate::InfiniteTileLayer`](crate::InfiniteTileLayer)s.
+    pub fn infinite(&self) -> bool {
+        self.infinite
     }
 }
 
 impl Map {
     /// Get a reference to the map's tilesets.
+    #[inline]
     pub fn tilesets(&self) -> &[Arc<Tileset>] {
         self.tilesets.as_ref()
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
-    pub fn layers(&self) -> MapLayerIter {
-        MapLayerIter::new(self)
+    ///
+    /// ## Example
+    /// ```
+    /// # use tiled::Loader;
+    /// #
+    /// # fn main() {
+    /// # struct Renderer;
+    /// # impl Renderer {
+    /// #     fn render(&self, _: tiled::TileLayer) {}
+    /// # }
+    /// # let my_renderer = Renderer;
+    /// # let map = Loader::new()
+    /// #     .load_tmx_map("assets/tiled_group_layers.tmx")
+    /// #     .unwrap();
+    /// #
+    /// let tile_layers = map.layers().filter_map(|layer| match layer.layer_type() {
+    ///     tiled::LayerType::TileLayer(layer) => Some(layer),
+    ///     _ => None,
+    /// });
+    ///
+    /// for layer in tile_layers {
+    ///     my_renderer.render(layer);
+    /// }
+    /// # }
+    /// ```
+    #[inline]
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
+        self.layers.iter().map(move |layer| Layer::new(self, layer))
     }
 
     /// Returns the layer that has the specified index, if it exists.
@@ -115,41 +150,13 @@ impl Map {
     }
 }
 
-/// An iterator that iterates over all the layers in a map, obtained via [`Map::layers`].
-pub struct MapLayerIter<'map> {
-    map: &'map Map,
-    index: usize,
-}
-
-impl<'map> MapLayerIter<'map> {
-    fn new(map: &'map Map) -> Self {
-        Self { map, index: 0 }
-    }
-}
-
-impl<'map> Iterator for MapLayerIter<'map> {
-    type Item = Layer<'map>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let layer_data = self.map.layers.get(self.index)?;
-        self.index += 1;
-        Some(Layer::new(self.map, layer_data))
-    }
-}
-
-impl<'map> ExactSizeIterator for MapLayerIter<'map> {
-    fn len(&self) -> usize {
-        self.map.layers.len() - self.index
-    }
-}
-
 impl Map {
-    fn parse_xml(
+    pub(crate) fn parse_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
         cache: &mut impl ResourceCache,
-    ) -> Result<Map, TiledError> {
+    ) -> Result<Map> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [
@@ -157,14 +164,14 @@ impl Map {
                 ("infinite", infinite, |v:String| Some(v == "1")),
             ],
             required: [
-                ("version", version, |v| Some(v)),
+                ("version", version, Some),
                 ("orientation", orientation, |v:String| v.parse().ok()),
                 ("width", width, |v:String| v.parse().ok()),
                 ("height", height, |v:String| v.parse().ok()),
                 ("tilewidth", tile_width, |v:String| v.parse().ok()),
                 ("tileheight", tile_height, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("map must have a version, width and height with correct types".to_string())
+            Error::MalformedAttributes("map must have version, width, height, tilewidth, tileheight and orientation with correct types".to_string())
         );
 
         let infinite = infinite.unwrap_or(false);
@@ -181,8 +188,8 @@ impl Map {
                 let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
-                        let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || Tileset::new_external(file, Some(&tileset_path)))?;
+                        let file = File::open(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err })?;
+                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || crate::parse::xml::parse_tileset(file, &tileset_path))?;
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
@@ -262,6 +269,7 @@ impl Map {
 
 /// Represents the way tiles are laid out in a map.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[allow(missing_docs)]
 pub enum Orientation {
     Orthogonal,
     Isometric,
@@ -272,7 +280,7 @@ pub enum Orientation {
 impl FromStr for Orientation {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
             "isometric" => Ok(Orientation::Isometric),
@@ -311,33 +319,4 @@ impl Gid {
     /// The GID representing an empty tile in the map.
     #[allow(dead_code)]
     pub const EMPTY: Gid = Gid(0);
-}
-
-/// A wrapper over a naive datatype that holds a reference to the parent map as well as the type's data.
-#[derive(Clone, PartialEq, Debug)]
-pub struct MapWrapper<'map, DataT>
-where
-    DataT: Clone + PartialEq + std::fmt::Debug,
-{
-    map: &'map Map,
-    data: &'map DataT,
-}
-
-impl<'map, DataT> MapWrapper<'map, DataT>
-where
-    DataT: Clone + PartialEq + std::fmt::Debug,
-{
-    pub(crate) fn new(map: &'map Map, data: &'map DataT) -> Self {
-        Self { map, data }
-    }
-
-    /// Get the wrapper's data.
-    pub fn data(&self) -> &'map DataT {
-        self.data
-    }
-
-    /// Get the wrapper's map.
-    pub fn map(&self) -> &'map Map {
-        self.map
-    }
 }
