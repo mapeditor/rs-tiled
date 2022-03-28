@@ -148,9 +148,19 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
         &self.cache
     }
 
+    /// Returns a mutable reference to the loader's internal [`ResourceCache`].
+    pub fn cache_mut(&mut self) -> &mut Cache {
+        &mut self.cache
+    }
+
     /// Returns a reference to the loader's internal [`ResourceReader`].
     pub fn reader(&self) -> &Reader {
         &self.reader
+    }
+
+    /// Returns a mutable reference to the loader's internal [`ResourceReader`].
+    pub fn reader_mut(&mut self) -> &mut Reader {
+        &mut self.reader
     }
 
     /// Consumes the loader and returns its internal [`ResourceCache`] and [`ResourceReader`].
