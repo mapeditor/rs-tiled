@@ -14,7 +14,7 @@ pub trait ResourceReader {
     type Resource: Read;
     /// The type that is returned if [`read_from()`](Self::read_from()) fails. For example, for
     /// [`FilesystemResourceReader`], this is defined as [`std::io::Error`].
-    type Error: std::error::Error + 'static;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     /// Try to return a reader object from a path into the resources filesystem.
     fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error>;
