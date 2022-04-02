@@ -55,7 +55,7 @@ impl MapHandler {
         self.map.tile_height
     }
 
-    pub fn get_bounds(&self) -> graphics::Rect {
+    pub fn bounds(&self) -> graphics::Rect {
         graphics::Rect::new(0.0, 0.0, (self.height() * self.tile_height()) as f32, (self.height() * self.tile_height()) as f32)
     }
 
@@ -67,25 +67,23 @@ impl MapHandler {
     pub fn draw(&mut self, ctx: &mut Context, draw_param: DrawParam, parallax_pan: (f32, f32)) -> GameResult {
 
         // could be cached for more performance
-        let layer_batches: Vec<Vec<SpriteBatch>> = self.generate_map_render(ctx, parallax_pan);
+        let layer_batches: HashMap<u32, Vec<SpriteBatch>> = self.generate_map_render(ctx, parallax_pan);
 
-        // draw tile layers
-
-        // for each layer
-        for layer in &layer_batches {
-            // for each tileset in the layer
-            for batch in layer {
-                graphics::draw(ctx, batch, draw_param)?;
-            }
-        }
-
-        // draw objects
+        // draw layers
 
         for l in self.map.layers() {
             match &l.layer_type() {
                 tiled::LayerType::ObjectLayer(ol) => {
                     for o in ol.objects() {
                         Self::draw_object(&o, ctx, draw_param.clone())?;
+                    }
+                }
+                tiled::LayerType::TileLayer(_tl) => {
+                    let batches = layer_batches.get(&l.id()).unwrap();
+
+                    // each tileset in the layer gets a different batch
+                    for batch in batches {
+                        graphics::draw(ctx, batch, draw_param)?;
                     }
                 }
                 _ => {},
@@ -95,8 +93,9 @@ impl MapHandler {
         Ok(())
     }
 
-    fn generate_map_render(&mut self, ctx: &Context, parallax_pan: (f32, f32)) -> Vec<Vec<SpriteBatch>> {
-        let mut layer_batches: Vec<Vec<SpriteBatch>> = Vec::new();
+    /// Generates a set of `SpriteBatch`es for each tile layer in the map.
+    fn generate_map_render(&mut self, ctx: &Context, parallax_pan: (f32, f32)) -> HashMap<u32, Vec<SpriteBatch>> {
+        let mut layer_batches: HashMap<u32, Vec<SpriteBatch>> = HashMap::new();
 
         let tile_layers = self.map.layers().filter_map(|l| {
             match l.layer_type() {
@@ -160,7 +159,7 @@ impl MapHandler {
                         }
                     }
 
-                    layer_batches.push(ts_sizes_and_batches.into_values().map(|sb| sb.0).collect());
+                    layer_batches.insert(layer.id(), ts_sizes_and_batches.into_values().map(|sb| sb.0).collect());
                 }
                 TileLayer::Infinite(_) => {
                     unimplemented!()
@@ -225,6 +224,7 @@ impl MapHandler {
         Ok(())
     }
 }
+
 fn get_tile_rect(
     tileset: &tiled::Tileset,
     id: u32,

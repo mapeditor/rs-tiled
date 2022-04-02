@@ -57,41 +57,9 @@ impl event::EventHandler<ggez::GameError> for Game {
         let bg_color: ggez::graphics::Color = self.map.background_color().unwrap_or([0.1, 0.2, 0.3, 1.0].into());
         graphics::clear(ctx, bg_color);
 
-        // draw map tiles + objects
+        self.draw_map(ctx)?;
 
-        let (window_width, window_height) = graphics::size(ctx);
-
-        let draw_param = DrawParam::default()
-            .dest([
-                self.pan.0 + window_width / 2.0 - (self.map.width() * self.map.tile_width()) as f32 / 2.0, 
-                self.pan.1 + window_height / 2.0 - (self.map.height() * self.map.tile_height()) as f32 / 2.0
-                ])
-            .scale([self.scale, self.scale]);
-
-        self.map.draw(ctx, draw_param, self.pan)?;
-
-        // draw map bounds
-
-        let rect = self.map.get_bounds();
-        let r1 =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::stroke(2.0 / self.scale), rect, graphics::Color::from_rgb_u32(0x888888))?;
-        graphics::draw(ctx, &r1, draw_param)?;
-
-        // draw fps
-
-        let fps = ggez::timer::fps(ctx);
-        let text = graphics::Text::new(format!("{:.0} fps", fps));
-
-        graphics::draw(
-            ctx,
-            &text,
-            DrawParam::default()
-                .dest([window_width - text.width(ctx) - 40.0, 10.0])
-                .scale([1.25, 1.25])
-                .color(graphics::Color::WHITE),
-        )?;
-
-        // present
+        self.draw_fps(ctx)?;
 
         graphics::present(ctx)?;
 
@@ -126,5 +94,50 @@ impl event::EventHandler<ggez::GameError> for Game {
         let pos_y = mouse_y - window_height / 2.0 + (self.map.height() * self.map.tile_height()) as f32 / 2.0;
         self.pan.0 = (self.pan.0 - pos_x) / old_scale * self.scale + pos_x;
         self.pan.1 = (self.pan.1 - pos_y) / old_scale * self.scale + pos_y;
+    }
+}
+
+impl Game {
+    fn draw_map(&mut self, ctx: &mut Context) -> GameResult {
+
+        // draw tiles + objects
+
+        let (window_width, window_height) = graphics::size(ctx);
+
+        let draw_param = DrawParam::default()
+            .dest([
+                self.pan.0 + window_width / 2.0 - (self.map.width() * self.map.tile_width()) as f32 / 2.0, 
+                self.pan.1 + window_height / 2.0 - (self.map.height() * self.map.tile_height()) as f32 / 2.0
+                ])
+            .scale([self.scale, self.scale]);
+
+        self.map.draw(ctx, draw_param, self.pan)?;
+
+        // draw bounds
+
+        let rect = self.map.bounds();
+        let r1 =
+            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::stroke(2.0 / self.scale), rect, graphics::Color::from_rgb_u32(0x888888))?;
+        graphics::draw(ctx, &r1, draw_param)?;
+
+        Ok(())
+    }
+
+    fn draw_fps(&self, ctx: &mut Context) -> GameResult {
+        let fps = ggez::timer::fps(ctx);
+        let text = graphics::Text::new(format!("{:.0} fps", fps));
+
+        let (window_width, _window_height) = graphics::size(ctx);
+
+        graphics::draw(
+            ctx,
+            &text,
+            DrawParam::default()
+                .dest([window_width - text.width(ctx) - 40.0, 10.0])
+                .scale([1.25, 1.25])
+                .color(graphics::Color::WHITE),
+        )?;
+
+        Ok(())
     }
 }
