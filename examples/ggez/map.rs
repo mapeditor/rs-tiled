@@ -1,6 +1,9 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use ggez::{graphics::{self, spritebatch::SpriteBatch, DrawParam}, Context, GameResult};
+use ggez::{
+    graphics::{self, spritebatch::SpriteBatch, DrawParam},
+    Context, GameResult,
+};
 use tiled::TileLayer;
 
 pub struct MapHandler {
@@ -21,15 +24,12 @@ impl MapHandler {
                 let mut pb = PathBuf::new();
                 pb.push("/");
                 pb.push(image.source.clone());
-                
+
                 // load the image
                 let mut img = graphics::Image::new(ctx, pb)?;
                 img.set_filter(graphics::FilterMode::Nearest);
 
-                tileset_image_cache.insert(
-                    ts.name.clone(),
-                    img,
-                );
+                tileset_image_cache.insert(ts.name.clone(), img);
             }
         }
 
@@ -58,11 +58,17 @@ impl MapHandler {
     }
 
     pub fn bounds(&self) -> graphics::Rect {
-        graphics::Rect::new(0.0, 0.0, (self.height() * self.tile_height()) as f32, (self.height() * self.tile_height()) as f32)
+        graphics::Rect::new(
+            0.0,
+            0.0,
+            (self.height() * self.tile_height()) as f32,
+            (self.height() * self.tile_height()) as f32,
+        )
     }
 
     pub fn background_color(&self) -> Option<graphics::Color> {
-        self.map.background_color
+        self.map
+            .background_color
             .map(|c| ggez::graphics::Color::from_rgba(c.red, c.green, c.blue, c.alpha))
     }
 
@@ -72,8 +78,12 @@ impl MapHandler {
         self.batch_cache = None;
     }
 
-    pub fn draw(&mut self, ctx: &mut Context, draw_param: DrawParam, parallax_pan: (f32, f32)) -> GameResult {
-
+    pub fn draw(
+        &mut self,
+        ctx: &mut Context,
+        draw_param: DrawParam,
+        parallax_pan: (f32, f32),
+    ) -> GameResult {
         // update batch cache if needed
 
         if self.example_animate {
@@ -105,7 +115,7 @@ impl MapHandler {
                         graphics::draw(ctx, batch, draw_param)?;
                     }
                 }
-                _ => {},
+                _ => {}
             }
         }
 
@@ -113,14 +123,16 @@ impl MapHandler {
     }
 
     /// Generates a set of `SpriteBatch`es for each tile layer in the map.
-    fn generate_map_render(&self, ctx: &Context, parallax_pan: (f32, f32)) -> HashMap<u32, Vec<SpriteBatch>> {
+    fn generate_map_render(
+        &self,
+        ctx: &Context,
+        parallax_pan: (f32, f32),
+    ) -> HashMap<u32, Vec<SpriteBatch>> {
         let mut layer_batches: HashMap<u32, Vec<SpriteBatch>> = HashMap::new();
 
-        let tile_layers = self.map.layers().filter_map(|l| {
-            match l.layer_type() {
-                tiled::LayerType::TileLayer(tl) => Some((l, tl)),
-                _ => None,
-            }
+        let tile_layers = self.map.layers().filter_map(|l| match l.layer_type() {
+            tiled::LayerType::TileLayer(tl) => Some((l, tl)),
+            _ => None,
         });
 
         for (i, (layer, tl)) in tile_layers.enumerate() {
@@ -133,10 +145,11 @@ impl MapHandler {
                         if let Some(img) = self.tileset_image_cache.get(&ts.name) {
                             // img.clone() here is cheap (see docs for `ggez::graphics::Image`)
                             let batch = SpriteBatch::new(img.clone());
-                            ts_sizes_and_batches.insert(ts.name.clone(), (batch, (img.width(), img.height())));
+                            ts_sizes_and_batches
+                                .insert(ts.name.clone(), (batch, (img.width(), img.height())));
                         }
                     }
-                    
+
                     let width = d.width();
                     let height = d.height();
 
@@ -148,24 +161,29 @@ impl MapHandler {
                             if let Some(tile) = d.get_tile(x, y) {
                                 // get tile's rectangle in the tileset texture
                                 let ts = tile.get_tileset();
-                                if let Some((batch, ts_size)) = ts_sizes_and_batches.get_mut(&ts.name) {
-                                    let mut dx = x as f32 * self.map.tile_width as f32 + parallax_pan.0 * (layer.parallax_x - 1.0);
-                                    let mut dy = y as f32 * self.map.tile_height as f32 + parallax_pan.1 * (layer.parallax_y - 1.0);
+                                if let Some((batch, ts_size)) =
+                                    ts_sizes_and_batches.get_mut(&ts.name)
+                                {
+                                    let mut dx = x as f32 * self.map.tile_width as f32
+                                        + parallax_pan.0 * (layer.parallax_x - 1.0);
+                                    let mut dy = y as f32 * self.map.tile_height as f32
+                                        + parallax_pan.1 * (layer.parallax_y - 1.0);
 
                                     if self.example_animate {
-                                        dx += (secs_since_start - x as f32 * 0.3 + i as f32 * 0.25).sin() * 20.0;
-                                        dy += (secs_since_start * 1.25 + y as f32 * 0.3 + i as f32 * 0.25).cos() * 20.0;
+                                        dx += (secs_since_start - x as f32 * 0.3 + i as f32 * 0.25)
+                                            .sin()
+                                            * 20.0;
+                                        dy += (secs_since_start * 1.25
+                                            + y as f32 * 0.3
+                                            + i as f32 * 0.25)
+                                            .cos()
+                                            * 20.0;
                                     }
 
                                     batch.add(
                                         DrawParam::default()
-                                            .src(
-                                                get_tile_rect(ts, tile.id(), ts_size.0, ts_size.1)
-                                            )
-                                            .dest([
-                                                dx,
-                                                dy,
-                                            ])
+                                            .src(get_tile_rect(ts, tile.id(), ts_size.0, ts_size.1))
+                                            .dest([dx, dy])
                                             .color(ggez::graphics::Color::from_rgba(
                                                 0xFF,
                                                 0xFF,
@@ -178,7 +196,10 @@ impl MapHandler {
                         }
                     }
 
-                    layer_batches.insert(layer.id(), ts_sizes_and_batches.into_values().map(|sb| sb.0).collect());
+                    layer_batches.insert(
+                        layer.id(),
+                        ts_sizes_and_batches.into_values().map(|sb| sb.0).collect(),
+                    );
                 }
                 TileLayer::Infinite(_) => {
                     unimplemented!()
@@ -188,55 +209,74 @@ impl MapHandler {
 
         layer_batches
     }
-    
-    fn draw_object(object: &tiled::ObjectData, ctx: &mut Context, draw_param: DrawParam) -> GameResult {
+
+    fn draw_object(
+        object: &tiled::ObjectData,
+        ctx: &mut Context,
+        draw_param: DrawParam,
+    ) -> GameResult {
         match &object.shape {
             tiled::ObjectShape::Rect { width, height } => {
                 let bounds = graphics::Rect::new(object.x, object.y, *width, *height);
-                let shape =
-                    graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::stroke(2.0), bounds, graphics::Color::CYAN)?;
+                let shape = graphics::Mesh::new_rectangle(
+                    ctx,
+                    graphics::DrawMode::stroke(2.0),
+                    bounds,
+                    graphics::Color::CYAN,
+                )?;
                 graphics::draw(ctx, &shape, draw_param)?;
-            },
+            }
             tiled::ObjectShape::Ellipse { width, height } => {
                 let shape = graphics::Mesh::new_ellipse(
-                    ctx, 
-                    graphics::DrawMode::stroke(2.0), 
-                    [object.x + width / 2.0, object.y + height / 2.0], 
-                    *width / 2.0, 
-                    *height / 2.0, 
-                    0.5, 
-                    graphics::Color::CYAN
+                    ctx,
+                    graphics::DrawMode::stroke(2.0),
+                    [object.x + width / 2.0, object.y + height / 2.0],
+                    *width / 2.0,
+                    *height / 2.0,
+                    0.5,
+                    graphics::Color::CYAN,
                 )?;
                 graphics::draw(ctx, &shape, draw_param)?;
-            },
+            }
             tiled::ObjectShape::Polyline { points } => {
-                let points: Vec<_> = points.iter().map(|p| [p.0 + object.x, p.1 + object.y]).collect();
+                let points: Vec<_> = points
+                    .iter()
+                    .map(|p| [p.0 + object.x, p.1 + object.y])
+                    .collect();
                 let shape = graphics::Mesh::new_polyline(
-                    ctx, 
-                    graphics::DrawMode::stroke(2.0), 
-                    &points,
-                    graphics::Color::CYAN
-                )?;
-                graphics::draw(ctx, &shape, draw_param)?;
-            },
-            tiled::ObjectShape::Polygon { points } => {
-                let points: Vec<_> = points.iter().map(|p| [p.0 + object.x, p.1 + object.y]).collect();
-                let shape = graphics::Mesh::new_polyline(
-                    ctx, 
+                    ctx,
                     graphics::DrawMode::stroke(2.0),
                     &points,
-                    graphics::Color::CYAN
+                    graphics::Color::CYAN,
                 )?;
                 graphics::draw(ctx, &shape, draw_param)?;
-            },
+            }
+            tiled::ObjectShape::Polygon { points } => {
+                let points: Vec<_> = points
+                    .iter()
+                    .map(|p| [p.0 + object.x, p.1 + object.y])
+                    .collect();
+                let shape = graphics::Mesh::new_polyline(
+                    ctx,
+                    graphics::DrawMode::stroke(2.0),
+                    &points,
+                    graphics::Color::CYAN,
+                )?;
+                graphics::draw(ctx, &shape, draw_param)?;
+            }
             tiled::ObjectShape::Point(_, _) => {
                 // exercise for the reader
-            },
+            }
         }
 
         if !object.name.is_empty() {
             let text = graphics::Text::new(object.name.clone());
-            graphics::queue_text(ctx, &text, [object.x, object.y], Some(graphics::Color::YELLOW));
+            graphics::queue_text(
+                ctx,
+                &text,
+                [object.x, object.y],
+                Some(graphics::Color::YELLOW),
+            );
             graphics::draw_queued_text(ctx, draw_param, None, graphics::FilterMode::Nearest)?;
         }
 

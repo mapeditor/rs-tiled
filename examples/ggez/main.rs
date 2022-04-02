@@ -1,18 +1,23 @@
 mod map;
 
-use ggez::{event::{self, MouseButton}, Context, GameResult, graphics::{self, DrawParam}, input, mint::Point2};
+use ggez::{
+    event::{self, MouseButton},
+    graphics::{self, DrawParam},
+    input,
+    mint::Point2,
+    Context, GameResult,
+};
 use map::MapHandler;
 
 fn main() -> GameResult {
     // init ggez
     let cb = ggez::ContextBuilder::new("rs-tiled + ggez", "rs-tiled")
-        .window_setup(ggez::conf::WindowSetup::default()
-            .title("rs-tiled + ggez example")
-            .vsync(false)
+        .window_setup(
+            ggez::conf::WindowSetup::default()
+                .title("rs-tiled + ggez example")
+                .vsync(false),
         )
-        .window_mode(ggez::conf::WindowMode::default()
-            .dimensions(1000.0, 800.0)
-        )
+        .window_mode(ggez::conf::WindowMode::default().dimensions(1000.0, 800.0))
         // add repo root to ggez filesystem (our example map looks for `assets/tilesheet.png`)
         .add_resource_path(std::env::var("CARGO_MANIFEST_DIR").unwrap());
 
@@ -35,7 +40,9 @@ impl Game {
 
         // load the map
         let mut loader = tiled::Loader::new();
-        let map = loader.load_tmx_map("assets/tiled_base64_external.tmx").unwrap();
+        let map = loader
+            .load_tmx_map("assets/tiled_base64_external.tmx")
+            .unwrap();
 
         let map_handler = MapHandler::new(map, ctx).unwrap();
 
@@ -54,7 +61,10 @@ impl event::EventHandler<ggez::GameError> for Game {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // fill background color
-        let bg_color: ggez::graphics::Color = self.map.background_color().unwrap_or([0.1, 0.2, 0.3, 1.0].into());
+        let bg_color: ggez::graphics::Color = self
+            .map
+            .background_color()
+            .unwrap_or([0.1, 0.2, 0.3, 1.0].into());
         graphics::clear(ctx, bg_color);
 
         self.draw_map(ctx)?;
@@ -66,7 +76,13 @@ impl event::EventHandler<ggez::GameError> for Game {
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: event::MouseButton, _x: f32, _y: f32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: event::MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
         // right click toggles demo animation effect
         if button == MouseButton::Right {
             self.map.example_animate = !self.map.example_animate;
@@ -76,7 +92,9 @@ impl event::EventHandler<ggez::GameError> for Game {
 
     fn mouse_motion_event(&mut self, ctx: &mut Context, _x: f32, _y: f32, dx: f32, dy: f32) {
         // left or middle click + drag pans the map around
-        if input::mouse::button_pressed(ctx, event::MouseButton::Left) || input::mouse::button_pressed(ctx, event::MouseButton::Middle) {
+        if input::mouse::button_pressed(ctx, event::MouseButton::Left)
+            || input::mouse::button_pressed(ctx, event::MouseButton::Middle)
+        {
             self.pan.0 += dx;
             self.pan.1 += dy;
 
@@ -92,10 +110,13 @@ impl event::EventHandler<ggez::GameError> for Game {
         self.scale *= 1.0 + y as f32 * 0.1;
 
         // zoom to mouse cursor
-        let Point2 { x: mouse_x, y: mouse_y } = input::mouse::position(ctx);
+        let Point2 {
+            x: mouse_x,
+            y: mouse_y,
+        } = input::mouse::position(ctx);
         self.pan.0 = (self.pan.0 - mouse_x) / old_scale * self.scale + mouse_x;
         self.pan.1 = (self.pan.1 - mouse_y) / old_scale * self.scale + mouse_y;
-        
+
         // need to invalidate for parallax to work
         self.map.invalidate_batch_cache();
     }
@@ -103,7 +124,6 @@ impl event::EventHandler<ggez::GameError> for Game {
 
 impl Game {
     fn draw_map(&mut self, ctx: &mut Context) -> GameResult {
-
         // draw tiles + objects
 
         let draw_param = DrawParam::default()
@@ -115,8 +135,12 @@ impl Game {
         // draw bounds
 
         let rect = self.map.bounds();
-        let r1 =
-            graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::stroke(2.0 / self.scale), rect, graphics::Color::from_rgb_u32(0x888888))?;
+        let r1 = graphics::Mesh::new_rectangle(
+            ctx,
+            graphics::DrawMode::stroke(2.0 / self.scale),
+            rect,
+            graphics::Color::from_rgb_u32(0x888888),
+        )?;
         graphics::draw(ctx, &r1, draw_param)?;
 
         Ok(())
