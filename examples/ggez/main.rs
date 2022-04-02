@@ -70,6 +70,7 @@ impl event::EventHandler<ggez::GameError> for Game {
         // right click toggles demo animation effect
         if button == MouseButton::Right {
             self.map.example_animate = !self.map.example_animate;
+            self.map.invalidate_batch_cache();
         }
     }
 
@@ -78,6 +79,9 @@ impl event::EventHandler<ggez::GameError> for Game {
         if input::mouse::button_pressed(ctx, event::MouseButton::Left) || input::mouse::button_pressed(ctx, event::MouseButton::Middle) {
             self.pan.0 += dx;
             self.pan.1 += dy;
+
+            // need to invalidate for parallax to work
+            self.map.invalidate_batch_cache();
         }
     }
 
@@ -91,6 +95,9 @@ impl event::EventHandler<ggez::GameError> for Game {
         let Point2 { x: mouse_x, y: mouse_y } = input::mouse::position(ctx);
         self.pan.0 = (self.pan.0 - mouse_x) / old_scale * self.scale + mouse_x;
         self.pan.1 = (self.pan.1 - mouse_y) / old_scale * self.scale + mouse_y;
+        
+        // need to invalidate for parallax to work
+        self.map.invalidate_batch_cache();
     }
 }
 

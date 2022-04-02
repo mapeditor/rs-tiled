@@ -6,6 +6,7 @@ use tiled::TileLayer;
 pub struct MapHandler {
     map: tiled::Map,
     tileset_image_cache: HashMap<String, graphics::Image>,
+    batch_cache: Option<HashMap<u32, Vec<SpriteBatch>>>,
     pub example_animate: bool,
 }
 
@@ -35,6 +36,7 @@ impl MapHandler {
         Ok(Self {
             tileset_image_cache,
             map,
+            batch_cache: None,
             example_animate: false,
         })
     }
@@ -64,10 +66,27 @@ impl MapHandler {
             .map(|c| ggez::graphics::Color::from_rgba(c.red, c.green, c.blue, c.alpha))
     }
 
+    /// Clear the tile layer `SpriteBatch` cache.
+    /// If tile positions move
+    pub fn invalidate_batch_cache(&mut self) {
+        self.batch_cache = None;
+    }
+
     pub fn draw(&mut self, ctx: &mut Context, draw_param: DrawParam, parallax_pan: (f32, f32)) -> GameResult {
 
-        // could be cached for more performance
-        let layer_batches: HashMap<u32, Vec<SpriteBatch>> = self.generate_map_render(ctx, parallax_pan);
+        // update batch cache if needed
+
+        if self.example_animate {
+            // if it's animating, the individual tile positions are changing, so we can't use this cache
+            self.invalidate_batch_cache();
+        }
+
+        // (can't use `get_or_insert_with` due to needing to double borrow self)
+        if self.batch_cache.is_none() {
+            self.batch_cache = Some(self.generate_map_render(ctx, parallax_pan));
+        }
+
+        let layer_batches: &HashMap<u32, Vec<SpriteBatch>> = self.batch_cache.as_ref().unwrap();
 
         // draw layers
 
@@ -94,7 +113,7 @@ impl MapHandler {
     }
 
     /// Generates a set of `SpriteBatch`es for each tile layer in the map.
-    fn generate_map_render(&mut self, ctx: &Context, parallax_pan: (f32, f32)) -> HashMap<u32, Vec<SpriteBatch>> {
+    fn generate_map_render(&self, ctx: &Context, parallax_pan: (f32, f32)) -> HashMap<u32, Vec<SpriteBatch>> {
         let mut layer_batches: HashMap<u32, Vec<SpriteBatch>> = HashMap::new();
 
         let tile_layers = self.map.layers().filter_map(|l| {
