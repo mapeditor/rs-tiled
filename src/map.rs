@@ -145,7 +145,7 @@ impl Map {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::Tile,
+                    LayerTag::Tiles,
                     infinite,
                     map_path,
                     &tilesets,
@@ -167,7 +167,7 @@ impl Map {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::Object,
+                    LayerTag::Objects,
                     infinite,
                     map_path,
                     &tilesets,

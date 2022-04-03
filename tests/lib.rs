@@ -6,7 +6,7 @@ use tiled::{
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
     match layer.layer_type() {
-        LayerType::Tile(x) => x,
+        LayerType::Tiles(x) => x,
         _ => panic!("Not a tile layer"),
     }
 }
@@ -20,7 +20,7 @@ fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
 
 fn as_object_layer<'map>(layer: Layer<'map>) -> ObjectLayer<'map> {
     match layer.layer_type() {
-        LayerType::Object(x) => x,
+        LayerType::Objects(x) => x,
         _ => panic!("Not an object layer"),
     }
 }

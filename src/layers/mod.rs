@@ -15,16 +15,16 @@ pub use group::*;
 
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) enum LayerDataType {
-    Tile(TileLayerData),
-    Object(ObjectLayerData),
+    Tiles(TileLayerData),
+    Objects(ObjectLayerData),
     Image(ImageLayerData),
     Group(GroupLayerData),
 }
 
 #[derive(Clone, Copy)]
 pub(crate) enum LayerTag {
-    Tile,
-    Object,
+    Tiles,
+    Objects,
     Image,
     Group,
 }
@@ -86,13 +86,13 @@ impl LayerData {
         );
 
         let (ty, properties) = match tag {
-            LayerTag::Tile => {
+            LayerTag::Tiles => {
                 let (ty, properties) = TileLayerData::new(parser, attrs, infinite, tilesets)?;
-                (LayerDataType::Tile(ty), properties)
+                (LayerDataType::Tiles(ty), properties)
             }
-            LayerTag::Object => {
+            LayerTag::Objects => {
                 let (ty, properties) = ObjectLayerData::new(parser, attrs, Some(tilesets))?;
-                (LayerDataType::Object(ty), properties)
+                (LayerDataType::Objects(ty), properties)
             }
             LayerTag::Image => {
                 let (ty, properties) = ImageLayerData::new(parser, map_path)?;
@@ -137,9 +137,9 @@ impl<'map> Layer<'map> {
 #[derive(Debug)]
 pub enum LayerType<'map> {
     /// A tile layer; Also see [`TileLayer`].
-    Tile(TileLayer<'map>),
+    Tiles(TileLayer<'map>),
     /// An object layer (also called object group); Also see [`ObjectLayer`].
-    Object(ObjectLayer<'map>),
+    Objects(ObjectLayer<'map>),
     /// An image layer; Also see [`ImageLayer`].
     Image(ImageLayer<'map>),
     /// A group layer; Also see [`GroupLayer`].
@@ -149,8 +149,8 @@ pub enum LayerType<'map> {
 impl<'map> LayerType<'map> {
     fn new(map: &'map Map, data: &'map LayerDataType) -> Self {
         match data {
-            LayerDataType::Tile(data) => Self::Tile(TileLayer::new(map, data)),
-            LayerDataType::Object(data) => Self::Object(ObjectLayer::new(map, data)),
+            LayerDataType::Tiles(data) => Self::Tiles(TileLayer::new(map, data)),
+            LayerDataType::Objects(data) => Self::Objects(ObjectLayer::new(map, data)),
             LayerDataType::Image(data) => Self::Image(ImageLayer::new(map, data)),
             LayerDataType::Group(data) => Self::Group(GroupLayer::new(map, data)),
         }

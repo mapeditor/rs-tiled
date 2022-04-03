@@ -13,7 +13,7 @@ fn main() {
         print!("Layer \"{}\":\n\t", layer.name);
 
         match layer.layer_type() {
-            tiled::LayerType::Tile(layer) => match layer {
+            tiled::LayerType::Tiles(layer) => match layer {
                 tiled::TileLayer::Finite(data) => println!(
                     "Finite tile layer with width = {} and height = {}; ID of tile @ (0,0): {}",
                     data.width(),
@@ -29,7 +29,7 @@ fn main() {
                     )
                 }
             },
-            tiled::LayerType::Object(layer) => {
+            tiled::LayerType::Objects(layer) => {
                 println!("Object layer with {} objects", layer.objects().len())
             }
             tiled::LayerType::Image(layer) => {

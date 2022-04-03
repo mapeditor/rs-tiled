@@ -36,19 +36,19 @@ pub enum Error {
         compression: Option<String>,
     },
     /// There was an error parsing the value of a [`PropertyValue`].
-    /// 
+    ///
     /// [`PropertyValue`]: crate::PropertyValue
     InvalidPropertyValue {
         /// A description of the error that occured.
-        description: String
+        description: String,
     },
     /// Found an unknown property value type while parsing a [`PropertyValue`].
-    /// 
+    ///
     /// [`PropertyValue`]: crate::PropertyValue
     UnknownPropertyType {
         /// The name of the type that isn't recognized by the crate.
         /// Supported types are `string`, `int`, `float`, `bool`, `color`, `file` and `object`.
-        type_name: String
+        type_name: String,
     },
 }
 
