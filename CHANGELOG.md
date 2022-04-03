@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2]
+### Added
+- `TileLayer::width` & `TileLayer::height` for ergonomic access of width/height.
+- `FiniteTileLayerData::get_tile_data`, `InfiniteTileLayerData::get_tile_data`.
+
 ## [0.10.1]
 ### Added
 - `Loader` type for loading map and tileset files without having to necessarily mention the cache
