@@ -71,10 +71,36 @@ impl<'map> ObjectLayer<'map> {
 
     /// Returns an iterator over the objects present in this layer, in the order they were declared
     /// in in the TMX file.
+    ///
+    /// ## Example
+    /// ```
+    /// # use tiled::Loader;
+    /// use tiled::Object;
+    ///
+    /// # fn main() {
+    /// # let map = Loader::new()
+    /// #     .load_tmx_map("assets/tiled_group_layers.tmx")
+    /// #     .unwrap();
+    /// #
+    /// let spawnpoints: Vec<Object> = map
+    ///     .layers()
+    ///     .filter_map(|layer| match layer.layer_type() {
+    ///         tiled::LayerType::ObjectLayer(layer) => Some(layer),
+    ///         _ => None,
+    ///     })
+    ///     .flat_map(|layer| layer.objects())
+    ///     .filter(|object| object.obj_type == "spawn")
+    ///     .collect();
+    ///
+    /// dbg!(spawnpoints);
+    /// # }
+    /// ```
     #[inline]
-    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object> {
-        self.objects
+    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object<'map>> + 'map {
+        let map: &'map crate::Map = self.map;
+        self.data
+            .objects
             .iter()
-            .map(move |object| Object::new(self.map, object))
+            .map(move |object| Object::new(map, object))
     }
 }

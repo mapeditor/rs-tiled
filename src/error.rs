@@ -35,23 +35,23 @@ pub enum Error {
         compression: Option<String>,
     },
     /// There was an error parsing the value of a [`PropertyValue`].
-    /// 
+    ///
     /// [`PropertyValue`]: crate::PropertyValue
     InvalidPropertyValue {
         /// A description of the error that occured.
-        description: String
+        description: String,
     },
     /// Found an unknown property value type while parsing a [`PropertyValue`].
-    /// 
+    ///
     /// [`PropertyValue`]: crate::PropertyValue
     UnknownPropertyType {
         /// The name of the type that isn't recognized by the crate.
         /// Supported types are `string`, `int`, `float`, `bool`, `color`, `file` and `object`.
-        type_name: String
+        type_name: String,
     },
 }
 
-/// A result with an error variant of [`tiled::error::Error`].
+/// A result with an error variant of [`crate::Error`].
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl fmt::Display for Error {
@@ -77,12 +77,12 @@ impl fmt::Display for Error {
                 )
             }
             Error::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
-            Error::InvalidEncodingFormat { encoding: None, compression: None } => 
+            Error::InvalidEncodingFormat { encoding: None, compression: None } =>
                 write!(
                     fmt,
                     "Deprecated combination of encoding and compression"
                 ),
-            Error::InvalidEncodingFormat { encoding, compression } => 
+            Error::InvalidEncodingFormat { encoding, compression } =>
                 write!(
                     fmt,
                     "Unknown encoding or compression format or invalid combination of both (for tile layers): {} encoding with {} compression",

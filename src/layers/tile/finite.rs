@@ -51,8 +51,8 @@ impl FiniteTileLayerData {
         let (e, c) = get_attrs!(
             attrs,
             optionals: [
-                ("encoding", encoding, |v| Some(v)),
-                ("compression", compression, |v| Some(v)),
+                ("encoding", encoding, Some),
+                ("compression", compression, Some),
             ]
         );
 
@@ -65,7 +65,12 @@ impl FiniteTileLayerData {
         })
     }
 
-    pub(crate) fn get_tile(&self, x: i32, y: i32) -> Option<&LayerTileData> {
+    /// Obtains the tile data present at the position given.
+    ///
+    /// If the position given is invalid or the position is empty, this function will return [`None`].
+    ///
+    /// If you want to get a [`Tile`](`crate::Tile`) instead, use [`FiniteTileLayer::get_tile()`].
+    pub fn get_tile_data(&self, x: i32, y: i32) -> Option<&LayerTileData> {
         if x < self.width as i32 && y < self.height as i32 && x >= 0 && y >= 0 {
             self.tiles[x as usize + y as usize * self.width as usize].as_ref()
         } else {
@@ -85,7 +90,7 @@ impl<'map> FiniteTileLayer<'map> {
     /// If the position given is invalid or the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data
-            .get_tile(x, y)
-            .and_then(|data| Some(LayerTile::new(self.map(), data)))
+            .get_tile_data(x, y)
+            .map(|data| LayerTile::new(self.map(), data))
     }
 }

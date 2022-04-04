@@ -14,7 +14,7 @@ pub struct Tilesheet {
 
 impl Tilesheet {
     /// Create a tilesheet from a Tiled tileset, loading its texture along the way.
-    pub fn from_tileset<'p>(tileset: Arc<Tileset>) -> Self {
+    pub fn from_tileset(tileset: Arc<Tileset>) -> Self {
         let tileset_image = tileset.image.as_ref().unwrap();
 
         let texture = {

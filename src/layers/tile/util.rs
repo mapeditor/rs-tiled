@@ -36,7 +36,7 @@ pub(crate) fn parse_data_line(
 }
 
 fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<u8>> {
-    while let Some(next) = parser.next() {
+    for next in parser {
         match next.map_err(Error::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 return base64::decode(s.trim().as_bytes()).map_err(Error::Base64DecodingError)
@@ -57,7 +57,7 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
             decoder.read_to_end(&mut data)?;
             Ok(data)
         })
-        .map_err(|e| Error::DecompressingError(e))
+        .map_err(Error::DecompressingError)
 }
 
 fn decode_csv(
@@ -65,7 +65,7 @@ fn decode_csv(
     tilesets: &[MapTilesetGid],
     for_tileset: Option<Arc<Tileset>>,
 ) -> Result<Vec<Option<LayerTileData>>> {
-    while let Some(next) = parser.next() {
+    for next in parser {
         match next.map_err(Error::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 let tiles = s

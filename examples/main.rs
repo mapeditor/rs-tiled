@@ -1,17 +1,13 @@
 use std::path::PathBuf;
 
-use tiled::{FilesystemResourceCache, Map};
+use tiled::Loader;
 
 fn main() {
-    // Create a new resource cache. This is a structure that holds references to loaded
-    // assets such as tilesets so that they only get loaded once.
-    // [`FilesystemResourceCache`] is a implementation of [`tiled::ResourceCache`] that
-    // identifies resources by their path in the filesystem.
-    let mut cache = FilesystemResourceCache::new();
+    let mut loader = Loader::new();
 
     let map_path = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
         .join("assets/tiled_base64_zlib.tmx");
-    let map = Map::parse_file(map_path, &mut cache).unwrap();
+    let map = loader.load_tmx_map(map_path).unwrap();
 
     for layer in map.layers() {
         print!("Layer \"{}\":\n\t", layer.name);
@@ -25,8 +21,6 @@ fn main() {
                     data.get_tile(0, 0).unwrap().id()
                 ),
                 tiled::TileLayer::Infinite(data) => {
-                    // This is prone to change! Infinite layers will be refactored before 0.10.0
-                    // releases.
                     println!(
                         "Infinite tile layer; Tile @ (-5, 0) = {:?}",
                         data.get_tile(-5, 0)

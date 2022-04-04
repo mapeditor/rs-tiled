@@ -58,7 +58,7 @@ impl LayerTileData {
 
     /// Get the layer tile's local id within its parent tileset.
     #[inline]
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> TileId {
         self.id
     }
 
@@ -105,6 +105,11 @@ impl LayerTileData {
     }
 }
 
+/// The raw data of a [`TileLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
+///
+/// The reason this data is not public is because with the current interface there is no way to
+/// dereference [`TileLayer`] into this structure, and even if we could, it wouldn't make much
+/// sense, since we can already deref from the finite/infinite tile layers themselves.
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum TileLayerData {
     Finite(FiniteTileLayerData),
@@ -194,6 +199,74 @@ impl<'map> TileLayer<'map> {
         match self {
             TileLayer::Finite(finite) => finite.get_tile(x, y),
             TileLayer::Infinite(infinite) => infinite.get_tile(x, y),
+        }
+    }
+
+    /// The width of this layer, if finite, or `None` if infinite.
+    ///
+    /// ## Example
+    /// ```
+    /// use tiled::LayerType;
+    /// use tiled::Loader;
+    ///
+    /// # fn main() {
+    /// # let map = Loader::new()
+    /// #     .load_tmx_map("assets/tiled_base64_zlib.tmx")
+    /// #     .unwrap();
+    /// # let layer = match map.get_layer(0).unwrap().layer_type() {
+    /// #     LayerType::TileLayer(layer) => layer,
+    /// #     _ => panic!("Layer #0 is not a tile layer"),
+    /// # };
+    /// #
+    /// let width = match layer {
+    ///     tiled::TileLayer::Finite(finite) => Some(finite.width()),
+    ///     _ => None,
+    /// };
+    ///
+    /// // These are both equal, and they achieve the same thing; However, matching on the layer
+    /// // type is significantly more verbose. If you already know the layer type, then it is
+    /// // slighly faster to use its respective width method.
+    /// assert_eq!(width, layer.width());
+    /// # }
+    /// ```
+    pub fn width(&self) -> Option<u32> {
+        match self {
+            TileLayer::Finite(finite) => Some(finite.width()),
+            TileLayer::Infinite(_infinite) => None,
+        }
+    }
+
+    /// The height of this layer, if finite, or `None` if infinite.
+    ///
+    /// ## Example
+    /// ```
+    /// use tiled::LayerType;
+    /// use tiled::Loader;
+    ///
+    /// # fn main() {
+    /// # let map = Loader::new()
+    /// #     .load_tmx_map("assets/tiled_base64_zlib.tmx")
+    /// #     .unwrap();
+    /// # let layer = match map.get_layer(0).unwrap().layer_type() {
+    /// #     LayerType::TileLayer(layer) => layer,
+    /// #     _ => panic!("Layer #0 is not a tile layer"),
+    /// # };
+    /// #
+    /// let height = match layer {
+    ///     tiled::TileLayer::Finite(finite) => Some(finite.height()),
+    ///     _ => None,
+    /// };
+    ///
+    /// // These are both equal, and they achieve the same thing; However, matching on the layer
+    /// // type is significantly more verbose. If you already know the layer type, then it is
+    /// // slighly faster to use its respective height method.
+    /// assert_eq!(height, layer.height());
+    /// # }
+    /// ```
+    pub fn height(&self) -> Option<u32> {
+        match self {
+            TileLayer::Finite(finite) => Some(finite.height()),
+            TileLayer::Infinite(_infinite) => None,
         }
     }
 }

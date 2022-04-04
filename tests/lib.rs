@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
-    Color, FilesystemResourceCache, FiniteTileLayer, GroupLayer, Layer, LayerType, Map,
-    ObjectLayer, PropertyValue, ResourceCache, TileLayer,
+    Color, FiniteTileLayer, GroupLayer, Layer, LayerType, Loader, Map, ObjectLayer, PropertyValue,
+    ResourceCache, TileLayer,
 };
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
@@ -51,12 +51,14 @@ fn compare_everything_but_tileset_sources(r: &Map, e: &Map) {
 
 #[test]
 fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
-    let mut cache = FilesystemResourceCache::new();
-    let z = Map::parse_file("assets/tiled_base64_zlib.tmx", &mut cache).unwrap();
-    let g = Map::parse_file("assets/tiled_base64_gzip.tmx", &mut cache).unwrap();
-    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
-    let zstd = Map::parse_file("assets/tiled_base64_zstandard.tmx", &mut cache).unwrap();
-    let c = Map::parse_file("assets/tiled_csv.tmx", &mut cache).unwrap();
+    let mut loader = Loader::new();
+    let z = loader.load_tmx_map("assets/tiled_base64_zlib.tmx").unwrap();
+    let g = loader.load_tmx_map("assets/tiled_base64_gzip.tmx").unwrap();
+    let r = loader.load_tmx_map("assets/tiled_base64.tmx").unwrap();
+    let zstd = loader
+        .load_tmx_map("assets/tiled_base64_zstandard.tmx")
+        .unwrap();
+    let c = Loader::new().load_tmx_map("assets/tiled_csv.tmx").unwrap();
     compare_everything_but_tileset_sources(&z, &g);
     compare_everything_but_tileset_sources(&z, &r);
     compare_everything_but_tileset_sources(&z, &c);
@@ -77,21 +79,24 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
 
 #[test]
 fn test_external_tileset() {
-    let mut cache = FilesystemResourceCache::new();
+    let mut loader = Loader::new();
 
-    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
-    let e = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
+    let r = loader.load_tmx_map("assets/tiled_base64.tmx").unwrap();
+    let e = loader
+        .load_tmx_map("assets/tiled_base64_external.tmx")
+        .unwrap();
     compare_everything_but_tileset_sources(&r, &e);
 }
 
 #[test]
 fn test_sources() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let e = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
+    let mut loader = Loader::new();
+    let e = loader
+        .load_tmx_map("assets/tiled_base64_external.tmx")
+        .unwrap();
     assert_eq!(
         e.tilesets()[0],
-        cache.get_tileset("assets/tilesheet.tsx").unwrap()
+        loader.cache().get_tileset("assets/tilesheet.tsx").unwrap()
     );
     assert_eq!(
         e.tilesets()[0].image.as_ref().unwrap().source,
@@ -101,27 +106,28 @@ fn test_sources() {
 
 #[test]
 fn test_just_tileset() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_base64_external.tmx", &mut cache).unwrap();
+    let mut loader = Loader::new();
+    let r = loader
+        .load_tmx_map("assets/tiled_base64_external.tmx")
+        .unwrap();
     assert_eq!(
         r.tilesets()[0],
-        cache.get_tileset("assets/tilesheet.tsx").unwrap()
+        loader.cache().get_tileset("assets/tilesheet.tsx").unwrap()
     );
 }
 
 #[test]
 fn test_infinite_tileset() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_base64_zlib_infinite.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_base64_zlib_infinite.tmx")
+        .unwrap();
 
     if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(1).unwrap()) {
         assert_eq!(inf.get_tile(2, 10).unwrap().id(), 5);
         assert_eq!(inf.get_tile(5, 36).unwrap().id(), 73);
         assert_eq!(inf.get_tile(15, 15).unwrap().id(), 22);
     } else {
-        assert!(false, "It is wrongly recognised as a finite map");
+        panic!("It is wrongly recognised as a finite map");
     }
     if let TileLayer::Infinite(inf) = &as_tile_layer(r.get_layer(0).unwrap()) {
         // NW corner
@@ -144,15 +150,15 @@ fn test_infinite_tileset() {
         assert!(inf.get_tile(32, 47).is_none());
         assert!(inf.get_tile(31, 48).is_none());
     } else {
-        assert!(false, "It is wrongly recognised as a finite map");
+        panic!("It is wrongly recognised as a finite map");
     }
 }
 
 #[test]
 fn test_image_layers() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_image_layers.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_image_layers.tmx")
+        .unwrap();
     assert_eq!(r.layers().len(), 2);
     let mut image_layers = r.layers().map(|layer| {
         if let LayerType::ImageLayer(img) = layer.layer_type() {
@@ -177,7 +183,7 @@ fn test_image_layers() {
             .0
             .image
             .as_ref()
-            .expect(&format!("{}'s image shouldn't be None", second.1.name));
+            .unwrap_or_else(|| panic!("{}'s image shouldn't be None", second.1.name));
         assert_eq!(image.source, PathBuf::from("assets/tilesheet.png"));
         assert_eq!(image.width, 448);
         assert_eq!(image.height, 192);
@@ -186,13 +192,13 @@ fn test_image_layers() {
 
 #[test]
 fn test_tile_property() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_base64.tmx")
+        .unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
         .get_tile(1)
         .unwrap()
-        .properties()
+        .properties
         .get("a tile property")
     {
         v.clone()
@@ -204,9 +210,9 @@ fn test_tile_property() {
 
 #[test]
 fn test_layer_property() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_base64.tmx")
+        .unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
         r.get_layer(0).unwrap().properties.get("prop3")
     {
@@ -219,9 +225,9 @@ fn test_layer_property() {
 
 #[test]
 fn test_object_group_property() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_object_groups.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_groups.tmx")
+        .unwrap();
     let group_layer = r.get_layer(1).unwrap();
     let group_layer = as_group_layer(group_layer);
     let sub_layer = group_layer.get_layer(0).unwrap();
@@ -236,9 +242,9 @@ fn test_object_group_property() {
 }
 #[test]
 fn test_tileset_property() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_base64.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_base64.tmx")
+        .unwrap();
     let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
         r.tilesets()[0].properties.get("tileset property")
     {
@@ -251,9 +257,9 @@ fn test_tileset_property() {
 
 #[test]
 fn test_flipped() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_flipped.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_flipped.tmx")
+        .unwrap();
     let layer = as_tile_layer(r.get_layer(0).unwrap());
 
     let t1 = layer.get_tile(0, 0).unwrap();
@@ -279,9 +285,9 @@ fn test_flipped() {
 
 #[test]
 fn test_ldk_export() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/ldk_tiled_export.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/ldk_tiled_export.tmx")
+        .unwrap();
     let layer = as_finite(as_tile_layer(r.get_layer(0).unwrap()));
     {
         assert_eq!(layer.width(), 8);
@@ -293,9 +299,9 @@ fn test_ldk_export() {
 
 #[test]
 fn test_parallax_layers() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_parallax.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_parallax.tmx")
+        .unwrap();
     for (i, layer) in r.layers().enumerate() {
         match i {
             0 => {
@@ -320,9 +326,9 @@ fn test_parallax_layers() {
 
 #[test]
 fn test_object_property() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_object_property.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_property.tmx")
+        .unwrap();
     let layer = r.get_layer(1).unwrap();
     let prop_value = if let Some(PropertyValue::ObjectValue(v)) = as_object_layer(layer)
         .get_object(0)
@@ -339,9 +345,9 @@ fn test_object_property() {
 
 #[test]
 fn test_tint_color() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_image_layers.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_image_layers.tmx")
+        .unwrap();
     assert_eq!(
         r.get_layer(0).unwrap().tint_color,
         Some(Color {
@@ -364,9 +370,9 @@ fn test_tint_color() {
 
 #[test]
 fn test_group_layers() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_group_layers.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_group_layers.tmx")
+        .unwrap();
 
     // Depth = 0
     let layer_tile_1 = r.get_layer(0).unwrap();
@@ -416,9 +422,9 @@ fn test_group_layers() {
 
 #[test]
 fn test_object_template_property() {
-    let mut cache = FilesystemResourceCache::new();
-
-    let r = Map::parse_file("assets/tiled_object_template.tmx", &mut cache).unwrap();
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_template.tmx")
+        .unwrap();
 
     let object_layer = as_object_layer(r.get_layer(1).unwrap());
     let object = object_layer.get_object(0).unwrap(); // The templated object

@@ -89,7 +89,7 @@ impl Template {
                             ts
                         } else {
                             let file = File::open(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                            let tileset = Arc::new(Tileset::parse_with_template_list(file, &tileset_path, cache, None)?);
+                            let tileset = Arc::new(crate::parse::xml::parse_tileset(file, &tileset_path, cache)?);
                             cache.insert_tileset(tileset_path.clone(), tileset.clone());
                             tileset
                         });

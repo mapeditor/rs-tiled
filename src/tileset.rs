@@ -4,14 +4,12 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use xml::attribute::OwnedAttribute;
-use xml::reader::XmlEvent;
-use xml::EventReader;
 
 use crate::error::{Error, Result};
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
-use crate::tile::Tile;
-use crate::{util::*, Gid, ResourceCache, TileData};
+use crate::tile::TileData;
+use crate::{util::*, Gid, ResourceCache, Tile, TileId};
 
 /// A collection of tiles for usage in maps and template objects.
 ///
@@ -54,7 +52,7 @@ pub struct Tileset {
     pub image: Option<Image>,
 
     /// All the tiles present in this tileset, indexed by their local IDs.
-    tiles: HashMap<u32, TileData>,
+    tiles: HashMap<TileId, TileData>,
 
     /// The custom properties of the tileset.
     pub properties: Properties,
@@ -101,56 +99,24 @@ impl Tileset {
     ///
     /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
     /// ```
+    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tsx_tileset_from` instead")]
     pub fn parse_reader<R: Read>(
         reader: R,
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
     ) -> Result<Self> {
-        Tileset::parse_with_template_list(reader, path, cache, None)
-    }
-
-    /// Parse a tileset from a reader, but updates a list of templates
-    ///
-    /// Used by Maps and Templates which require a state for managing the template list
-    pub(crate) fn parse_with_template_list<R: Read>(
-        reader: R,
-        path: impl AsRef<Path>,
-        cache: &mut impl ResourceCache,
-        for_tileset: Option<Arc<Tileset>>,
-    ) -> Result<Self> {
-        let mut tileset_parser = EventReader::new(reader);
-        loop {
-            match tileset_parser.next().map_err(Error::XmlDecodingError)? {
-                XmlEvent::StartElement {
-                    name, attributes, ..
-                } if name.local_name == "tileset" => {
-                    return Self::parse_external_tileset(
-                        &mut tileset_parser.into_iter(),
-                        &attributes,
-                        path.as_ref(),
-                        for_tileset,
-                        cache,
-                    );
-                }
-                XmlEvent::EndDocument => {
-                    return Err(Error::PrematureEnd(
-                        "Tileset Document ended before map was parsed".to_string(),
-                    ))
-                }
-                _ => {}
-            }
-        }
+        crate::parse::xml::parse_tileset(reader, path.as_ref(), cache)
     }
 
     /// Gets the tile with the specified ID from the tileset.
     #[inline]
-    pub fn get_tile(&self, id: u32) -> Option<Tile> {
+    pub fn get_tile(&self, id: TileId) -> Option<Tile> {
         self.tiles.get(&id).map(|data| Tile::new(self, data))
     }
 
     /// Iterates through the tiles from this tileset.
     #[inline]
-    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (u32, Tile)> {
+    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (TileId, Tile)> {
         self.tiles
             .iter()
             .map(move |(id, data)| (*id, Tile::new(self, data)))
@@ -176,7 +142,7 @@ impl Tileset {
 
     fn parse_xml_embedded(
         parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: &Vec<OwnedAttribute>,
+        attrs: &[OwnedAttribute],
         map_path: &Path, // Template or Map file
         for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
@@ -187,15 +153,15 @@ impl Tileset {
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
                 ("columns", columns, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
+                ("name", name, Some),
             ],
            required: [
                 ("tilecount", tilecount, |v:String| v.parse().ok()),
-                ("firstgid", first_gid, |v:String| v.parse().ok().map(|n| Gid(n))),
+                ("firstgid", first_gid, |v:String| v.parse().ok().map(Gid)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
             ],
-            Error::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
+            Error::MalformedAttributes("tileset must have a firstgid, tilecount, tilewidth, and tileheight with correct types".to_string())
         );
 
         let root_path = map_path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
@@ -222,14 +188,14 @@ impl Tileset {
     }
 
     fn parse_xml_reference(
-        attrs: &Vec<OwnedAttribute>,
+        attrs: &[OwnedAttribute],
         map_path: &Path,
     ) -> Result<EmbeddedParseResult> {
         let (first_gid, source) = get_attrs!(
             attrs,
             required: [
-                ("firstgid", first_gid, |v:String| v.parse().ok().map(|n| Gid(n))),
-                ("source", name, |v| Some(v)),
+                ("firstgid", first_gid, |v:String| v.parse().ok().map(Gid)),
+                ("source", name, Some),
             ],
             Error::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
         );
@@ -242,9 +208,9 @@ impl Tileset {
         })
     }
 
-    fn parse_external_tileset(
+    pub(crate) fn parse_external_tileset(
         parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: &Vec<OwnedAttribute>,
+        attrs: &[OwnedAttribute],
         path: &Path,
         for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
@@ -255,7 +221,7 @@ impl Tileset {
                 ("spacing", spacing, |v:String| v.parse().ok()),
                 ("margin", margin, |v:String| v.parse().ok()),
                 ("columns", columns, |v:String| v.parse().ok()),
-                ("name", name, |v| Some(v)),
+                ("name", name, Some),
             ],
             required: [
                 ("tilecount", tilecount, |v:String| v.parse().ok()),
@@ -348,9 +314,11 @@ impl Tileset {
     ) -> Result<u32> {
         image
             .as_ref()
-            .ok_or(Error::MalformedAttributes(
-                "No <image> nor columns attribute in <tileset>".to_string(),
-            ))
-            .and_then(|image| Ok((image.width as u32 - margin + spacing) / (tile_width + spacing)))
+            .map(|image| (image.width as u32 - margin + spacing) / (tile_width + spacing))
+            .ok_or_else(|| {
+                Error::MalformedAttributes(
+                    "No <image> nor columns attribute in <tileset>".to_string(),
+                )
+            })
     }
 }

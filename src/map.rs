@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromStr, sync::Arc};
 
-use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
+use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::{Error, Result},
@@ -70,46 +70,26 @@ impl Map {
     /// the library won't read from the filesystem if it is not required to do so.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
+    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tmx_map_from` instead")]
     pub fn parse_reader<R: Read>(
         reader: R,
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
     ) -> Result<Self> {
-        let mut parser = EventReader::new(reader);
-        loop {
-            match parser.next().map_err(Error::XmlDecodingError)? {
-                XmlEvent::StartElement {
-                    name, attributes, ..
-                } => {
-                    if name.local_name == "map" {
-                        return Self::parse_xml(
-                            &mut parser.into_iter(),
-                            attributes,
-                            path.as_ref(),
-                            cache,
-                        );
-                    }
-                }
-                XmlEvent::EndDocument => {
-                    return Err(Error::PrematureEnd(
-                        "Document ended before map was parsed".to_string(),
-                    ))
-                }
-                _ => {}
-            }
-        }
+        crate::parse::xml::parse_map(reader, path.as_ref(), cache)
     }
 
     /// Parse a file hopefully containing a Tiled map and try to parse it.  All external
     /// files will be loaded relative to the path given.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
+    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tmx_map` instead")]
     pub fn parse_file(path: impl AsRef<Path>, cache: &mut impl ResourceCache) -> Result<Self> {
         let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
             path: path.as_ref().to_owned(),
             err,
         })?;
-        Self::parse_reader(reader, path.as_ref(), cache)
+        crate::parse::xml::parse_map(reader, path.as_ref(), cache)
     }
 
     /// The TMX format version this map was saved to. Equivalent to the map file's `version`
@@ -134,6 +114,31 @@ impl Map {
     }
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
+    ///
+    /// ## Example
+    /// ```
+    /// # use tiled::Loader;
+    /// #
+    /// # fn main() {
+    /// # struct Renderer;
+    /// # impl Renderer {
+    /// #     fn render(&self, _: tiled::TileLayer) {}
+    /// # }
+    /// # let my_renderer = Renderer;
+    /// # let map = Loader::new()
+    /// #     .load_tmx_map("assets/tiled_group_layers.tmx")
+    /// #     .unwrap();
+    /// #
+    /// let tile_layers = map.layers().filter_map(|layer| match layer.layer_type() {
+    ///     tiled::LayerType::TileLayer(layer) => Some(layer),
+    ///     _ => None,
+    /// });
+    ///
+    /// for layer in tile_layers {
+    ///     my_renderer.render(layer);
+    /// }
+    /// # }
+    /// ```
     #[inline]
     pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
         self.layers.iter().map(move |layer| Layer::new(self, layer))
@@ -146,7 +151,7 @@ impl Map {
 }
 
 impl Map {
-    fn parse_xml(
+    pub(crate) fn parse_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
@@ -159,7 +164,7 @@ impl Map {
                 ("infinite", infinite, |v:String| Some(v == "1")),
             ],
             required: [
-                ("version", version, |v| Some(v)),
+                ("version", version, Some),
                 ("orientation", orientation, |v:String| v.parse().ok()),
                 ("width", width, |v:String| v.parse().ok()),
                 ("height", height, |v:String| v.parse().ok()),
@@ -187,7 +192,7 @@ impl Map {
                             ts
                         } else {
                             let file = File::open(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                            let tileset = Arc::new(Tileset::parse_with_template_list(file, &tileset_path, cache, None)?);
+                            let tileset = Arc::new(crate::parse::xml::parse_tileset(file, &tileset_path, cache)?);
                             cache.insert_tileset(tileset_path.clone(), tileset.clone());
                             tileset
                         };

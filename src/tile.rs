@@ -15,14 +15,21 @@ use crate::{
 /// A tile ID, local to a tileset.
 pub type TileId = u32;
 
+/// Raw data belonging to a tile.
 #[derive(Debug, PartialEq, Clone, Default)]
-pub(crate) struct TileData {
-    image: Option<Image>,
-    properties: Properties,
-    collision: Option<ObjectLayerData>,
-    animation: Option<Vec<Frame>>,
-    tile_type: Option<String>,
-    probability: f32,
+pub struct TileData {
+    /// The image of the tile. Only set when the tile is part of an "image collection" tileset.
+    pub image: Option<Image>,
+    /// The custom properties of this tile.
+    pub properties: Properties,
+    /// The collision shapes of this tile.
+    pub collision: Option<ObjectLayerData>,
+    /// The animation frames of this tile.
+    pub animation: Option<Vec<Frame>>,
+    /// The type of this tile.
+    pub tile_type: Option<String>,
+    /// The probability of this tile.
+    pub probability: f32,
 }
 
 /// Points to a tile belonging to a tileset.
@@ -41,35 +48,14 @@ impl<'tileset> Tile<'tileset> {
     pub fn tileset(&self) -> &'tileset Tileset {
         self.tileset
     }
+}
 
-    /// Get a reference to the tile's image.
-    pub fn image(&self) -> Option<&Image> {
-        self.data.image.as_ref()
-    }
+impl<'tileset> std::ops::Deref for Tile<'tileset> {
+    type Target = TileData;
 
-    /// Get a reference to the tile's properties.
-    pub fn properties(&self) -> &Properties {
-        &self.data.properties
-    }
-
-    /// Get a reference to the tile's collision.
-    pub fn collision(&self) -> Option<&ObjectLayerData> {
-        self.data.collision.as_ref()
-    }
-
-    /// Get a reference to the tile's animation frames.
-    pub fn animation(&self) -> Option<&[Frame]> {
-        self.data.animation.as_ref().map(Vec::as_slice)
-    }
-
-    /// Get a reference to the tile's type.
-    pub fn tile_type(&self) -> Option<&str> {
-        self.data.tile_type.as_deref()
-    }
-
-    /// Get the tile's probability.
-    pub fn probability(&self) -> f32 {
-        self.data.probability
+    #[inline]
+    fn deref(&self) -> &'tileset Self::Target {
+        self.data
     }
 }
 
