@@ -5,7 +5,7 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Gid, Map, MapTilesetGid, Properties, Tile, TileId, TiledError, Tileset,
+    Error, Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset,
 };
 
 mod finite;
@@ -118,14 +118,14 @@ impl TileLayerData {
         infinite: bool,
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
-    ) -> Result<(Self, Properties), TiledError> {
+    ) -> Result<(Self, Properties)> {
         let (width, height) = get_attrs!(
             attrs,
             required: [
                 ("width", width, |v: String| v.parse().ok()),
                 ("height", height, |v: String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("layer parsing error, width and height attributes required".to_string())
+            Error::MalformedAttributes("layer parsing error, width and height attributes required".to_string())
         );
         let mut result = Self::Finite(Default::default());
         let mut properties = HashMap::new();

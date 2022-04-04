@@ -3,7 +3,7 @@
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::TiledError,
+    error::{Error, Result},
     util::{get_attrs, parse_tag, XmlEventResult},
 };
 
@@ -20,14 +20,14 @@ pub struct Frame {
 }
 
 impl Frame {
-    pub(crate) fn new(attrs: Vec<OwnedAttribute>) -> Result<Frame, TiledError> {
+    pub(crate) fn new(attrs: Vec<OwnedAttribute>) -> Result<Frame> {
         let (tile_id, duration) = get_attrs!(
             attrs,
             required: [
                 ("tileid", tile_id, |v:String| v.parse().ok()),
                 ("duration", duration, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("A frame must have tileid and duration".to_string())
+            Error::MalformedAttributes("A frame must have tileid and duration".to_string())
         );
         Ok(Frame {
             tile_id: tile_id,
@@ -38,7 +38,7 @@ impl Frame {
 
 pub(crate) fn parse_animation(
     parser: &mut impl Iterator<Item = XmlEventResult>,
-) -> Result<Vec<Frame>, TiledError> {
+) -> Result<Vec<Frame>> {
     let mut animation = Vec::new();
     parse_tag!(parser, "animation", {
         "frame" => |attrs| {

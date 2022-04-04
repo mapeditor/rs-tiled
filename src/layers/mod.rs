@@ -3,7 +3,7 @@ use std::{path::Path, sync::Arc};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::TiledError, properties::Properties, util::*, Color, Map, MapTilesetGid, ResourceCache,
+    error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid, ResourceCache,
     Tileset,
 };
 
@@ -74,7 +74,7 @@ impl LayerData {
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
-    ) -> Result<Self, TiledError> {
+    ) -> Result<Self> {
         let (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id) = get_attrs!(
             attrs,
             optionals: [

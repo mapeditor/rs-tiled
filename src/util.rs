@@ -55,7 +55,7 @@ macro_rules! match_attrs {
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
         while let Some(next) = $parser.next() {
-            match next.map_err(TiledError::XmlDecodingError)? {
+            match next.map_err(Error::XmlDecodingError)? {
                 #[allow(unused_variables)]
                 $(
                     xml::reader::XmlEvent::StartElement {name, attributes, ..}
@@ -68,7 +68,7 @@ macro_rules! parse_tag {
                 }
 
                 xml::reader::XmlEvent::EndDocument => {
-                    return Err(TiledError::PrematureEnd("Document ended before we expected.".to_string()));
+                    return Err(Error::PrematureEnd("Document ended before we expected.".to_string()));
                 }
                 _ => {}
             }

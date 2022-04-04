@@ -2,7 +2,7 @@ use std::{convert::TryInto, io::Read, sync::Arc};
 
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, LayerTileData, MapTilesetGid, TiledError, Tileset};
+use crate::{util::XmlEventResult, Error, LayerTileData, MapTilesetGid, Result, Tileset};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,
@@ -10,7 +10,7 @@ pub(crate) fn parse_data_line(
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
     for_tileset: Option<Arc<Tileset>>,
-) -> Result<Vec<Option<LayerTileData>>, TiledError> {
+) -> Result<Vec<Option<LayerTileData>>> {
     match (encoding.as_deref(), compression.as_deref()) {
         (Some("csv"), None) => decode_csv(parser, tilesets, for_tileset),
 
@@ -28,18 +28,18 @@ pub(crate) fn parse_data_line(
             .and_then(|data| process_decoder(zstd::stream::read::Decoder::with_buffer(&data[..])))
             .map(|v| convert_to_tiles(&v, tilesets, for_tileset)),
 
-        _ => Err(TiledError::InvalidEncodingFormat {
+        _ => Err(Error::InvalidEncodingFormat {
             encoding,
             compression,
         }),
     }
 }
 
-fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<u8>, TiledError> {
+fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<u8>> {
     while let Some(next) = parser.next() {
-        match next.map_err(TiledError::XmlDecodingError)? {
+        match next.map_err(Error::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
-                return base64::decode(s.trim().as_bytes()).map_err(TiledError::Base64DecodingError)
+                return base64::decode(s.trim().as_bytes()).map_err(Error::Base64DecodingError)
             }
             XmlEvent::EndElement { name, .. } if name.local_name == "data" => {
                 return Ok(Vec::new());
@@ -47,26 +47,26 @@ fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec
             _ => {}
         }
     }
-    Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
+    Err(Error::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
-fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>, TiledError> {
+fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
     decoder
         .and_then(|mut decoder| {
             let mut data = Vec::new();
             decoder.read_to_end(&mut data)?;
             Ok(data)
         })
-        .map_err(|e| TiledError::DecompressingError(e))
+        .map_err(|e| Error::DecompressingError(e))
 }
 
 fn decode_csv(
     parser: &mut impl Iterator<Item = XmlEventResult>,
     tilesets: &[MapTilesetGid],
     for_tileset: Option<Arc<Tileset>>,
-) -> Result<Vec<Option<LayerTileData>>, TiledError> {
+) -> Result<Vec<Option<LayerTileData>>> {
     while let Some(next) = parser.next() {
-        match next.map_err(TiledError::XmlDecodingError)? {
+        match next.map_err(Error::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
                 let tiles = s
                     .split(',')
@@ -83,7 +83,7 @@ fn decode_csv(
             _ => {}
         }
     }
-    Err(TiledError::PrematureEnd("Ran out of XML data".to_owned()))
+    Err(Error::PrematureEnd("Ran out of XML data".to_owned()))
 }
 
 fn convert_to_tiles(

@@ -4,7 +4,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{floor_div, get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, TiledError, Tileset,
+    Error, LayerTile, LayerTileData, MapTilesetGid, Result, Tileset,
 };
 
 use super::util::parse_data_line;
@@ -27,7 +27,7 @@ impl InfiniteTileLayerData {
         attrs: Vec<OwnedAttribute>,
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
-    ) -> Result<Self, TiledError> {
+    ) -> Result<Self> {
         let (e, c) = get_attrs!(
             attrs,
             optionals: [
@@ -127,7 +127,7 @@ impl InternalChunk {
         compression: Option<String>,
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
-    ) -> Result<Self, TiledError> {
+    ) -> Result<Self> {
         let (x, y, width, height) = get_attrs!(
             attrs,
             required: [
@@ -136,7 +136,7 @@ impl InternalChunk {
                 ("width", width, |v: String| v.parse().ok()),
                 ("height", height, |v: String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("chunk must have x, y, width & height attributes".to_string())
+            Error::MalformedAttributes("chunk must have x, y, width & height attributes".to_string())
         );
 
         let tiles = parse_data_line(encoding, compression, parser, tilesets, for_tileset)?;

@@ -6,8 +6,10 @@ use xml::attribute::OwnedAttribute;
 use xml::reader::XmlEvent;
 use xml::EventReader;
 
-use crate::error::TiledError;
-use crate::{util::*, EmbeddedParseResultType, MapTilesetGid, ObjectData, ResourceCache, Tileset};
+use crate::{
+    util::*, EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache, Result,
+    Tileset,
+};
 
 /// A template, consisting of an object and a tileset
 ///
@@ -25,24 +27,21 @@ impl Template {
     pub(crate) fn parse_template(
         path: &Path,
         cache: &mut impl ResourceCache,
-    ) -> Result<Arc<Template>, TiledError> {
+    ) -> Result<Arc<Template>> {
         // Check the cache to see if this template exists
         if let Some(templ) = cache.get_template(path) {
             return Ok(templ);
         }
 
         // Open the template file
-        let file = File::open(&path).map_err(|err| TiledError::CouldNotOpenFile {
+        let file = File::open(&path).map_err(|err| Error::CouldNotOpenFile {
             path: path.to_path_buf(),
             err,
         })?;
 
         let mut template_parser = EventReader::new(file);
         loop {
-            match template_parser
-                .next()
-                .map_err(TiledError::XmlDecodingError)?
-            {
+            match template_parser.next().map_err(Error::XmlDecodingError)? {
                 XmlEvent::StartElement {
                     name, attributes, ..
                 } if name.local_name == "template" => {
@@ -58,7 +57,7 @@ impl Template {
                     return Ok(template);
                 }
                 XmlEvent::EndDocument => {
-                    return Err(TiledError::PrematureEnd(
+                    return Err(Error::PrematureEnd(
                         "Template Document ended before template element was parsed".to_string(),
                     ))
                 }
@@ -72,7 +71,7 @@ impl Template {
         _attrs: &Vec<OwnedAttribute>,
         template_path: &Path,
         cache: &mut impl ResourceCache,
-    ) -> Result<Arc<Template>, TiledError> {
+    ) -> Result<Arc<Template>> {
         let mut object = Option::None;
         let mut tileset = None;
         let mut tileset_gid: Vec<MapTilesetGid> = vec![];
@@ -89,7 +88,7 @@ impl Template {
                         tileset = Some(if let Some(ts) = cache.get_tileset(&tileset_path) {
                             ts
                         } else {
-                            let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
+                            let file = File::open(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err })?;
                             let tileset = Arc::new(Tileset::parse_with_template_list(file, &tileset_path, cache, None)?);
                             cache.insert_tileset(tileset_path.clone(), tileset.clone());
                             tileset

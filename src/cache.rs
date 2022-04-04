@@ -20,9 +20,9 @@ pub trait ResourceCache {
     /// ```
     /// use std::fs::File;
     /// use tiled::{FilesystemResourceCache, ResourceCache, Tileset};
-    /// # use tiled::TiledError;
+    /// # use tiled::Result;
     /// # use std::sync::Arc;
-    /// # fn main() -> Result<(), TiledError> {
+    /// # fn main() -> Result<()> {
     /// let mut cache = FilesystemResourceCache::new();
     /// let path = "assets/tilesheet.tsx";
     ///

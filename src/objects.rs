@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::TiledError,
+    error::{Error, Result},
     properties::{parse_properties, Properties},
     template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
@@ -84,7 +84,7 @@ impl ObjectData {
         for_tileset: Option<Arc<Tileset>>,
         base_path: &Path,
         cache: &mut impl ResourceCache,
-    ) -> Result<ObjectData, TiledError> {
+    ) -> Result<ObjectData> {
         let (mut id, mut tile, mut x, mut y, mut n, mut t, mut w, mut h, mut v, mut r, template) = get_attrs!(
             attrs,
             optionals: [
@@ -106,7 +106,7 @@ impl ObjectData {
         // If the template attribute is there, we need to go fetch the template file
         let template = if let Some(template) = template {
             let s: String = template;
-            let parent_dir = base_path.parent().ok_or(TiledError::PathIsNotFile)?;
+            let parent_dir = base_path.parent().ok_or(Error::PathIsNotFile)?;
             let template_path = parent_dir.join(Path::new(&s));
 
             let template = Template::parse_template(&template_path, cache)?;
@@ -204,38 +204,38 @@ impl ObjectData {
 }
 
 impl ObjectData {
-    fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, TiledError> {
+    fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
         let s = get_attrs!(
             attrs,
             required: [
                 ("points", points, |v| Some(v)),
             ],
-            TiledError::MalformedAttributes("A polyline must have points".to_string())
+            Error::MalformedAttributes("A polyline must have points".to_string())
         );
         let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polyline { points })
     }
 
-    fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, TiledError> {
+    fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
         let s = get_attrs!(
             attrs,
             required: [
                 ("points", points, |v| Some(v)),
             ],
-            TiledError::MalformedAttributes("A polygon must have points".to_string())
+            Error::MalformedAttributes("A polygon must have points".to_string())
         );
         let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polygon { points: points })
     }
 
-    fn parse_points(s: String) -> Result<Vec<(f32, f32)>, TiledError> {
+    fn parse_points(s: String) -> Result<Vec<(f32, f32)>> {
         let pairs = s.split(' ');
         pairs
             .map(|point| point.split(','))
             .map(|components| {
                 let v: Vec<&str> = components.collect();
                 if v.len() != 2 {
-                    return Err(TiledError::MalformedAttributes(
+                    return Err(Error::MalformedAttributes(
                         "one of a polyline's points does not have an x and y coordinate"
                             .to_string(),
                     ));
@@ -243,7 +243,7 @@ impl ObjectData {
                 let (x, y) = (v[0].parse().ok(), v[1].parse().ok());
                 match (x, y) {
                     (Some(x), Some(y)) => Ok((x, y)),
-                    _ => Err(TiledError::MalformedAttributes(
+                    _ => Err(Error::MalformedAttributes(
                         "one of polyline's points does not have i32eger coordinates".to_string(),
                     )),
                 }

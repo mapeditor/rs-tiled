@@ -5,7 +5,7 @@ use std::{collections::HashMap, fmt, fs::File, io::Read, path::Path, str::FromSt
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader};
 
 use crate::{
-    error::TiledError,
+    error::{Error, Result},
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
@@ -74,10 +74,10 @@ impl Map {
         reader: R,
         path: impl AsRef<Path>,
         cache: &mut impl ResourceCache,
-    ) -> Result<Self, TiledError> {
+    ) -> Result<Self> {
         let mut parser = EventReader::new(reader);
         loop {
-            match parser.next().map_err(TiledError::XmlDecodingError)? {
+            match parser.next().map_err(Error::XmlDecodingError)? {
                 XmlEvent::StartElement {
                     name, attributes, ..
                 } => {
@@ -91,7 +91,7 @@ impl Map {
                     }
                 }
                 XmlEvent::EndDocument => {
-                    return Err(TiledError::PrematureEnd(
+                    return Err(Error::PrematureEnd(
                         "Document ended before map was parsed".to_string(),
                     ))
                 }
@@ -104,11 +104,8 @@ impl Map {
     /// files will be loaded relative to the path given.
     ///
     /// The tileset cache is used to store and refer to any tilesets found along the way.
-    pub fn parse_file(
-        path: impl AsRef<Path>,
-        cache: &mut impl ResourceCache,
-    ) -> Result<Self, TiledError> {
-        let reader = File::open(path.as_ref()).map_err(|err| TiledError::CouldNotOpenFile {
+    pub fn parse_file(path: impl AsRef<Path>, cache: &mut impl ResourceCache) -> Result<Self> {
+        let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
             path: path.as_ref().to_owned(),
             err,
         })?;
@@ -138,42 +135,13 @@ impl Map {
 
     /// Get an iterator over all the layers in the map in ascending order of their layer index.
     #[inline]
-    pub fn layers(&self) -> MapLayerIter {
-        MapLayerIter::new(self)
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
+        self.layers.iter().map(move |layer| Layer::new(self, layer))
     }
 
     /// Returns the layer that has the specified index, if it exists.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
         self.layers.get(index).map(|data| Layer::new(self, data))
-    }
-}
-
-/// An iterator that iterates over all the layers in a map, obtained via [`Map::layers`].
-#[derive(Debug)]
-pub struct MapLayerIter<'map> {
-    map: &'map Map,
-    index: usize,
-}
-
-impl<'map> MapLayerIter<'map> {
-    fn new(map: &'map Map) -> Self {
-        Self { map, index: 0 }
-    }
-}
-
-impl<'map> Iterator for MapLayerIter<'map> {
-    type Item = Layer<'map>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let layer_data = self.map.layers.get(self.index)?;
-        self.index += 1;
-        Some(Layer::new(self.map, layer_data))
-    }
-}
-
-impl<'map> ExactSizeIterator for MapLayerIter<'map> {
-    fn len(&self) -> usize {
-        self.map.layers.len() - self.index
     }
 }
 
@@ -183,7 +151,7 @@ impl Map {
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
         cache: &mut impl ResourceCache,
-    ) -> Result<Map, TiledError> {
+    ) -> Result<Map> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
             optionals: [
@@ -198,7 +166,7 @@ impl Map {
                 ("tilewidth", tile_width, |v:String| v.parse().ok()),
                 ("tileheight", tile_height, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("map must have version, width, height, tilewidth, tileheight and orientation with correct types".to_string())
+            Error::MalformedAttributes("map must have version, width, height, tilewidth, tileheight and orientation with correct types".to_string())
         );
 
         let infinite = infinite.unwrap_or(false);
@@ -218,7 +186,7 @@ impl Map {
                         let tileset = if let Some(ts) = cache.get_tileset(&tileset_path) {
                             ts
                         } else {
-                            let file = File::open(&tileset_path).map_err(|err| TiledError::CouldNotOpenFile{path: tileset_path.clone(), err })?;
+                            let file = File::open(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err })?;
                             let tileset = Arc::new(Tileset::parse_with_template_list(file, &tileset_path, cache, None)?);
                             cache.insert_tileset(tileset_path.clone(), tileset.clone());
                             tileset
@@ -321,7 +289,7 @@ pub enum Orientation {
 impl FromStr for Orientation {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "orthogonal" => Ok(Orientation::Orthogonal),
             "isometric" => Ok(Orientation::Isometric),
