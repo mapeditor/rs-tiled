@@ -6,9 +6,11 @@ use crate::{
     Image, Properties, TiledError,
 };
 
+/// The raw data of an [`ImageLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct ImageLayerData {
-    image: Option<Image>,
+pub struct ImageLayerData {
+    /// The single image this layer contains, if it exists.
+    pub image: Option<Image>,
 }
 
 impl ImageLayerData {
@@ -35,11 +37,8 @@ impl ImageLayerData {
     }
 }
 
-map_wrapper!(ImageLayer => ImageLayerData);
-
-impl<'map> ImageLayer<'map> {
-    /// Get a reference to the image layer's image.
-    pub fn image(&self) -> Option<&Image> {
-        self.data.image.as_ref()
-    }
-}
+map_wrapper!(
+    #[doc = "A layer consisting of a single image."]
+    #[doc = "\nAlso see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#imagelayer)."]
+    ImageLayer => ImageLayerData
+);

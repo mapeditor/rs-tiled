@@ -28,17 +28,40 @@ pub(crate) enum TilesetLocation {
 
 /// Stores the internal tile gid about a layer tile, along with how it is flipped.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct LayerTileData {
+pub struct LayerTileData {
     /// A valid TilesetLocation that points to a tileset that **may or may not contain** this tile.
     tileset_location: TilesetLocation,
     /// The local ID of the tile in the tileset it's in.
     id: TileId,
-    flip_h: bool,
-    flip_v: bool,
-    flip_d: bool,
+    /// Whether this tile is flipped on its Y axis (horizontally).
+    pub flip_h: bool,
+    /// Whether this tile is flipped on its X axis (vertically).
+    pub flip_v: bool,
+    /// Whether this tile is flipped diagonally.
+    pub flip_d: bool,
 }
 
 impl LayerTileData {
+    /// Get the layer tile's tileset index. Guaranteed to be a
+    /// valid index of the map tileset container, but **isn't guaranteed to actually contain
+    /// this tile**.
+    ///
+    /// Use [`LayerTile::get_tile`] if you want to obtain the [`Tile`] that this layer tile is
+    /// referencing.
+    #[inline]
+    pub fn tileset_index(&self) -> Option<usize> {
+        match self.tileset_location {
+            TilesetLocation::Map(n) => Some(n),
+            TilesetLocation::Template(_) => None,
+        }
+    }
+
+    /// Get the layer tile's local id within its parent tileset.
+    #[inline]
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
     const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
     const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
     const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
@@ -96,10 +119,8 @@ impl TileLayerData {
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
     ) -> Result<(Self, Properties), TiledError> {
-        let ((), (width, height)) = get_attrs!(
+        let (width, height) = get_attrs!(
             attrs,
-            optionals: [
-            ],
             required: [
                 ("width", width, |v: String| v.parse().ok()),
                 ("height", height, |v: String| v.parse().ok()),
@@ -127,14 +148,19 @@ impl TileLayerData {
     }
 }
 
-map_wrapper!(LayerTile => LayerTileData);
+map_wrapper!(
+    #[doc = "An instance of a [`Tile`] present in a [`TileLayer`]."]
+    LayerTile => LayerTileData
+);
 
 impl<'map> LayerTile<'map> {
     /// Get a reference to the layer tile's referenced tile, if it exists.
+    #[inline]
     pub fn get_tile(&self) -> Option<Tile<'map>> {
         self.get_tileset().get_tile(self.data.id)
     }
     /// Get a reference to the layer tile's referenced tileset.
+    #[inline]
     pub fn get_tileset(&self) -> &'map Tileset {
         match &self.data.tileset_location {
             // SAFETY: `tileset_index` is guaranteed to be valid
@@ -142,46 +168,14 @@ impl<'map> LayerTile<'map> {
             TilesetLocation::Template(t) => &t,
         }
     }
-
-    /// Get the layer tile's tileset index. Guaranteed to be a
-    /// valid index of the map tileset container, but **isn't guaranteed to actually contain
-    /// this tile**.
-    ///
-    /// Will return None if the tile is not located in one of the map's tilesets (i.e. the
-    /// tileset is from a template).
-    ///
-    /// Use [`LayerTile::get_tile`] if you want to obtain the [`Tile`] that this layer tile is
-    /// referencing.
-    pub fn tileset_index(&self) -> Option<usize> {
-        match self.data.tileset_location {
-            TilesetLocation::Map(n) => Some(n),
-            TilesetLocation::Template(_) => None,
-        }
-    }
-
-    /// Get the layer tile's local id within its parent tileset.
-    pub fn id(&self) -> u32 {
-        self.data.id
-    }
-
-    /// Whether this tile is flipped on its Y axis (horizontally).
-    pub fn flip_h(&self) -> bool {
-        self.data.flip_h
-    }
-
-    /// Whether this tile is flipped on its X axis (vertically).
-    pub fn flip_v(&self) -> bool {
-        self.data.flip_v
-    }
-
-    /// Whether this tile is flipped diagonally.
-    pub fn flip_d(&self) -> bool {
-        self.data.flip_d
-    }
 }
 
+/// A map layer containing tiles in some way. May be finite or infinite.
+#[derive(Debug)]
 pub enum TileLayer<'map> {
+    /// An finite tile layer; Also see [`FiniteTileLayer`].
     Finite(FiniteTileLayer<'map>),
+    /// An infinite tile layer; Also see [`InfiniteTileLayer`].
     Infinite(InfiniteTileLayer<'map>),
 }
 
@@ -193,6 +187,9 @@ impl<'map> TileLayer<'map> {
         }
     }
 
+    /// Obtains the tile present at the position given.
+    ///
+    /// If the position given is invalid or the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         match self {
             TileLayer::Finite(finite) => finite.get_tile(x, y),

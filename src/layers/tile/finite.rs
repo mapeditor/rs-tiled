@@ -9,8 +9,9 @@ use crate::{
 
 use super::util::parse_data_line;
 
+/// The raw data of a [`FiniteTileLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(PartialEq, Clone, Default)]
-pub(crate) struct FiniteTileLayerData {
+pub struct FiniteTileLayerData {
     width: u32,
     height: u32,
     /// The tiles are arranged in rows.
@@ -27,6 +28,18 @@ impl std::fmt::Debug for FiniteTileLayerData {
 }
 
 impl FiniteTileLayerData {
+    /// Get the tile layer's width in tiles.
+    #[inline]
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Get the tile layer's height in tiles.
+    #[inline]
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
@@ -35,14 +48,12 @@ impl FiniteTileLayerData {
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self, TiledError> {
-        let ((e, c), ()) = get_attrs!(
+        let (e, c) = get_attrs!(
             attrs,
             optionals: [
                 ("encoding", encoding, |v| Some(v)),
                 ("compression", compression, |v| Some(v)),
-            ],
-            required: [],
-            TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
+            ]
         );
 
         let tiles = parse_data_line(e, c, parser, tilesets, for_tileset)?;
@@ -63,22 +74,18 @@ impl FiniteTileLayerData {
     }
 }
 
-map_wrapper!(FiniteTileLayer => FiniteTileLayerData);
+map_wrapper!(
+    #[doc = "A [`TileLayer`](super::TileLayer) with a defined bound (width and height)."]
+    FiniteTileLayer => FiniteTileLayerData
+);
 
 impl<'map> FiniteTileLayer<'map> {
+    /// Obtains the tile present at the position given.
+    ///
+    /// If the position given is invalid or the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data
             .get_tile(x, y)
             .and_then(|data| Some(LayerTile::new(self.map(), data)))
-    }
-
-    /// Get the tile layer's width in tiles.
-    pub fn width(&self) -> u32 {
-        self.data.width
-    }
-
-    /// Get the tile layer's height in tiles.
-    pub fn height(&self) -> u32 {
-        self.data.height
     }
 }

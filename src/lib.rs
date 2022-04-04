@@ -1,3 +1,10 @@
+#![doc = include_str!("../README.md")]
+#![warn(missing_docs)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(unsafe_code)]
+#![deny(missing_copy_implementations)]
+#![deny(missing_debug_implementations)]
+
 mod animation;
 mod cache;
 mod error;

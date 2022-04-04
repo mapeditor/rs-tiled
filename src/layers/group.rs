@@ -8,8 +8,9 @@ use crate::{
     Layer, Map, MapTilesetGid, ResourceCache, Tileset,
 };
 
+/// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct GroupLayerData {
+pub struct GroupLayerData {
     layers: Vec<LayerData>,
 }
 
@@ -86,12 +87,21 @@ impl GroupLayerData {
     }
 }
 
-map_wrapper!(GroupLayer => GroupLayerData);
+map_wrapper!(
+    #[doc = "A group layer, used to organize the layers of the map in a hierarchy."]
+    #[doc = "\nAlso see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#group)."]
+    #[doc = "## Note"]
+    #[doc = "In Tiled, the properties of the group layer recursively affect child layers.
+    Implementing this behavior is left up to the user of this library."]
+    GroupLayer => GroupLayerData
+);
 
 impl<'map> GroupLayer<'map> {
+    /// Returns an iterator over the layers present in this group in display order.
     pub fn layers(&self) -> GroupLayerIter {
         GroupLayerIter::new(self.map, self.data)
     }
+    /// Gets a specific layer from the group by index.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
         self.data
             .layers
@@ -101,6 +111,7 @@ impl<'map> GroupLayer<'map> {
 }
 
 /// An iterator that iterates over all the layers in a group layer, obtained via [`GroupLayer::layers`].
+#[derive(Debug)]
 pub struct GroupLayerIter<'map> {
     map: &'map Map,
     group: &'map GroupLayerData,

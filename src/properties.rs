@@ -7,7 +7,9 @@ use crate::{
     util::{get_attrs, parse_tag, XmlEventResult},
 };
 
+/// Represents a RGBA color with 8-bit depth on each channel.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[allow(missing_docs)]
 pub struct Color {
     pub alpha: u8,
     pub red: u8,
@@ -55,16 +57,26 @@ impl FromStr for Color {
     }
 }
 
+/// Represents a custom property's value.
+///
+/// Also read the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-properties).
 #[derive(Debug, PartialEq, Clone)]
 pub enum PropertyValue {
+    /// A boolean value. Corresponds to the `bool` property type.
     BoolValue(bool),
+    /// A floating point value. Corresponds to the `float` property type.
     FloatValue(f32),
+    /// A signed integer value. Corresponds to the `int` property type.
     IntValue(i32),
-    ColorValue(u32),
+    /// A color value. Corresponds to the `color` property type.
+    ColorValue(Color),
+    /// A string value. Corresponds to the `string` property type.
     StringValue(String),
-    /// Holds the path relative to the map or tileset
+    /// A filepath value. Corresponds to the `file` property type.
+    /// Holds the path relative to the map or tileset.
     FileValue(String),
-    /// Holds the id of a referenced object, or 0 if unset
+    /// An object ID value. Corresponds to the `object` property type.
+    /// Holds the id of a referenced object, or 0 if unset.
     ObjectValue(u32),
 }
 
@@ -90,12 +102,11 @@ impl PropertyValue {
                     description: err.to_string(),
                 }),
             },
-            "color" if value.len() > 1 => match u32::from_str_radix(&value[1..], 16) {
-                Ok(color) => Ok(PropertyValue::ColorValue(color)),
-                Err(err) => Err(TiledError::InvalidPropertyValue {
-                    description: err.to_string(),
+            "color" if value.len() > 1 => Color::from_str(&value)
+                .map(|color| PropertyValue::ColorValue(color))
+                .map_err(|_| TiledError::InvalidPropertyValue {
+                    description: "Couldn't parse color".to_string(),
                 }),
-            },
             "string" => Ok(PropertyValue::StringValue(value)),
             "object" => match value.parse() {
                 Ok(val) => Ok(PropertyValue::ObjectValue(val)),
@@ -105,12 +116,13 @@ impl PropertyValue {
             },
             "file" => Ok(PropertyValue::FileValue(value)),
             _ => Err(TiledError::UnknownPropertyType {
-                name: property_type,
+                type_name: property_type,
             }),
         }
     }
 }
 
+/// A custom property container.
 pub type Properties = HashMap<String, PropertyValue>;
 
 pub(crate) fn parse_properties(

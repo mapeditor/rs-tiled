@@ -12,6 +12,7 @@ use crate::{
     ResourceCache, Tileset,
 };
 
+/// A tile ID, local to a tileset.
 pub type TileId = u32;
 
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -24,6 +25,8 @@ pub(crate) struct TileData {
     probability: f32,
 }
 
+/// Points to a tile belonging to a tileset.
+#[derive(Debug)]
 pub struct Tile<'tileset> {
     pub(crate) tileset: &'tileset Tileset,
     pub(crate) data: &'tileset TileData,

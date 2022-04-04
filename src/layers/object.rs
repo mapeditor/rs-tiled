@@ -11,7 +11,8 @@ use crate::{
 /// Raw data referring to a map object layer or tile collision data.
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectLayerData {
-    pub objects: Vec<ObjectData>,
+    objects: Vec<ObjectData>,
+    /// The color used in the editor to display objects in this layer.
     pub colour: Option<Color>,
 }
 
@@ -26,14 +27,11 @@ impl ObjectLayerData {
         path_relative_to: &Path,
         cache: &mut impl ResourceCache,
     ) -> Result<(ObjectLayerData, Properties), TiledError> {
-        let (c, ()) = get_attrs!(
+        let c = get_attrs!(
             attrs,
             optionals: [
                 ("color", colour, |v:String| v.parse().ok()),
-            ],
-            required: [],
-            // this error should never happen since there are no required attrs
-            TiledError::MalformedAttributes("object group parsing error".to_string())
+            ]
         );
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
@@ -49,11 +47,21 @@ impl ObjectLayerData {
         });
         Ok((ObjectLayerData { objects, colour: c }, properties))
     }
+
+    /// Returns the data belonging to the objects contained within the layer, in the order they were
+    /// declared in the TMX file.
+    #[inline]
+    pub fn object_data(&self) -> &[ObjectData] {
+        self.objects.as_ref()
+    }
 }
 
-map_wrapper!(ObjectLayer => ObjectLayerData);
+map_wrapper!(
+    #[doc = "Also called an \"object group\". Used for storing [`Object`]s in a map."]
+    ObjectLayer => ObjectLayerData);
 
 impl<'map> ObjectLayer<'map> {
+    /// Obtains the object corresponding to the index given.
     pub fn get_object(&self, idx: usize) -> Option<Object<'map>> {
         self.data
             .objects
@@ -61,12 +69,16 @@ impl<'map> ObjectLayer<'map> {
             .map(|data| Object::new(self.map, data))
     }
 
+    /// Returns an iterator over the objects present in this layer, in the order they were declared
+    /// in in the TMX file.
+    #[inline]
     pub fn objects(&self) -> Objects<'map> {
         Objects::new(self.map, self.data)
     }
 }
 
 /// An iterator that iterates over all the objects in an object layer, obtained via [`ObjectLayer::objects`].
+#[derive(Debug)]
 pub struct Objects<'map> {
     map: &'map Map,
     data: &'map ObjectLayerData,
@@ -74,6 +86,7 @@ pub struct Objects<'map> {
 }
 
 impl<'map> Objects<'map> {
+    #[inline]
     fn new(map: &'map Map, data: &'map ObjectLayerData) -> Self {
         Self {
             map,
@@ -94,6 +107,7 @@ impl<'map> Iterator for Objects<'map> {
 }
 
 impl<'map> ExactSizeIterator for Objects<'map> {
+    #[inline]
     fn len(&self) -> usize {
         self.data.objects.len() - self.index
     }

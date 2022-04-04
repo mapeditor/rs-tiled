@@ -14,7 +14,7 @@ fn main() {
     let map = Map::parse_file(map_path, &mut cache).unwrap();
 
     for layer in map.layers() {
-        print!("Layer \"{}\":\n\t", layer.name());
+        print!("Layer \"{}\":\n\t", layer.name);
 
         match layer.layer_type() {
             tiled::LayerType::TileLayer(layer) => match layer {
@@ -39,7 +39,7 @@ fn main() {
             tiled::LayerType::ImageLayer(layer) => {
                 println!(
                     "Image layer with {}",
-                    match &layer.image() {
+                    match &layer.image {
                         Some(img) =>
                             format!("an image with source = {}", img.source.to_string_lossy()),
                         None => "no image".to_owned(),

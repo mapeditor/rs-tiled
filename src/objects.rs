@@ -10,7 +10,11 @@ use crate::{
     LayerTile, LayerTileData, MapTilesetGid, ResourceCache, Tileset,
 };
 
+/// A structure describing an [`Object`]'s shape.
+///
+/// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-object).
 #[derive(Debug, PartialEq, Clone)]
+#[allow(missing_docs)]
 pub enum ObjectShape {
     Rect { width: f32, height: f32 },
     Ellipse { width: f32, height: f32 },
@@ -20,20 +24,54 @@ pub enum ObjectShape {
 }
 
 /// Raw data belonging to an object. Used internally and for tile collisions.
+///
+/// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-object).
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectData {
-    pub id: u32,
+    id: u32,
     tile: Option<LayerTileData>,
+    /// The name of the object, which is arbitrary and set by the user.
     pub name: String,
+    /// The type of the object, which is arbitrary and set by the user.
     pub obj_type: String,
+    /// The width of the object, if applicable. This refers to the attribute in `object`.
+    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
+    /// member in [`ObjectShape`] instead.
+    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
     pub width: f32,
+    /// The height of the object, if applicable. This refers to the attribute in `object`.
+    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
+    /// member in [`ObjectShape`] instead.
+    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
     pub height: f32,
+    /// The X coordinate of this object in pixels.
     pub x: f32,
+    /// The Y coordinate of this object in pixels.
     pub y: f32,
+    /// The clockwise rotation of this object around (x,y) in degrees.
     pub rotation: f32,
+    /// Whether the object is shown or hidden.
     pub visible: bool,
+    /// The object's shape.
     pub shape: ObjectShape,
+    /// The object's custom properties as set by the user.
     pub properties: Properties,
+}
+
+impl ObjectData {
+    /// ID of the object, which is unique per map since Tiled 0.11.
+    ///
+    /// On older versions this value is defaulted to 0.
+    #[inline]
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    /// Returns the data of the tile that this object is referencing, if it exists.
+    #[inline]
+    pub fn tile_data(&self) -> Option<LayerTileData> {
+        self.tile.clone()
+    }
 }
 
 impl ObjectData {
@@ -47,10 +85,7 @@ impl ObjectData {
         base_path: &Path,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData, TiledError> {
-        let (
-            (mut id, mut tile, mut x, mut y, mut n, mut t, mut w, mut h, mut v, mut r, template),
-            (),
-        ) = get_attrs!(
+        let (mut id, mut tile, mut x, mut y, mut n, mut t, mut w, mut h, mut v, mut r, template) = get_attrs!(
             attrs,
             optionals: [
                 ("id", id, |v:String| v.parse().ok()),
@@ -65,9 +100,7 @@ impl ObjectData {
                 ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
                 ("rotation", rotation, |v:String| v.parse().ok()),
                 ("template", template, |v:String| v.parse().ok()),
-            ],
-            required: [],
-            TiledError::MalformedAttributes("objects must have an x and a y number".to_string())
+            ]
         );
 
         // If the template attribute is there, we need to go fetch the template file
@@ -83,7 +116,9 @@ impl ObjectData {
                 x.get_or_insert(obj.x);
                 y.get_or_insert(obj.y);
                 v.get_or_insert(obj.visible);
+                #[allow(deprecated)]
                 w.get_or_insert(obj.width);
+                #[allow(deprecated)]
                 h.get_or_insert(obj.height);
                 r.get_or_insert(obj.rotation);
                 id.get_or_insert(obj.id);
@@ -150,6 +185,7 @@ impl ObjectData {
             }
         }
 
+        #[allow(deprecated)]
         Ok(ObjectData {
             id,
             tile,
@@ -169,9 +205,8 @@ impl ObjectData {
 
 impl ObjectData {
     fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, TiledError> {
-        let ((), s) = get_attrs!(
+        let s = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("points", points, |v| Some(v)),
             ],
@@ -182,9 +217,8 @@ impl ObjectData {
     }
 
     fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape, TiledError> {
-        let ((), s) = get_attrs!(
+        let s = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("points", points, |v| Some(v)),
             ],
@@ -218,69 +252,18 @@ impl ObjectData {
     }
 }
 
-map_wrapper!(Object => ObjectData);
+map_wrapper!(
+    #[doc = "Wrapper over an [`ObjectData`] that contains both a reference to the data as well as
+    to the map it is contained in."]
+    Object => ObjectData
+);
 
 impl<'map> Object<'map> {
-    /// Get the object's id.
-    pub fn id(&self) -> u32 {
-        self.data.id
-    }
-
     /// Returns the tile that the object is using as image, if any.
     pub fn get_tile(&self) -> Option<LayerTile<'map>> {
         self.data
             .tile
             .as_ref()
             .map(|tile| LayerTile::new(self.map, tile))
-    }
-
-    /// Get a reference to the object's name.
-    pub fn name(&self) -> &str {
-        self.data.name.as_ref()
-    }
-
-    /// Get a reference to the object's type.
-    pub fn obj_type(&self) -> &str {
-        self.data.obj_type.as_ref()
-    }
-
-    /// Get the object's width.
-    pub fn width(&self) -> f32 {
-        self.data.width
-    }
-
-    /// Get the object's height.
-    pub fn height(&self) -> f32 {
-        self.data.height
-    }
-
-    /// Get the object's x.
-    pub fn x(&self) -> f32 {
-        self.data.x
-    }
-
-    /// Get object's y.
-    pub fn y(&self) -> f32 {
-        self.data.y
-    }
-
-    /// Get a reference to the object's rotation.
-    pub fn rotation(&self) -> f32 {
-        self.data.rotation
-    }
-
-    /// Whether the object should be visible or not.
-    pub fn visible(&self) -> bool {
-        self.data.visible
-    }
-
-    /// Get a reference to the object's shape.
-    pub fn shape(&self) -> &ObjectShape {
-        &self.data.shape
-    }
-
-    /// Get a reference to the object's properties.
-    pub fn properties(&self) -> &Properties {
-        &self.data.properties
     }
 }

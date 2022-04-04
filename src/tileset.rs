@@ -13,15 +13,35 @@ use crate::properties::{parse_properties, Properties};
 use crate::tile::Tile;
 use crate::{util::*, Gid, ResourceCache, TileData};
 
-/// A tileset, usually the tilesheet image.
+/// A collection of tiles for usage in maps and template objects.
+/// 
+/// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset).
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tileset {
+    /// The name of the tileset, set by the user.
     pub name: String,
+    /// The (maximum) width in pixels of the tiles in this tileset. Irrelevant for [image collection]
+    /// tilesets.
+    /// 
+    /// [image collection]: Self::image
     pub tile_width: u32,
+    /// The (maximum) height in pixels of the tiles in this tileset. Irrelevant for [image collection]
+    /// tilesets.
+    /// 
+    /// [image collection]: Self::image
     pub tile_height: u32,
+    /// The spacing in pixels between the tiles in this tileset (applies to the tileset image).
+    /// Irrelevant for image collection tilesets.
     pub spacing: u32,
+    /// The margin around the tiles in this tileset (applies to the tileset image).
+    /// Irrelevant for image collection tilesets.
     pub margin: u32,
+    /// The number of tiles in this tileset. Note that tile IDs don't always have a connection with
+    /// the tile count, and as such there may be tiles with an ID bigger than the tile count.
     pub tilecount: u32,
+    /// The number of tile columns in the tileset. Editable for image collection tilesets, otherwise
+    /// calculated using [image](Self::image) width, [tile width](Self::tile_width),
+    /// [spacing](Self::spacing) and [margin](Self::margin).
     pub columns: u32,
 
     /// A tileset can either:
@@ -126,6 +146,7 @@ impl Tileset {
     }
 
     /// Gets the tile with the specified ID from the tileset.
+    #[inline]
     pub fn get_tile(&self, id: u32) -> Option<Tile> {
         self.tiles.get(&id).map(|data| Tile::new(self, data))
     }
@@ -203,9 +224,8 @@ impl Tileset {
         attrs: &Vec<OwnedAttribute>,
         map_path: &Path,
     ) -> Result<EmbeddedParseResult, TiledError> {
-        let ((), (first_gid, source)) = get_attrs!(
+        let (first_gid, source) = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("firstgid", first_gid, |v:String| v.parse().ok().map(|n| Gid(n))),
                 ("source", name, |v| Some(v)),

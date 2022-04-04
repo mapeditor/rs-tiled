@@ -9,8 +9,9 @@ use crate::{
 
 use super::util::parse_data_line;
 
+/// The raw data of a [`InfiniteTileLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
 #[derive(PartialEq, Clone)]
-pub(crate) struct InfiniteTileLayerData {
+pub struct InfiniteTileLayerData {
     chunks: HashMap<(i32, i32), Chunk>,
 }
 
@@ -27,14 +28,12 @@ impl InfiniteTileLayerData {
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self, TiledError> {
-        let ((e, c), ()) = get_attrs!(
+        let (e, c) = get_attrs!(
             attrs,
             optionals: [
                 ("encoding", encoding, |v| Some(v)),
                 ("compression", compression, |v| Some(v)),
-            ],
-            required: [],
-            TiledError::MalformedAttributes("data must have an encoding and a compression".to_string())
+            ]
         );
 
         let mut chunks = HashMap::<(i32, i32), Chunk>::new();
@@ -82,14 +81,21 @@ fn tile_to_chunk_pos(x: i32, y: i32) -> (i32, i32) {
     )
 }
 
+/// Part of an infinite tile layer.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Chunk {
     tiles: Box<[Option<LayerTileData>; Self::TILE_COUNT]>,
 }
 
 impl Chunk {
+    /// Internal infinite layer chunk width. Do not rely on this value as it might change between
+    /// versions.
     pub const WIDTH: u32 = 16;
+    /// Internal infinite layer chunk height. Do not rely on this value as it might change between
+    /// versions.
     pub const HEIGHT: u32 = 16;
+    /// Internal infinite layer chunk tile count. Do not rely on this value as it might change
+    /// between versions.
     pub const TILE_COUNT: usize = Self::WIDTH as usize * Self::HEIGHT as usize;
 
     pub(crate) fn new() -> Self {
@@ -122,9 +128,8 @@ impl InternalChunk {
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self, TiledError> {
-        let ((), (x, y, width, height)) = get_attrs!(
+        let (x, y, width, height) = get_attrs!(
             attrs,
-            optionals: [],
             required: [
                 ("x", x, |v: String| v.parse().ok()),
                 ("y", y, |v: String| v.parse().ok()),
@@ -146,9 +151,15 @@ impl InternalChunk {
     }
 }
 
-map_wrapper!(InfiniteTileLayer => InfiniteTileLayerData);
+map_wrapper!(
+    #[doc = "A [`TileLayer`](super::TileLayer) with no bounds, internally stored using [`Chunk`]s."]
+    InfiniteTileLayer => InfiniteTileLayerData
+);
 
 impl<'map> InfiniteTileLayer<'map> {
+    /// Obtains the tile present at the position given.
+    ///
+    /// If the position is empty, this function will return [`None`].
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
         self.data
             .get_tile(x, y)

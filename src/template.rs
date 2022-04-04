@@ -15,7 +15,9 @@ use crate::{util::*, EmbeddedParseResultType, MapTilesetGid, ObjectData, Resourc
 /// maps.
 #[derive(Clone, Debug)]
 pub struct Template {
+    /// The tileset this template contains a reference to
     pub tileset: Option<Arc<Tileset>>,
+    /// The object data for this template
     pub object: Option<ObjectData>,
 }
 
