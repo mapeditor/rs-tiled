@@ -37,7 +37,7 @@ impl Template {
         loop {
             match template_parser.next().map_err(Error::XmlDecodingError)? {
                 XmlEvent::StartElement {
-                    name, attributes, ..
+                    name, attributes: _, ..
                 } if name.local_name == "template" => {
                     let template = Self::parse_external_template(
                         &mut template_parser.into_iter(),
