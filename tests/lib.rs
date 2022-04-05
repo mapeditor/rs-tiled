@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
-    Color, FiniteTileLayer, GroupLayer, Layer, LayerType, Loader, Map, ObjectLayer, PropertyValue,
-    ResourceCache, TileLayer,
+    Color, FiniteTileLayer, GroupLayer, Layer, LayerType, Loader, Map, ObjectLayer, ObjectShape,
+    PropertyValue, ResourceCache, TileLayer,
 };
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
@@ -431,8 +431,13 @@ fn test_object_template_property() {
     let object_nt = object_layer.get_object(1).unwrap(); // The non-templated object
 
     // Test core properties
-    assert_eq!(object.width, 32.0);
-    assert_eq!(object.height, 32.0);
+    assert_eq!(
+        object.shape,
+        ObjectShape::Rect {
+            width: 32.0,
+            height: 32.0
+        }
+    );
     assert_eq!(object.x, 32.0);
     assert_eq!(object.y, 32.0);
 
