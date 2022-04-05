@@ -2,7 +2,6 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-use xml::attribute::OwnedAttribute;
 use xml::reader::XmlEvent;
 use xml::EventReader;
 
@@ -20,7 +19,7 @@ pub struct Template {
     /// The tileset this template contains a reference to
     pub tileset: Option<Arc<Tileset>>,
     /// The object data for this template
-    pub object: Option<ObjectData>,
+    pub object: ObjectData,
 }
 
 impl Template {
@@ -28,11 +27,6 @@ impl Template {
         path: &Path,
         cache: &mut impl ResourceCache,
     ) -> Result<Arc<Template>> {
-        // Check the cache to see if this template exists
-        if let Some(templ) = cache.get_template(path) {
-            return Ok(templ);
-        }
-
         // Open the template file
         let file = File::open(&path).map_err(|err| Error::CouldNotOpenFile {
             path: path.to_path_buf(),
@@ -47,13 +41,9 @@ impl Template {
                 } if name.local_name == "template" => {
                     let template = Self::parse_external_template(
                         &mut template_parser.into_iter(),
-                        &attributes,
                         path,
                         cache,
                     )?;
-
-                    // Insert it into the cache
-                    cache.insert_template(path.to_path_buf(), template.clone());
                     return Ok(template);
                 }
                 XmlEvent::EndDocument => {
@@ -68,7 +58,6 @@ impl Template {
 
     fn parse_external_template(
         parser: &mut impl Iterator<Item = XmlEventResult>,
-        _attrs: &Vec<OwnedAttribute>,
         template_path: &Path,
         cache: &mut impl ResourceCache,
     ) -> Result<Arc<Template>> {
@@ -105,6 +94,8 @@ impl Template {
                 Ok(())
             },
         });
+
+        let object = object.ok_or(Error::TemplateHasNoObject)?;
 
         Ok(Arc::new(Template { tileset, object }))
     }

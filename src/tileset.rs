@@ -127,13 +127,13 @@ impl Tileset {
     pub(crate) fn parse_xml_in_map(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
-        map_path: &Path, // Template or Map file
+        path: &Path, // Template or Map file
         for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
-        Tileset::parse_xml_embedded(parser, &attrs, map_path, for_tileset, cache).or_else(|err| {
+        Tileset::parse_xml_embedded(parser, &attrs, path, for_tileset, cache).or_else(|err| {
             if matches!(err, Error::MalformedAttributes(_)) {
-                Tileset::parse_xml_reference(&attrs, map_path)
+                Tileset::parse_xml_reference(&attrs, path)
             } else {
                 Err(err)
             }
@@ -143,7 +143,7 @@ impl Tileset {
     fn parse_xml_embedded(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &[OwnedAttribute],
-        map_path: &Path, // Template or Map file
+        path: &Path, // Template or Map file
         for_tileset: Option<Arc<Tileset>>,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
@@ -164,7 +164,7 @@ impl Tileset {
             Error::MalformedAttributes("tileset must have a firstgid, tilecount, tilewidth, and tileheight with correct types".to_string())
         );
 
-        let root_path = map_path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
+        let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
 
         Self::finish_parsing_xml(
             parser,

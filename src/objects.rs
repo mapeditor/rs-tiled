@@ -104,15 +104,24 @@ impl ObjectData {
         );
 
         // If the template attribute is there, we need to go fetch the template file
-        let template = if let Some(template) = template {
-            let s: String = template;
-            let parent_dir = base_path.parent().ok_or(Error::PathIsNotFile)?;
-            let template_path = parent_dir.join(Path::new(&s));
+        let template = template
+            .map(|template| {
+                let s: String = template;
+                let parent_dir = base_path.parent().ok_or(Error::PathIsNotFile)?;
+                let template_path = parent_dir.join(Path::new(&s));
 
-            let template = Template::parse_template(&template_path, cache)?;
+                // Check the cache to see if this template exists
+                let template = if let Some(templ) = cache.get_template(&template_path) {
+                    templ
+                } else {
+                    let template = Template::parse_template(&template_path, cache)?;
+                    // Insert it into the cache
+                    cache.insert_template(&template_path, template.clone());
+                    template
+                };
 
-            // The template sets the default values for the object
-            if let Some(obj) = &template.object {
+                // The template sets the default values for the object
+                let obj = &template.object;
                 x.get_or_insert(obj.x);
                 y.get_or_insert(obj.y);
                 v.get_or_insert(obj.visible);
@@ -127,11 +136,9 @@ impl ObjectData {
                 if let Some(templ_tile) = obj.tile.clone() {
                     tile.get_or_insert(templ_tile);
                 }
-            };
-            Some(template)
-        } else {
-            None
-        };
+                Ok(template)
+            })
+            .transpose()?;
 
         let x = x.unwrap_or(0f32);
         let y = y.unwrap_or(0f32);
@@ -176,11 +183,9 @@ impl ObjectData {
         // Possibly copy properties from the template into the object
         // Any that already exist in the object's map don't get copied over
         if let Some(templ) = template {
-            if let Some(obj) = &templ.object {
-                for (k, v) in &obj.properties {
-                    if !properties.contains_key(k) {
-                        properties.insert(k.clone(), v.clone());
-                    }
+            for (k, v) in &templ.object.properties {
+                if !properties.contains_key(k) {
+                    properties.insert(k.clone(), v.clone());
                 }
             }
         }

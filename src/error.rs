@@ -49,6 +49,8 @@ pub enum Error {
         /// Supported types are `string`, `int`, `float`, `bool`, `color`, `file` and `object`.
         type_name: String,
     },
+    /// A template was found that does not have an object element in it.
+    TemplateHasNoObject,
 }
 
 /// A result with an error variant of [`crate::Error`].
@@ -93,6 +95,7 @@ impl fmt::Display for Error {
                 write!(fmt, "Invalid property value: {}", description),
             Error::UnknownPropertyType { type_name } =>
                 write!(fmt, "Unknown property value type '{}'", type_name),
+            Error::TemplateHasNoObject => write!(fmt, "A template was found with no object element"),
         }
     }
 }

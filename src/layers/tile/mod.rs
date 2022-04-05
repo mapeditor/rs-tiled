@@ -20,9 +20,9 @@ pub use infinite::*;
 /// Tilesets can be located in either one of the map's tilesets, or a tileset specified by a template.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum TilesetLocation {
-    /// Index into the Map's tileset list, guaranteed to be a valid index of the map tileset container
+    /// Index into the Map's tileset list, guaranteed to be a valid index of the map tileset container.
     Map(usize),
-    /// Arc of the tileset itself if and only if this is location is from a template
+    /// Arc of the tileset itself if and only if this location is from a template.
     Template(Arc<Tileset>),
 }
 

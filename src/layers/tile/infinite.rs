@@ -104,6 +104,7 @@ impl Chunk {
     pub const TILE_COUNT: usize = Self::WIDTH as usize * Self::HEIGHT as usize;
 
     pub(crate) fn new() -> Self {
+        // LayerTileData isn't Copy; need to create a value here to use as the initializer of the array
         const INIT: Option<LayerTileData> = None;
         Self {
             tiles: Box::new([INIT; Self::TILE_COUNT]),
