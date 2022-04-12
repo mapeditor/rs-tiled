@@ -15,18 +15,18 @@ pub use group::*;
 
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) enum LayerDataType {
-    TileLayer(TileLayerData),
-    ObjectLayer(ObjectLayerData),
-    ImageLayer(ImageLayerData),
-    GroupLayer(GroupLayerData),
+    Tiles(TileLayerData),
+    Objects(ObjectLayerData),
+    Image(ImageLayerData),
+    Group(GroupLayerData),
 }
 
 #[derive(Clone, Copy)]
 pub(crate) enum LayerTag {
-    TileLayer,
-    ObjectLayer,
-    ImageLayer,
-    GroupLayer,
+    Tiles,
+    Objects,
+    Image,
+    Group,
 }
 
 /// The raw data of a [`Layer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -86,21 +86,21 @@ impl LayerData {
         );
 
         let (ty, properties) = match tag {
-            LayerTag::TileLayer => {
+            LayerTag::Tiles => {
                 let (ty, properties) = TileLayerData::new(parser, attrs, infinite, tilesets)?;
-                (LayerDataType::TileLayer(ty), properties)
+                (LayerDataType::Tiles(ty), properties)
             }
-            LayerTag::ObjectLayer => {
+            LayerTag::Objects => {
                 let (ty, properties) = ObjectLayerData::new(parser, attrs, Some(tilesets))?;
-                (LayerDataType::ObjectLayer(ty), properties)
+                (LayerDataType::Objects(ty), properties)
             }
-            LayerTag::ImageLayer => {
+            LayerTag::Image => {
                 let (ty, properties) = ImageLayerData::new(parser, map_path)?;
-                (LayerDataType::ImageLayer(ty), properties)
+                (LayerDataType::Image(ty), properties)
             }
-            LayerTag::GroupLayer => {
+            LayerTag::Group => {
                 let (ty, properties) = GroupLayerData::new(parser, infinite, map_path, tilesets)?;
-                (LayerDataType::GroupLayer(ty), properties)
+                (LayerDataType::Group(ty), properties)
             }
         };
 
@@ -137,22 +137,22 @@ impl<'map> Layer<'map> {
 #[derive(Debug)]
 pub enum LayerType<'map> {
     /// A tile layer; Also see [`TileLayer`].
-    TileLayer(TileLayer<'map>),
+    Tiles(TileLayer<'map>),
     /// An object layer (also called object group); Also see [`ObjectLayer`].
-    ObjectLayer(ObjectLayer<'map>),
+    Objects(ObjectLayer<'map>),
     /// An image layer; Also see [`ImageLayer`].
-    ImageLayer(ImageLayer<'map>),
+    Image(ImageLayer<'map>),
     /// A group layer; Also see [`GroupLayer`].
-    GroupLayer(GroupLayer<'map>),
+    Group(GroupLayer<'map>),
 }
 
 impl<'map> LayerType<'map> {
     fn new(map: &'map Map, data: &'map LayerDataType) -> Self {
         match data {
-            LayerDataType::TileLayer(data) => Self::TileLayer(TileLayer::new(map, data)),
-            LayerDataType::ObjectLayer(data) => Self::ObjectLayer(ObjectLayer::new(map, data)),
-            LayerDataType::ImageLayer(data) => Self::ImageLayer(ImageLayer::new(map, data)),
-            LayerDataType::GroupLayer(data) => Self::GroupLayer(GroupLayer::new(map, data)),
+            LayerDataType::Tiles(data) => Self::Tiles(TileLayer::new(map, data)),
+            LayerDataType::Objects(data) => Self::Objects(ObjectLayer::new(map, data)),
+            LayerDataType::Image(data) => Self::Image(ImageLayer::new(map, data)),
+            LayerDataType::Group(data) => Self::Group(GroupLayer::new(map, data)),
         }
     }
 }

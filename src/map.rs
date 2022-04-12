@@ -170,7 +170,7 @@ impl Map {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::TileLayer,
+                    LayerTag::Tiles,
                     infinite,
                     map_path,
                     &tilesets,
@@ -181,7 +181,7 @@ impl Map {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::ImageLayer,
+                    LayerTag::Image,
                     infinite,
                     map_path,
                     &tilesets,
@@ -192,7 +192,7 @@ impl Map {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::ObjectLayer,
+                    LayerTag::Objects,
                     infinite,
                     map_path,
                     &tilesets,
@@ -203,7 +203,7 @@ impl Map {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::GroupLayer,
+                    LayerTag::Group,
                     infinite,
                     map_path,
                     &tilesets,
