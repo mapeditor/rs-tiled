@@ -33,7 +33,7 @@ impl GroupLayerData {
                     LayerTag::Tiles,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
                 )?);
                 Ok(())
             },
@@ -44,7 +44,7 @@ impl GroupLayerData {
                     LayerTag::Image,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
                 )?);
                 Ok(())
             },
@@ -55,7 +55,7 @@ impl GroupLayerData {
                     LayerTag::Objects,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
                 )?);
                 Ok(())
             },
@@ -66,7 +66,7 @@ impl GroupLayerData {
                     LayerTag::Group,
                     infinite,
                     map_path,
-                    &tilesets,
+                    tilesets,
                 )?);
                 Ok(())
             },
@@ -90,10 +90,34 @@ map_wrapper!(
 
 impl<'map> GroupLayer<'map> {
     /// Returns an iterator over the layers present in this group in display order.
-    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
-        self.layers
+    /// ## Example
+    /// ```
+    /// use tiled::Layer;
+    /// # use tiled::Loader;
+    ///
+    /// # fn main() {
+    /// # let map = Loader::new()
+    /// #     .load_tmx_map("assets/tiled_group_layers.tmx")
+    /// #     .unwrap();
+    /// #
+    /// let nested_layers: Vec<Layer> = map
+    ///     .layers()
+    ///     .filter_map(|layer| match layer.layer_type() {
+    ///         tiled::LayerType::GroupLayer(layer) => Some(layer),
+    ///         _ => None,
+    ///     })
+    ///     .flat_map(|layer| layer.layers())
+    ///     .collect();
+    ///
+    /// dbg!(nested_layers);
+    /// # }
+    /// ```
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer<'map>> + 'map {
+        let map: &'map crate::Map = self.map;
+        self.data
+            .layers
             .iter()
-            .map(move |layer| Layer::new(self.map, layer))
+            .map(move |layer| Layer::new(map, layer))
     }
     /// Gets a specific layer from the group by index.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {

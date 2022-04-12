@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `LayerType` variants have been stripped from the `Layer` suffix.
 
+## [0.10.2]
+### Added
+- `TileLayer::width` & `TileLayer::height` for ergonomic access of width/height.
+- `FiniteTileLayerData::get_tile_data`, `InfiniteTileLayerData::get_tile_data`.
+
 ## [0.10.1]
 ### Added
 - `Loader` type for loading map and tileset files without having to necessarily mention the cache

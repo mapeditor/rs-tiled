@@ -21,8 +21,6 @@ fn main() {
                     data.get_tile(0, 0).unwrap().id()
                 ),
                 tiled::TileLayer::Infinite(data) => {
-                    // This is prone to change! Infinite layers will be refactored before 0.10.0
-                    // releases.
                     println!(
                         "Infinite tile layer; Tile @ (-5, 0) = {:?}",
                         data.get_tile(-5, 0)

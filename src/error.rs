@@ -24,7 +24,7 @@ pub enum Error {
         /// The path to the file that was unable to be opened.
         path: PathBuf,
         /// The error that occured when trying to open the file.
-        err: Box<dyn std::error::Error>,
+        err: Box<dyn std::error::Error + Send + Sync + 'static>,
     },
     /// There was an invalid tile in the map parsed.
     InvalidTileFound,
@@ -78,12 +78,12 @@ impl fmt::Display for Error {
                 )
             }
             Error::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
-            Error::InvalidEncodingFormat { encoding: None, compression: None } => 
+            Error::InvalidEncodingFormat { encoding: None, compression: None } =>
                 write!(
                     fmt,
                     "Deprecated combination of encoding and compression"
                 ),
-            Error::InvalidEncodingFormat { encoding, compression } => 
+            Error::InvalidEncodingFormat { encoding, compression } =>
                 write!(
                     fmt,
                     "Unknown encoding or compression format or invalid combination of both (for tile layers): {} encoding with {} compression",
