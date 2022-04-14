@@ -117,7 +117,7 @@ fn test_just_tileset() {
 }
 
 #[test]
-fn test_infinite_tileset() {
+fn test_infinite_map() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64_zlib_infinite.tmx")
         .unwrap();

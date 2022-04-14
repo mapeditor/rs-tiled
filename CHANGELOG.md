@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.2]
 ### Added
+- Map-wrapped chunks: `ChunkWrapper`.
+- Ability to access infinite tile layer chunks via `InfiniteTileLayerData::chunks` & 
+`InfiniteTileLayerData::chunk_data`, as well as chunk data via `Chunk::get_tile_data` &
+`ChunkWrapper::get_tile`.
 - `TileLayer::width` & `TileLayer::height` for ergonomic access of width/height.
 - `FiniteTileLayerData::get_tile_data`, `InfiniteTileLayerData::get_tile_data`.
 
