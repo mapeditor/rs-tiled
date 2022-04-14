@@ -102,7 +102,7 @@ fn tile_to_chunk_pos(x: i32, y: i32) -> (i32, i32) {
 /// Has only the tile data contained within and not a reference to the map it is part of. It is for
 /// this reason that this type should actually be called `ChunkData`, and so this will change in
 /// the next breaking release. In 99.99% of cases you'll actually want to use [`ChunkWrapper`].
-// TODO: Rename to ChunkData
+// TODO(0.11.0): Rename to ChunkData
 #[derive(Debug, PartialEq, Clone)]
 pub struct Chunk {
     tiles: Box<[Option<LayerTileData>; Self::TILE_COUNT]>,
@@ -139,7 +139,7 @@ impl Chunk {
     }
 }
 
-// TODO: Rename to Chunk
+// TODO(0.11.0): Rename to Chunk
 map_wrapper!(
     #[doc = "Part of an [`InfiniteTileLayer`]."]
     #[doc = "This is the only map-wrapped type that has a `Wrapper` suffix. This will change in a later version."]
