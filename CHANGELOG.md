@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TileLayer::width` & `TileLayer::height` for ergonomic access of width/height.
 - `FiniteTileLayerData::get_tile_data`, `InfiniteTileLayerData::get_tile_data`.
 
+### Changed
+- Update `zstd` to `0.11.0`.
+
 ## [0.10.1]
 ### Added
 - `Loader` type for loading map and tileset files without having to necessarily mention the cache
