@@ -50,7 +50,7 @@ pub trait ResourceCache {
 }
 
 /// A cache that identifies resources by their path in the user's filesystem.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FilesystemResourceCache {
     tilesets: HashMap<ResourcePathBuf, Arc<Tileset>>,
 }

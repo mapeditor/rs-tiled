@@ -11,7 +11,7 @@ use crate::{Error, FilesystemResourceCache, Map, ResourceCache, Result, Tileset}
 /// This type is used for loading operations because they require a [`ResourceCache`] for
 /// intermediate artifacts, so using a type for creation can ensure that the cache is reused if
 /// loading more than one object is required.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Loader<Cache: ResourceCache = FilesystemResourceCache> {
     cache: Cache,
 }

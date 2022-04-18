@@ -105,8 +105,8 @@ impl ObjectData {
         let height = h.unwrap_or(0f32);
         let rotation = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
-        let name = n.unwrap_or_else(String::new);
-        let obj_type = t.unwrap_or_else(String::new);
+        let name = n.unwrap_or_default();
+        let obj_type = t.unwrap_or_default();
         let mut shape = None;
         let mut properties = HashMap::new();
 

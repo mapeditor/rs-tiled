@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `TileLayer::width` & `TileLayer::height` for ergonomic access of width/height.
 - `FiniteTileLayerData::get_tile_data`, `InfiniteTileLayerData::get_tile_data`.
+- `Default` derived implementation for `Loader` & `FilesystemResourceCache`
 
 ### Changed
 - Update `zstd` to `0.11.0`.
