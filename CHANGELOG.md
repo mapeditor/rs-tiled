@@ -6,8 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.11.0]
+### Added
+- Template support!
+Templates are loaded automatically when they are encountered, and are treated as intermediate
+objects. As such, `ResourceCache` has now methods for both getting and inserting them in. (#170)
+
 ### Changed
 - `LayerType` variants have been stripped from the `Layer` suffix.
+- `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
 
 ## [0.10.2]
 ### Added
