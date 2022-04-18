@@ -39,7 +39,7 @@ pub(crate) fn parse_for_tileset(
                 return Tileset::parse_external_tileset(
                     &mut tileset_parser.into_iter(),
                     &attributes,
-                    path.as_ref(),
+                    path,
                     for_tileset,
                     reader,
                     cache,

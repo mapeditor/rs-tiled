@@ -87,8 +87,7 @@ impl LayerTileData {
             let (tileset_location, id) = match for_tileset {
                 Some(tileset) => (TilesetLocation::Template(tileset), gid.0 - 1),
                 None => {
-                    let (tileset_index, tileset) =
-                        crate::util::get_tileset_for_gid(&tilesets, gid)?;
+                    let (tileset_index, tileset) = crate::util::get_tileset_for_gid(tilesets, gid)?;
                     let id = gid.0 - tileset.first_gid.0;
                     (TilesetLocation::Map(tileset_index), id)
                 }
@@ -170,7 +169,7 @@ impl<'map> LayerTile<'map> {
         match &self.data.tileset_location {
             // SAFETY: `tileset_index` is guaranteed to be valid
             TilesetLocation::Map(n) => &self.map.tilesets()[*n],
-            TilesetLocation::Template(t) => &t,
+            TilesetLocation::Template(t) => t,
         }
     }
 }
