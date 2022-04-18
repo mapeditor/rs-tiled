@@ -84,18 +84,18 @@ impl LayerTileData {
         if gid == Gid::EMPTY {
             None
         } else {
-            let (tileset_index, tileset) = crate::util::get_tileset_for_gid(&tilesets, gid)?;
-            let id = gid.0 - tileset.first_gid.0;
+            let (tileset_location, id) = match for_tileset {
+                Some(tileset) => (TilesetLocation::Template(tileset), gid.0 - 1),
+                None => {
+                    let (tileset_index, tileset) =
+                        crate::util::get_tileset_for_gid(&tilesets, gid)?;
+                    let id = gid.0 - tileset.first_gid.0;
+                    (TilesetLocation::Map(tileset_index), id)
+                }
+            };
 
             Some(Self {
-                tileset_location: match for_tileset {
-                    None => TilesetLocation::Map(tileset_index),
-                    Some(template_tileset) => {
-                        // If we have an override for the tileset, it must be the tileset we found from get_tileset_for_gid
-                        assert_eq!(tileset.tileset, template_tileset);
-                        TilesetLocation::Template(template_tileset)
-                    }
-                },
+                tileset_location,
                 id,
                 flip_h,
                 flip_v,
@@ -214,7 +214,7 @@ impl<'map> TileLayer<'map> {
     /// #     .load_tmx_map("assets/tiled_base64_zlib.tmx")
     /// #     .unwrap();
     /// # let layer = match map.get_layer(0).unwrap().layer_type() {
-    /// #     LayerType::TileLayer(layer) => layer,
+    /// #     LayerType::Tiles(layer) => layer,
     /// #     _ => panic!("Layer #0 is not a tile layer"),
     /// # };
     /// #
@@ -248,7 +248,7 @@ impl<'map> TileLayer<'map> {
     /// #     .load_tmx_map("assets/tiled_base64_zlib.tmx")
     /// #     .unwrap();
     /// # let layer = match map.get_layer(0).unwrap().layer_type() {
-    /// #     LayerType::TileLayer(layer) => layer,
+    /// #     LayerType::Tiles(layer) => layer,
     /// #     _ => panic!("Layer #0 is not a tile layer"),
     /// # };
     /// #

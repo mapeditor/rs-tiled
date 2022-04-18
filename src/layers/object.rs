@@ -5,7 +5,8 @@ use xml::attribute::OwnedAttribute;
 use crate::{
     parse_properties,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Color, Error, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, Result, Tileset,
+    Color, Error, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader,
+    Result, Tileset,
 };
 
 /// Raw data referring to a map object layer or tile collision data.
@@ -25,6 +26,7 @@ impl ObjectLayerData {
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         path_relative_to: &Path,
+        reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<(ObjectLayerData, Properties)> {
         let c = get_attrs!(
@@ -37,7 +39,7 @@ impl ObjectLayerData {
         let mut properties = HashMap::new();
         parse_tag!(parser, "objectgroup", {
             "object" => |attrs| {
-                objects.push(ObjectData::new(parser, attrs, tilesets, for_tileset.as_ref().cloned(), path_relative_to, cache)?);
+                objects.push(ObjectData::new(parser, attrs, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -85,7 +87,7 @@ impl<'map> ObjectLayer<'map> {
     /// let spawnpoints: Vec<Object> = map
     ///     .layers()
     ///     .filter_map(|layer| match layer.layer_type() {
-    ///         tiled::LayerType::ObjectLayer(layer) => Some(layer),
+    ///         tiled::LayerType::Objects(layer) => Some(layer),
     ///         _ => None,
     ///     })
     ///     .flat_map(|layer| layer.objects())

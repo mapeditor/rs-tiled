@@ -9,7 +9,7 @@ use crate::{
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    ResourceCache, Result, Tileset,
+    ResourceCache, ResourceReader, Result, Tileset,
 };
 
 /// A tile ID, local to a tileset.
@@ -65,6 +65,7 @@ impl TileData {
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
         for_tileset: Option<Arc<Tileset>>,
+        reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<(TileId, TileData)> {
         let ((tile_type, probability), id) = get_attrs!(
@@ -93,7 +94,7 @@ impl TileData {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, for_tileset.as_ref().cloned(), path_relative_to, cache)?.0);
+                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, for_tileset.as_ref().cloned(), path_relative_to, reader,cache)?.0);
                 Ok(())
             },
             "animation" => |_| {

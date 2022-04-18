@@ -7,7 +7,7 @@ use crate::{
     properties::{parse_properties, Properties},
     template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, ResourceCache, Tileset,
+    LayerTile, LayerTileData, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
 };
 
 /// A structure describing an [`Object`]'s shape.
@@ -83,6 +83,7 @@ impl ObjectData {
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         base_path: &Path,
+        reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
         let (mut id, mut tile, mut x, mut y, mut n, mut t, mut w, mut h, mut v, mut r, template) = get_attrs!(
@@ -114,7 +115,7 @@ impl ObjectData {
                 let template = if let Some(templ) = cache.get_template(&template_path) {
                     templ
                 } else {
-                    let template = Template::parse_template(&template_path, cache)?;
+                    let template = Template::parse_template(&template_path, reader, cache)?;
                     // Insert it into the cache
                     cache.insert_template(&template_path, template.clone());
                     template

@@ -1,39 +1,85 @@
 use std::{fs::File, io::Read, path::Path};
 
-use crate::{Error, FilesystemResourceCache, Map, ResourceCache, Result, Tileset};
+use crate::{DefaultResourceCache, Map, ResourceCache, Result, Tileset};
+
+/// A trait defining types that can load data from a [`ResourcePath`](crate::ResourcePath).
+///
+/// This trait should be implemented if you wish to load data from a virtual filesystem.
+///
+/// ## Example
+/// TODO: ResourceReader example
+pub trait ResourceReader {
+    /// The type of the resource that the reader provides. For example, for
+    /// [`FilesystemResourceReader`], this is defined as [`File`].
+    type Resource: Read;
+    /// The type that is returned if [`read_from()`](Self::read_from()) fails. For example, for
+    /// [`FilesystemResourceReader`], this is defined as [`std::io::Error`].
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    /// Try to return a reader object from a path into the resources filesystem.
+    fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error>;
+}
+
+/// A [`ResourceReader`] that reads from [`File`] handles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FilesystemResourceReader;
+
+impl FilesystemResourceReader {
+    fn new() -> Self {
+        Self
+    }
+}
+
+impl ResourceReader for FilesystemResourceReader {
+    type Resource = File;
+    type Error = std::io::Error;
+
+    fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error> {
+        std::fs::File::open(path)
+    }
+}
 
 /// A type used for loading [`Map`]s and [`Tileset`]s.
 ///
 /// Internally, it holds a [`ResourceCache`] that, as its name implies, caches intermediate loading
 /// artifacts, most notably map tilesets.
 ///
+/// It also contains a [`ResourceReader`] which is the object in charge of providing read handles
+/// to files via a [`ResourcePath`](crate::ResourcePath).
+///
 /// ## Reasoning
 /// This type is used for loading operations because they require a [`ResourceCache`] for
 /// intermediate artifacts, so using a type for creation can ensure that the cache is reused if
 /// loading more than one object is required.
 #[derive(Debug, Clone)]
-pub struct Loader<Cache: ResourceCache = FilesystemResourceCache> {
+pub struct Loader<
+    Cache: ResourceCache = DefaultResourceCache,
+    Reader: ResourceReader = FilesystemResourceReader,
+> {
     cache: Cache,
+    reader: Reader,
 }
 
-impl Loader<FilesystemResourceCache> {
-    /// Creates a new loader, creating a default ([`FilesystemResourceCache`]) resource cache in the process.
+impl Loader {
+    /// Creates a new loader, creating a default resource cache and reader
+    /// ([`DefaultResourceCache`] & [`FilesystemResourceReader`] respectively) in the process.
     pub fn new() -> Self {
         Self {
-            cache: FilesystemResourceCache::new(),
+            cache: DefaultResourceCache::new(),
+            reader: FilesystemResourceReader::new(),
         }
     }
 }
 
-impl<Cache: ResourceCache> Loader<Cache> {
-    /// Creates a new loader using a specific resource cache.
+impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
+    /// Creates a new loader using a specific resource cache and reader.
     ///
     /// ## Example
     /// ```
     /// # fn main() -> tiled::Result<()> {
     /// use std::{sync::Arc, path::Path};
     ///
-    /// use tiled::{Loader, ResourceCache};
+    /// use tiled::{Loader, ResourceCache, FilesystemResourceReader};
     ///
     /// /// An example resource cache that doesn't actually cache any resources at all.
     /// struct NoopResourceCache;
@@ -66,7 +112,7 @@ impl<Cache: ResourceCache> Loader<Cache> {
     ///     ) {}
     /// }
     ///
-    /// let mut loader = Loader::with_cache(NoopResourceCache);
+    /// let mut loader = Loader::with_cache_and_reader(NoopResourceCache, FilesystemResourceReader);
     ///
     /// let map = loader.load_tmx_map("assets/tiled_base64_external.tmx")?;
     ///
@@ -78,8 +124,8 @@ impl<Cache: ResourceCache> Loader<Cache> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn with_cache(cache: Cache) -> Self {
-        Self { cache }
+    pub fn with_cache_and_reader(cache: Cache, reader: Reader) -> Self {
+        Self { cache, reader }
     }
 
     /// Parses a file hopefully containing a Tiled map and tries to parse it. All external files
@@ -87,84 +133,22 @@ impl<Cache: ResourceCache> Loader<Cache> {
     ///
     /// All intermediate objects such as map tilesets will be stored in the [internal loader cache].
     ///
-    /// If you need to parse a reader object instead, use [Loader::load_tmx_map_from()].
-    ///
     /// [internal loader cache]: Loader::cache()
     pub fn load_tmx_map(&mut self, path: impl AsRef<Path>) -> Result<Map> {
-        let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
-            path: path.as_ref().to_owned(),
-            err,
-        })?;
-        crate::parse::xml::parse_map(reader, path.as_ref(), &mut self.cache)
-    }
-
-    /// Parses a map out of a reader hopefully containing the contents of a Tiled file.
-    ///
-    /// This augments [`load_tmx_map`] with a custom reader: some engines (e.g. Amethyst) simply
-    /// hand over a byte stream and file location for parsing, in which case this function may be
-    /// required.
-    ///
-    /// If you need to parse a file in the filesystem instead, [`load_tmx_map`] might be
-    /// more convenient.
-    ///
-    /// The path is used for external dependencies such as tilesets or images. It is required.
-    /// If the map if fully embedded and doesn't refer to external files, you may input an arbitrary
-    /// path; the library won't read from the filesystem if it is not required to do so.
-    ///
-    /// All intermediate objects such as map tilesets will be stored in the [internal loader cache].
-    ///
-    /// [internal loader cache]: Loader::cache()
-    /// [`load_tmx_map`]: Loader::load_tmx_map()
-    pub fn load_tmx_map_from(&mut self, reader: impl Read, path: impl AsRef<Path>) -> Result<Map> {
-        crate::parse::xml::parse_map(reader, path.as_ref(), &mut self.cache)
+        crate::parse::xml::parse_map(path.as_ref(), &mut self.reader, &mut self.cache)
     }
 
     /// Parses a file hopefully containing a Tiled tileset and tries to parse it. All external files
     /// will be loaded relative to the path given.
     ///
     /// Unless you specifically want to load a tileset, you won't need to call this function. If
-    /// you are trying to load a map, simply use [`Loader::load_tmx_map`] or
-    /// [`Loader::load_tmx_map_from`].
+    /// you are trying to load a map, simply use [`Loader::load_tmx_map`].
     ///
-    /// If you need to parse a reader object instead, use [Loader::load_tsx_tileset_from()].
+    /// ## Note
+    /// This function will **not** cache the tileset inside the internal [`ResourceCache`], since
+    /// in this context it is not an intermediate object.
     pub fn load_tsx_tileset(&mut self, path: impl AsRef<Path>) -> Result<Tileset> {
-        let reader = File::open(path.as_ref()).map_err(|err| Error::CouldNotOpenFile {
-            path: path.as_ref().to_owned(),
-            err,
-        })?;
-        crate::parse::xml::parse_tileset(reader, path.as_ref(), &mut self.cache)
-    }
-
-    /// Parses a tileset out of a reader hopefully containing the contents of a Tiled tileset.
-    /// Uses the `path` parameter as the root for any relative paths found in the tileset.
-    ///
-    /// Unless you specifically want to load a tileset, you won't need to call this function. If
-    /// you are trying to load a map, simply use [`Loader::load_tmx_map`] or
-    /// [`Loader::load_tmx_map_from`].
-    ///
-    /// ## Example
-    /// ```
-    /// use std::fs::File;
-    /// use std::path::PathBuf;
-    /// use std::io::BufReader;
-    /// use tiled::Loader;
-    ///
-    /// let path = "assets/tilesheet.tsx";
-    /// // Note: This is just an example, if you actually need to load a file use `load_tsx_tileset`
-    /// // instead.
-    /// let reader = BufReader::new(File::open(path).unwrap());
-    /// let mut loader = Loader::new();
-    /// let tileset = loader.load_tsx_tileset_from(reader, path).unwrap();
-    ///
-    /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
-    /// ```
-    pub fn load_tsx_tileset_from(
-        &mut self,
-        reader: impl Read,
-        path: impl AsRef<Path>,
-    ) -> Result<Tileset> {
-        // This function doesn't need the cache right now, but will do once template support is in
-        crate::parse::xml::parse_tileset(reader, path.as_ref(), &mut self.cache)
+        crate::parse::xml::parse_tileset(path.as_ref(), &mut self.reader, &mut self.cache)
     }
 
     /// Returns a reference to the loader's internal [`ResourceCache`].
@@ -172,8 +156,23 @@ impl<Cache: ResourceCache> Loader<Cache> {
         &self.cache
     }
 
-    /// Consumes the loader and returns its internal [`ResourceCache`].
-    pub fn into_cache(self) -> Cache {
-        self.cache
+    /// Returns a mutable reference to the loader's internal [`ResourceCache`].
+    pub fn cache_mut(&mut self) -> &mut Cache {
+        &mut self.cache
+    }
+
+    /// Returns a reference to the loader's internal [`ResourceReader`].
+    pub fn reader(&self) -> &Reader {
+        &self.reader
+    }
+
+    /// Returns a mutable reference to the loader's internal [`ResourceReader`].
+    pub fn reader_mut(&mut self) -> &mut Reader {
+        &mut self.reader
+    }
+
+    /// Consumes the loader and returns its internal [`ResourceCache`] and [`ResourceReader`].
+    pub fn into_inner(self) -> (Cache, Reader) {
+        (self.cache, self.reader)
     }
 }

@@ -1,13 +1,12 @@
-use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-use xml::reader::XmlEvent;
 use xml::EventReader;
+use xml::{attribute::OwnedAttribute, reader::XmlEvent};
 
 use crate::{
-    util::*, EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache, Result,
-    Tileset,
+    util::*, EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache,
+    ResourceReader, Result, Tileset,
 };
 
 /// A template, consisting of an object and a tileset
@@ -25,13 +24,16 @@ pub struct Template {
 impl Template {
     pub(crate) fn parse_template(
         path: &Path,
+        reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<Arc<Template>> {
         // Open the template file
-        let file = File::open(&path).map_err(|err| Error::CouldNotOpenFile {
-            path: path.to_path_buf(),
-            err,
-        })?;
+        let file = reader
+            .read_from(path)
+            .map_err(|err| Error::ResourceLoadingError {
+                path: path.to_owned(),
+                err: Box::new(err),
+            })?;
 
         let mut template_parser = EventReader::new(file);
         loop {
@@ -44,6 +46,7 @@ impl Template {
                     let template = Self::parse_external_template(
                         &mut template_parser.into_iter(),
                         path,
+                        reader,
                         cache,
                     )?;
                     return Ok(template);
@@ -61,6 +64,7 @@ impl Template {
     fn parse_external_template(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         template_path: &Path,
+        reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<Arc<Template>> {
         let mut object = Option::None;
@@ -69,18 +73,17 @@ impl Template {
 
         parse_tag!(parser, "template", {
             "object" => |attrs| {
-                object = Some(ObjectData::new(parser, attrs, Some(&tileset_gid), tileset.clone(), template_path, cache)?);
+                object = Some(ObjectData::new(parser, attrs, Some(&tileset_gid), tileset.clone(), template_path, reader, cache)?);
                 Ok(())
             },
-            "tileset" => |attrs| {
-                let res = Tileset::parse_xml_in_map(parser, attrs, template_path, tileset.clone(), cache)?;
+            "tileset" => |attrs: Vec<OwnedAttribute>| {
+                let res = Tileset::parse_xml_in_map(parser, &attrs, template_path, tileset.clone(), reader, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         tileset = Some(if let Some(ts) = cache.get_tileset(&tileset_path) {
                             ts
                         } else {
-                            let file = File::open(&tileset_path).map_err(|err| Error::CouldNotOpenFile{path: tileset_path.clone(), err })?;
-                            let tileset = Arc::new(crate::parse::xml::parse_tileset(file, &tileset_path, cache)?);
+                            let tileset = Arc::new(crate::parse::xml::parse_tileset( &tileset_path,  reader,cache)?);
                             cache.insert_tileset(tileset_path.clone(), tileset.clone());
                             tileset
                         });

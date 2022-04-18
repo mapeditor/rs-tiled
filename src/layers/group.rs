@@ -5,7 +5,7 @@ use crate::{
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Properties},
     util::*,
-    Error, Layer, MapTilesetGid, ResourceCache, Tileset,
+    Error, Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
 };
 
 /// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -21,6 +21,7 @@ impl GroupLayerData {
         map_path: &Path,
         tilesets: &[MapTilesetGid],
         for_tileset: Option<Arc<Tileset>>,
+        reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<(Self, Properties)> {
         let mut properties = HashMap::new();
@@ -30,11 +31,11 @@ impl GroupLayerData {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::TileLayer,
+                    LayerTag::Tiles,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),
+                    for_tileset.as_ref().cloned(),reader,
                     cache
                 )?);
                 Ok(())
@@ -43,11 +44,11 @@ impl GroupLayerData {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::ImageLayer,
+                    LayerTag::Image,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),
+                    for_tileset.as_ref().cloned(),reader,
                     cache
                 )?);
                 Ok(())
@@ -56,11 +57,11 @@ impl GroupLayerData {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::ObjectLayer,
+                    LayerTag::Objects,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),
+                    for_tileset.as_ref().cloned(),reader,
                     cache
                 )?);
                 Ok(())
@@ -69,11 +70,11 @@ impl GroupLayerData {
                 layers.push(LayerData::new(
                     parser,
                     attrs,
-                    LayerTag::GroupLayer,
+                    LayerTag::Group,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),
+                    for_tileset.as_ref().cloned(),reader,
                     cache
                 )?);
                 Ok(())
@@ -111,7 +112,7 @@ impl<'map> GroupLayer<'map> {
     /// let nested_layers: Vec<Layer> = map
     ///     .layers()
     ///     .filter_map(|layer| match layer.layer_type() {
-    ///         tiled::LayerType::GroupLayer(layer) => Some(layer),
+    ///         tiled::LayerType::Group(layer) => Some(layer),
     ///         _ => None,
     ///     })
     ///     .flat_map(|layer| layer.layers())
