@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
     Color, FiniteTileLayer, GroupLayer, Layer, LayerType, Loader, Map, ObjectLayer, ObjectShape,
-    PropertyValue, ResourceCache, TileLayer,
+    PropertyValue, ResourceCache, TileLayer, TilesetLocation,
 };
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
@@ -456,8 +456,14 @@ fn test_object_template_property() {
         object_nt.get_tile().unwrap().get_tileset().name,
         "tilesheet"
     );
-    assert_eq!(object.get_tile().unwrap().tileset_index(), None);
-    assert_eq!(object_nt.get_tile().unwrap().tileset_index(), Some(0));
+    assert!(matches!(
+        object.get_tile().unwrap().tileset_location(),
+        TilesetLocation::Template(..)
+    ));
+    assert_eq!(
+        object_nt.get_tile().unwrap().tileset_location(),
+        &TilesetLocation::Map(0)
+    );
     assert_eq!(object.get_tile().unwrap().id(), 44);
     assert_eq!(object_nt.get_tile().unwrap().id(), 44);
 }

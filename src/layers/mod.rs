@@ -93,8 +93,7 @@ impl LayerData {
 
         let (ty, properties) = match tag {
             LayerTag::Tiles => {
-                let (ty, properties) =
-                    TileLayerData::new(parser, attrs, infinite, tilesets, for_tileset)?;
+                let (ty, properties) = TileLayerData::new(parser, attrs, infinite, tilesets)?;
                 (LayerDataType::Tiles(ty), properties)
             }
             LayerTag::Objects => {

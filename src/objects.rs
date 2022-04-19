@@ -7,8 +7,113 @@ use crate::{
     properties::{parse_properties, Properties},
     template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
+    Gid, LayerTile, LayerTileData, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId,
+    Tileset,
 };
+
+/// The location of the tileset this tile is in
+///
+/// Tilesets can be contained within either a map or a template.
+#[derive(Clone, Debug, PartialEq)]
+pub enum TilesetLocation {
+    /// Index into the Map's tileset list, guaranteed to be a valid index of the map tileset container.
+    Map(usize),
+    /// Arc of the tileset itself if and only if this location is from a template.
+    Template(Arc<Tileset>),
+}
+
+/// Stores the internal tile gid about a layer tile, along with how it is flipped.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ObjectTileData {
+    /// A valid TilesetLocation that points to a tileset that **may or may not contain** this tile.
+    tileset_location: TilesetLocation,
+    /// The local ID of the tile in the tileset it's in.
+    id: TileId,
+    /// Whether this tile is flipped on its Y axis (horizontally).
+    pub flip_h: bool,
+    /// Whether this tile is flipped on its X axis (vertically).
+    pub flip_v: bool,
+    /// Whether this tile is flipped diagonally.
+    pub flip_d: bool,
+}
+
+impl ObjectTileData {
+    /// Get the layer tile's local id within its parent tileset.
+    #[inline]
+    pub fn id(&self) -> TileId {
+        self.id
+    }
+
+    /// Get a reference to the object tile data's tileset location, which points to a tileset that
+    /// **may or may not contain** this tile.
+    #[inline]
+    pub fn tileset_location(&self) -> &TilesetLocation {
+        &self.tileset_location
+    }
+
+    const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
+    const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
+    const FLIPPED_DIAGONALLY_FLAG: u32 = 0x20000000;
+    const ALL_FLIP_FLAGS: u32 = Self::FLIPPED_HORIZONTALLY_FLAG
+        | Self::FLIPPED_VERTICALLY_FLAG
+        | Self::FLIPPED_DIAGONALLY_FLAG;
+
+    /// Creates a new [`ObjectTileData`] from a [`Gid`] plus its flipping bits.
+    pub(crate) fn from_bits(
+        bits: u32,
+        tilesets: &[MapTilesetGid],
+        for_tileset: Option<Arc<Tileset>>,
+    ) -> Option<Self> {
+        let flags = bits & Self::ALL_FLIP_FLAGS;
+        let gid = Gid(bits & !Self::ALL_FLIP_FLAGS);
+        let flip_d = flags & Self::FLIPPED_DIAGONALLY_FLAG == Self::FLIPPED_DIAGONALLY_FLAG; // Swap x and y axis (anti-diagonally) [flips over y = -x line]
+        let flip_h = flags & Self::FLIPPED_HORIZONTALLY_FLAG == Self::FLIPPED_HORIZONTALLY_FLAG; // Flip tile over y axis
+        let flip_v = flags & Self::FLIPPED_VERTICALLY_FLAG == Self::FLIPPED_VERTICALLY_FLAG; // Flip tile over x axis
+
+        if gid == Gid::EMPTY {
+            None
+        } else {
+            let (tileset_location, id) = match for_tileset {
+                Some(tileset) => (TilesetLocation::Template(tileset), gid.0 - 1),
+                None => {
+                    let (tileset_index, tileset) = crate::util::get_tileset_for_gid(tilesets, gid)?;
+                    let id = gid.0 - tileset.first_gid.0;
+                    (TilesetLocation::Map(tileset_index), id)
+                }
+            };
+
+            Some(Self {
+                tileset_location,
+                id,
+                flip_h,
+                flip_v,
+                flip_d,
+            })
+        }
+    }
+}
+
+map_wrapper!(
+    #[doc = "An instance of a [`Tile`] present in an [`Object`]."]
+    ObjectTile => ObjectTileData
+);
+
+impl<'map> ObjectTile<'map> {
+    /// Get a reference to the object tile's referenced tile, if it exists.
+    #[inline]
+    pub fn get_tile(&self) -> Option<Tile<'map>> {
+        self.get_tileset().get_tile(self.data.id)
+    }
+    /// Get a reference to the object tile's referenced tileset.
+    #[inline]
+    pub fn get_tileset(&self) -> &'map Tileset {
+        match &self.data.tileset_location {
+            // SAFETY: `tileset_index` is guaranteed to be valid
+            TilesetLocation::Map(n) => &self.map.tilesets()[*n],
+            TilesetLocation::Template(t) => t,
+        }
+    }
+}
 
 /// A structure describing an [`Object`]'s shape.
 ///
@@ -29,7 +134,7 @@ pub enum ObjectShape {
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectData {
     id: u32,
-    tile: Option<LayerTileData>,
+    tile: Option<ObjectTileData>,
     /// The name of the object, which is arbitrary and set by the user.
     pub name: String,
     /// The type of the object, which is arbitrary and set by the user.
@@ -69,7 +174,7 @@ impl ObjectData {
 
     /// Returns the data of the tile that this object is referencing, if it exists.
     #[inline]
-    pub fn tile_data(&self) -> Option<LayerTileData> {
+    pub fn tile_data(&self) -> Option<ObjectTileData> {
         self.tile.clone()
     }
 }
@@ -91,7 +196,7 @@ impl ObjectData {
             optionals: [
                 ("id", id, |v:String| v.parse().ok()),
                 ("gid", tile, |v:String| v.parse().ok()
-                                            .and_then(|bits| LayerTileData::from_bits(bits, tilesets?, for_tileset.as_ref().cloned()))),
+                                            .and_then(|bits| ObjectTileData::from_bits(bits, tilesets?, for_tileset.as_ref().cloned()))),
                 ("x", x, |v:String| v.parse().ok()),
                 ("y", y, |v:String| v.parse().ok()),
                 ("name", name, |v:String| v.parse().ok()),
@@ -266,10 +371,10 @@ map_wrapper!(
 
 impl<'map> Object<'map> {
     /// Returns the tile that the object is using as image, if any.
-    pub fn get_tile(&self) -> Option<LayerTile<'map>> {
+    pub fn get_tile(&self) -> Option<ObjectTile<'map>> {
         self.data
             .tile
             .as_ref()
-            .map(|tile| LayerTile::new(self.map, tile))
+            .map(|tile| ObjectTile::new(self.map, tile))
     }
 }

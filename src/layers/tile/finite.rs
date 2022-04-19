@@ -46,7 +46,6 @@ impl FiniteTileLayerData {
         width: u32,
         height: u32,
         tilesets: &[MapTilesetGid],
-        for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
             attrs,
@@ -56,7 +55,7 @@ impl FiniteTileLayerData {
             ]
         );
 
-        let tiles = parse_data_line(e, c, parser, tilesets, for_tileset)?;
+        let tiles = parse_data_line(e, c, parser, tilesets)?;
 
         Ok(Self {
             width,

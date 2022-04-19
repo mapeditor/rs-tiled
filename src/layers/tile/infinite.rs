@@ -26,7 +26,6 @@ impl InfiniteTileLayerData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         tilesets: &[MapTilesetGid],
-        for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
             attrs,
@@ -39,7 +38,7 @@ impl InfiniteTileLayerData {
         let mut chunks = HashMap::<(i32, i32), Chunk>::new();
         parse_tag!(parser, "data", {
             "chunk" => |attrs| {
-                let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets, for_tileset.as_ref().cloned())?;
+                let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets)?;
                 for x in chunk.x..chunk.x + chunk.width as i32 {
                     for y in chunk.y..chunk.y + chunk.height as i32 {
                         let chunk_pos = tile_to_chunk_pos(x, y);
@@ -48,7 +47,7 @@ impl InfiniteTileLayerData {
                         let internal_pos = (x - chunk.x, y - chunk.y);
                         let internal_index = (internal_pos.0 + internal_pos.1 * chunk.width as i32) as usize;
 
-                        chunks.entry(chunk_pos).or_insert_with(Chunk::new).tiles[chunk_index] = chunk.tiles[internal_index].clone();
+                        chunks.entry(chunk_pos).or_insert_with(Chunk::new).tiles[chunk_index] = chunk.tiles[internal_index];
                     }
                 }
                 Ok(())
@@ -104,10 +103,8 @@ impl Chunk {
     pub const TILE_COUNT: usize = Self::WIDTH as usize * Self::HEIGHT as usize;
 
     pub(crate) fn new() -> Self {
-        // LayerTileData isn't Copy; need to create a value here to use as the initializer of the array
-        const INIT: Option<LayerTileData> = None;
         Self {
-            tiles: Box::new([INIT; Self::TILE_COUNT]),
+            tiles: Box::new([None; Self::TILE_COUNT]),
         }
     }
 }
@@ -132,7 +129,6 @@ impl InternalChunk {
         encoding: Option<String>,
         compression: Option<String>,
         tilesets: &[MapTilesetGid],
-        for_tileset: Option<Arc<Tileset>>,
     ) -> Result<Self> {
         let (x, y, width, height) = get_attrs!(
             attrs,
@@ -145,7 +141,7 @@ impl InternalChunk {
             Error::MalformedAttributes("chunk must have x, y, width & height attributes".to_string())
         );
 
-        let tiles = parse_data_line(encoding, compression, parser, tilesets, for_tileset)?;
+        let tiles = parse_data_line(encoding, compression, parser, tilesets)?;
 
         Ok(InternalChunk {
             x,
