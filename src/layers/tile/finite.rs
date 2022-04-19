@@ -1,10 +1,8 @@
-use std::sync::Arc;
-
 use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{get_attrs, map_wrapper, XmlEventResult},
-    LayerTile, LayerTileData, MapTilesetGid, Result, Tileset,
+    LayerTile, LayerTileData, MapTilesetGid, Result,
 };
 
 use super::util::parse_data_line;

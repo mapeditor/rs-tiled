@@ -7,8 +7,7 @@ use crate::{
     properties::{parse_properties, Properties},
     template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Gid, LayerTile, LayerTileData, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId,
-    Tileset,
+    Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
 };
 
 /// The location of the tileset this tile is in
@@ -253,8 +252,8 @@ impl ObjectData {
         let height = h.unwrap_or(0f32);
         let rotation = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
-        let name = n.unwrap_or_else(String::new);
-        let obj_type = t.unwrap_or_else(String::new);
+        let name = n.unwrap_or_default();
+        let obj_type = t.unwrap_or_default();
         let mut shape = None;
         let mut properties = HashMap::new();
 

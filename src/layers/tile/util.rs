@@ -1,8 +1,8 @@
-use std::{convert::TryInto, io::Read, sync::Arc};
+use std::{convert::TryInto, io::Read};
 
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, Error, LayerTileData, MapTilesetGid, Result, Tileset};
+use crate::{util::XmlEventResult, Error, LayerTileData, MapTilesetGid, Result};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,

@@ -1,10 +1,10 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use xml::attribute::OwnedAttribute;
 
 use crate::{
     util::{floor_div, get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Error, LayerTile, LayerTileData, MapTilesetGid, Result, Tileset,
+    Error, LayerTile, LayerTileData, MapTilesetGid, Result,
 };
 
 use super::util::parse_data_line;
