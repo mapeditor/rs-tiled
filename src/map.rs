@@ -98,7 +98,7 @@ impl Map {
     /// #     .unwrap();
     /// #
     /// let tile_layers = map.layers().filter_map(|layer| match layer.layer_type() {
-    ///     tiled::LayerType::TileLayer(layer) => Some(layer),
+    ///     tiled::LayerType::Tiles(layer) => Some(layer),
     ///     _ => None,
     /// });
     ///
