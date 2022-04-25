@@ -41,7 +41,7 @@ impl InfiniteTileLayerData {
                 let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets)?;
                 for x in chunk.x..chunk.x + chunk.width as i32 {
                     for y in chunk.y..chunk.y + chunk.height as i32 {
-                        let chunk_pos = tile_to_chunk_pos(x, y);
+                        let chunk_pos = Chunk::tile_to_chunk_pos(x, y);
                         let relative_pos = (x - chunk_pos.0 * Chunk::WIDTH as i32, y - chunk_pos.1 * Chunk::HEIGHT as i32);
                         let chunk_index = (relative_pos.0 + relative_pos.1 * Chunk::WIDTH as i32) as usize;
                         let internal_pos = (x - chunk.x, y - chunk.y);
@@ -63,7 +63,7 @@ impl InfiniteTileLayerData {
     ///
     /// If you want to get a [`Tile`](`crate::Tile`) instead, use [`InfiniteTileLayer::get_tile()`].
     pub fn get_tile_data(&self, x: i32, y: i32) -> Option<&LayerTileData> {
-        let chunk_pos = tile_to_chunk_pos(x, y);
+        let chunk_pos = Chunk::tile_to_chunk_pos(x, y);
         self.chunks
             .get(&chunk_pos)
             .and_then(|chunk| {
@@ -79,7 +79,7 @@ impl InfiniteTileLayerData {
 
     /// Returns an iterator over only the data part of the chunks of this tile layer.
     ///
-    /// In 99.99% of cases you'll want to use [`Self::chunks()`] instead; Using this method is only
+    /// In 99.99% of cases you'll want to use [`InfiniteTileLayer::chunks()`] instead; Using this method is only
     /// needed if you *only* require the tile data of the chunks (and no other utilities provided by
     /// the map-wrapped [`LayerTile`]), and you are in dire need for that extra bit of performance.
     ///
@@ -88,13 +88,17 @@ impl InfiniteTileLayerData {
     pub fn chunk_data(&self) -> impl ExactSizeIterator<Item = ((i32, i32), &Chunk)> {
         self.chunks.iter().map(|(pos, chunk)| (*pos, chunk))
     }
-}
 
-fn tile_to_chunk_pos(x: i32, y: i32) -> (i32, i32) {
-    (
-        floor_div(x, Chunk::WIDTH as i32),
-        floor_div(y, Chunk::HEIGHT as i32),
-    )
+    /// Obtains a chunk's data by its position. To obtain the position of the chunk that contains a
+    /// tile, use [Chunk::tile_to_chunk_pos()].
+    ///
+    /// In 99.99% of cases you'll want to use [`InfiniteTileLayer::get_chunk()`] instead; Using this method is only
+    /// needed if you *only* require the tile data of the chunk (and no other utilities provided by
+    /// the map-wrapped [`LayerTile`]), and you are in dire need for that extra bit of performance.
+    #[inline]
+    pub fn get_chunk_data(&self, x: i32, y: i32) -> Option<&Chunk> {
+        self.chunks.get(&(x, y))
+    }
 }
 
 /// Part of an infinite tile layer's data.
@@ -136,6 +140,14 @@ impl Chunk {
         } else {
             None
         }
+    }
+
+    /// Returns the position of the chunk that contains the given tile position.
+    pub fn tile_to_chunk_pos(x: i32, y: i32) -> (i32, i32) {
+        (
+            floor_div(x, Chunk::WIDTH as i32),
+            floor_div(y, Chunk::HEIGHT as i32),
+        )
     }
 }
 
@@ -261,5 +273,15 @@ impl<'map> InfiniteTileLayer<'map> {
             .chunks
             .iter()
             .map(move |(pos, chunk)| (*pos, ChunkWrapper::new(map, chunk)))
+    }
+
+    /// Obtains a chunk by its position. To obtain the position of the chunk that contains a tile,
+    /// use [Chunk::tile_to_chunk_pos].
+    #[inline]
+    pub fn get_chunk(&self, x: i32, y: i32) -> Option<ChunkWrapper<'map>> {
+        let map: &'map crate::Map = self.map;
+        self.data
+            .get_chunk_data(x, y)
+            .map(move |data| ChunkWrapper::new(map, data))
     }
 }
