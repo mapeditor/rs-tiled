@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path};
 
 use xml::attribute::OwnedAttribute;
 
@@ -64,7 +64,6 @@ impl TileData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
-        for_tileset: Option<Arc<Tileset>>,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<(TileId, TileData)> {
@@ -94,7 +93,9 @@ impl TileData {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, for_tileset.as_ref().cloned(), path_relative_to, reader,cache)?.0);
+                // Tile objects are not allowed within tile object groups, so we can pass None as the
+                // tilesets vector
+                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, None, path_relative_to, reader,cache)?.0);
                 Ok(())
             },
             "animation" => |_| {

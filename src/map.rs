@@ -154,7 +154,7 @@ impl Map {
 
         parse_tag!(parser, "map", {
             "tileset" => |attrs: Vec<OwnedAttribute>| {
-                let res = Tileset::parse_xml_in_map(parser, &attrs, map_path, None, reader, cache)?;
+                let res = Tileset::parse_xml_in_map(parser, &attrs, map_path,  reader, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let tileset = if let Some(ts) = cache.get_tileset(&tileset_path) {

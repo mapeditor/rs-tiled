@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use xml::attribute::OwnedAttribute;
 
@@ -101,26 +100,22 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &[OwnedAttribute],
         path: &Path, // Template or Map file
-        for_tileset: Option<Arc<Tileset>>,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
-        Tileset::parse_xml_embedded(parser, attrs, path, for_tileset, reader, cache).or_else(
-            |err| {
-                if matches!(err, Error::MalformedAttributes(_)) {
-                    Tileset::parse_xml_reference(attrs, path)
-                } else {
-                    Err(err)
-                }
-            },
-        )
+        Tileset::parse_xml_embedded(parser, attrs, path, reader, cache).or_else(|err| {
+            if matches!(err, Error::MalformedAttributes(_)) {
+                Tileset::parse_xml_reference(attrs, path)
+            } else {
+                Err(err)
+            }
+        })
     }
 
     fn parse_xml_embedded(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &[OwnedAttribute],
         path: &Path, // Template or Map file
-        for_tileset: Option<Arc<Tileset>>,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
@@ -155,7 +150,6 @@ impl Tileset {
                 tile_height,
                 tile_width,
             },
-            for_tileset,
             reader,
             cache,
         )
@@ -190,7 +184,6 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &[OwnedAttribute],
         path: &Path,
-        for_tileset: Option<Arc<Tileset>>,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<Tileset> {
@@ -224,7 +217,6 @@ impl Tileset {
                 tile_height,
                 tile_width,
             },
-            for_tileset,
             reader,
             cache,
         )
@@ -233,7 +225,6 @@ impl Tileset {
     fn finish_parsing_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         prop: TilesetProperties,
-        for_tileset: Option<Arc<Tileset>>,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<Tileset> {
@@ -251,7 +242,12 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                let (id, tile) = TileData::new(parser, attrs, &prop.root_path, for_tileset.clone(), reader,cache)?;
+                // Tilesets can have tiles which can have object groups which can have objects that
+                // refer to this tileset. The issue is that this tileset isn't even constructed yet.
+
+                // This is a corner case that isn't dealt with currently.
+                // FIXME
+                let (id, tile) = TileData::new(parser, attrs, &prop.root_path,  reader,cache)?;
                 tiles.insert(id, tile);
                 Ok(())
             },

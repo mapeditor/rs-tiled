@@ -77,7 +77,7 @@ impl Template {
                 Ok(())
             },
             "tileset" => |attrs: Vec<OwnedAttribute>| {
-                let res = Tileset::parse_xml_in_map(parser, &attrs, template_path, tileset.clone(), reader, cache)?;
+                let res = Tileset::parse_xml_in_map(parser, &attrs, template_path, reader, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         tileset = Some(if let Some(ts) = cache.get_tileset(&tileset_path) {
