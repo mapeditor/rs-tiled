@@ -82,7 +82,7 @@ impl<'map> ObjectLayer<'map> {
     /// let spawnpoints: Vec<Object> = map
     ///     .layers()
     ///     .filter_map(|layer| match layer.layer_type() {
-    ///         tiled::LayerType::ObjectLayer(layer) => Some(layer),
+    ///         tiled::LayerType::Objects(layer) => Some(layer),
     ///         _ => None,
     ///     })
     ///     .flat_map(|layer| layer.objects())

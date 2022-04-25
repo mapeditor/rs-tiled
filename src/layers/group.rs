@@ -103,7 +103,7 @@ impl<'map> GroupLayer<'map> {
     /// let nested_layers: Vec<Layer> = map
     ///     .layers()
     ///     .filter_map(|layer| match layer.layer_type() {
-    ///         tiled::LayerType::GroupLayer(layer) => Some(layer),
+    ///         tiled::LayerType::Group(layer) => Some(layer),
     ///         _ => None,
     ///     })
     ///     .flat_map(|layer| layer.layers())

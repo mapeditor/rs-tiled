@@ -187,7 +187,7 @@ impl<'map> TileLayer<'map> {
     /// #     .load_tmx_map("assets/tiled_base64_zlib.tmx")
     /// #     .unwrap();
     /// # let layer = match map.get_layer(0).unwrap().layer_type() {
-    /// #     LayerType::TileLayer(layer) => layer,
+    /// #     LayerType::Tiles(layer) => layer,
     /// #     _ => panic!("Layer #0 is not a tile layer"),
     /// # };
     /// #
@@ -221,7 +221,7 @@ impl<'map> TileLayer<'map> {
     /// #     .load_tmx_map("assets/tiled_base64_zlib.tmx")
     /// #     .unwrap();
     /// # let layer = match map.get_layer(0).unwrap().layer_type() {
-    /// #     LayerType::TileLayer(layer) => layer,
+    /// #     LayerType::Tiles(layer) => layer,
     /// #     _ => panic!("Layer #0 is not a tile layer"),
     /// # };
     /// #
