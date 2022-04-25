@@ -83,7 +83,7 @@ impl InfiniteTileLayerData {
     /// needed if you *only* require the tile data of the chunks (and no other utilities provided by
     /// the map-wrapped [`LayerTile`]), and you are in dire need for that extra bit of performance.
     ///
-    /// This iterator doesn't have any particular order set.
+    /// This iterator doesn't have any particular order.
     #[inline]
     pub fn chunk_data(&self) -> impl ExactSizeIterator<Item = ((i32, i32), &Chunk)> {
         self.chunks.iter().map(|(pos, chunk)| (*pos, chunk))
@@ -219,12 +219,12 @@ impl<'map> InfiniteTileLayer<'map> {
     /// Returns an iterator over different parts of this map called [`Chunk`]s.
     ///
     /// These **may not** correspond with the chunks in the TMX file, as the chunk size is
-    /// implementation defined (Check [`Chunk::WIDTH`], [`Chunk::HEIGHT`]).
+    /// implementation defined (see [`Chunk::WIDTH`], [`Chunk::HEIGHT`]).
     ///
     /// The iterator item contains the position of the chunk in chunk coordinates along with a
     /// reference to the actual chunk at that position.
     ///
-    /// This iterator doesn't have any particular order set.
+    /// This iterator doesn't have any particular order.
     ///
     /// ## Example
     /// ```
