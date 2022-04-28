@@ -95,7 +95,7 @@ impl TileData {
             "objectgroup" => |attrs| {
                 // Tile objects are not allowed within tile object groups, so we can pass None as the
                 // tilesets vector
-                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, None, path_relative_to, reader,cache)?.0);
+                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, None, path_relative_to, reader, cache)?.0);
                 Ok(())
             },
             "animation" => |_| {

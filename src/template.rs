@@ -83,7 +83,7 @@ impl Template {
                         tileset = Some(if let Some(ts) = cache.get_tileset(&tileset_path) {
                             ts
                         } else {
-                            let tileset = Arc::new(crate::parse::xml::parse_tileset( &tileset_path,  reader,cache)?);
+                            let tileset = Arc::new(crate::parse::xml::parse_tileset(&tileset_path, reader, cache)?);
                             cache.insert_tileset(tileset_path.clone(), tileset.clone());
                             tileset
                         });

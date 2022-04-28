@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Template support!
 Templates are loaded automatically when they are encountered, and are treated as intermediate
-objects. As such, `ResourceCache` has now methods for both getting and inserting them in. (#170)
+objects. As such, `ResourceCache` has now methods for both getting and inserting them (#170).
 
 ### Changed
 - `LayerType` variants have been stripped from the `Layer` suffix.

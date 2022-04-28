@@ -247,7 +247,7 @@ impl Tileset {
 
                 // This is a corner case that isn't dealt with currently.
                 // FIXME
-                let (id, tile) = TileData::new(parser, attrs, &prop.root_path,  reader,cache)?;
+                let (id, tile) = TileData::new(parser, attrs, &prop.root_path, reader, cache)?;
                 tiles.insert(id, tile);
                 Ok(())
             },
