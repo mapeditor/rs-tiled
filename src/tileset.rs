@@ -242,11 +242,6 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                // Tilesets can have tiles which can have object groups which can have objects that
-                // refer to this tileset. The issue is that this tileset isn't even constructed yet.
-
-                // This is a corner case that isn't dealt with currently.
-                // FIXME
                 let (id, tile) = TileData::new(parser, attrs, &prop.root_path, reader, cache)?;
                 tiles.insert(id, tile);
                 Ok(())
