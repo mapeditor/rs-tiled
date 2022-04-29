@@ -71,18 +71,18 @@ impl LayerData {
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id) = get_attrs!(
-            attrs,
-            optionals: [
-                ("opacity", opacity, |v:String| v.parse().ok()),
-                ("tintcolor", tint_color, |v:String| v.parse().ok()),
-                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                ("offsetx", offset_x, |v:String| v.parse().ok()),
-                ("offsety", offset_y, |v:String| v.parse().ok()),
-                ("parallaxx", parallax_x, |v:String| v.parse().ok()),
-                ("parallaxy", parallax_y, |v:String| v.parse().ok()),
-                ("name", name, Some),
-                ("id", id, |v:String| v.parse().ok()),
-            ]
+            for v in attrs {
+                Some("opacity") => opacity ?= v.parse(),
+                Some("tintcolor") => tint_color ?= v.parse(),
+                Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
+                Some("offsetx") => offset_x ?= v.parse(),
+                Some("offsety") => offset_y ?= v.parse(),
+                Some("parallaxx") => parallax_x ?= v.parse(),
+                Some("parallaxy") => parallax_y ?= v.parse(),
+                Some("name") => name = v,
+                Some("id") => id ?= v.parse(),
+            }
+            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id)
         );
 
         let (ty, properties) = match tag {

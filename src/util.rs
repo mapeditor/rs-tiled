@@ -2,53 +2,113 @@
 /// will check that the required ones are there. This could have been done with
 /// attrs.find but that would be inefficient.
 macro_rules! get_attrs {
-    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),+ $(,)*]
-     , required: [$(($name:pat, $var:ident, $method:expr)),+ $(,)*], $err:expr) => {
-        {
-            $(let mut $oVar = None;)*
-            $(let mut $var = None;)*
-            $crate::util::match_attrs!($attrs, match: [$(($oName, $oVar, $oMethod)),+, $(($name, $var, $method)),+]);
-
-            if !(true $(&& $var.is_some())*) {
-                return Err($err);
-            }
-            (
-                    ($($oVar),*),
-                    ($($var.unwrap()),*)
-            )
+    (
+        for $attr:ident in $attrs:ident {
+            $($branches:tt)*
         }
-    };
-    ($attrs:expr, optionals: [$(($oName:pat, $oVar:ident, $oMethod:expr)),+ $(,)*]) => {
+        $ret_expr:expr
+    ) => {
         {
-            $(let mut $oVar = None;)+
-            $crate::util::match_attrs!($attrs, match: [$(($oName, $oVar, $oMethod)),+]);
-            ($($oVar),*)
-        }
-    };
-    ($attrs:expr, required: [$(($name:pat, $var:ident, $method:expr)),+ $(,)*], $err:expr) => {
-        {
-            $(let mut $var = None;)*
-            $crate::util::match_attrs!($attrs, match: [$(($name, $var, $method)),+]);
+            $crate::util::let_attr_branches!($($branches)*);
 
-            if !(true $(&& $var.is_some())*) {
-                return Err($err);
+            for attr in $attrs.iter() {
+                let $attr = attr.value.clone();
+                $crate::util::process_attr_branches!(attr; $($branches)*);
             }
 
-            ($($var.unwrap()),*)
+            $crate::util::handle_attr_branches!($($branches)*);
+
+            $ret_expr
         }
     };
 }
 
-macro_rules! match_attrs {
-    ($attrs:expr, match: [$(($name:pat, $var:ident, $method:expr)),*]) => {
-        for attr in $attrs.iter() {
-            match <String as AsRef<str>>::as_ref(&attr.name.local_name) {
-                $($name => $var = $method(attr.value.clone()),)*
-                _ => {}
-            }
+macro_rules! let_attr_branches {
+    () => {};
+
+    (Some($attr_pat_opt:literal) => $opt_var:ident $(?)?= $opt_expr:expr $(, $($tail:tt)*)?) => {
+        let mut $opt_var = None;
+        $crate::util::let_attr_branches!($($($tail)*)?);
+    };
+
+    ($attr_pat_opt:literal => $opt_var:ident $(?)?= $opt_expr:expr $(, $($tail:tt)*)?) => {
+        let mut $opt_var = None;
+        $crate::util::let_attr_branches!($($($tail)*)?);
+    };
+}
+
+pub(crate) use let_attr_branches;
+
+macro_rules! process_attr_branches {
+    ($attr:ident; ) => {};
+
+    ($attr:ident; Some($attr_pat_opt:literal) => $opt_var:ident = $opt_expr:expr $(, $($tail:tt)*)?) => {
+        if(&$attr.name.local_name == $attr_pat_opt) {
+            $opt_var = Some($opt_expr);
+        }
+        else {
+            $crate::util::process_attr_branches!($attr; $($($tail)*)?);
+        }
+    };
+
+    ($attr:ident; Some($attr_pat_opt:literal) => $opt_var:ident ?= $opt_expr:expr $(, $($tail:tt)*)?) => {
+        if(&$attr.name.local_name == $attr_pat_opt) {
+            $opt_var = Some($opt_expr.map_err(|_|
+                $crate::Error::MalformedAttributes(
+                    concat!("Error parsing optional attribute '", $attr_pat_opt, "'").to_owned()
+                )
+            )?);
+        }
+        else {
+            $crate::util::process_attr_branches!($attr; $($($tail)*)?);
+        }
+    };
+
+    ($attr:ident; $attr_pat_opt:literal => $opt_var:ident = $opt_expr:expr $(, $($tail:tt)*)?) => {
+        if(&$attr.name.local_name == $attr_pat_opt) {
+            $opt_var = Some($opt_expr);
+        }
+        else {
+            $crate::util::process_attr_branches!($attr; $($($tail)*)?);
+        }
+    };
+
+    ($attr:ident; $attr_pat_opt:literal => $opt_var:ident ?= $opt_expr:expr $(, $($tail:tt)*)?) => {
+        if(&$attr.name.local_name == $attr_pat_opt) {
+            $opt_var = Some($opt_expr.map_err(|_|
+                $crate::Error::MalformedAttributes(
+                    concat!("Error parsing attribute '", $attr_pat_opt, "'").to_owned()
+                )
+            )?);
+        }
+        else {
+            $crate::util::process_attr_branches!($attr; $($($tail)*)?);
         }
     }
 }
+
+pub(crate) use process_attr_branches;
+
+macro_rules! handle_attr_branches {
+    () => {};
+
+    (Some($attr_pat_opt:literal) => $opt_var:ident $(?)?= $opt_expr:expr $(, $($tail:tt)*)?) => {
+        $crate::util::handle_attr_branches!($($($tail)*)?);
+    };
+
+    ($attr_pat_opt:literal => $opt_var:ident $(?)?= $opt_expr:expr $(, $($tail:tt)*)?) => {
+        let $opt_var = $opt_var
+            .ok_or_else(||
+                Error::MalformedAttributes(
+                    concat!("Missing attribute: ", $attr_pat_opt).to_owned()
+                )
+            )?;
+
+        $crate::util::handle_attr_branches!($($($tail)*)?);
+    };
+}
+
+pub(crate) use handle_attr_branches;
 
 /// Goes through the children of the tag and will call the correct function for
 /// that child. Closes the tag.
@@ -112,7 +172,6 @@ macro_rules! map_wrapper {
 
 pub(crate) use get_attrs;
 pub(crate) use map_wrapper;
-pub(crate) use match_attrs;
 pub(crate) use parse_tag;
 
 use crate::{Gid, MapTilesetGid};

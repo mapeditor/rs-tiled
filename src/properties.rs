@@ -135,16 +135,13 @@ pub(crate) fn parse_properties(
     let mut p = HashMap::new();
     parse_tag!(parser, "properties", {
         "property" => |attrs:Vec<OwnedAttribute>| {
-            let ((t, v_attr), k) = get_attrs!(
-                attrs,
-                optionals: [
-                    ("type", property_type, Some),
-                    ("value", value, Some),
-                ],
-                required: [
-                    ("name", key, Some),
-                ],
-                Error::MalformedAttributes("property must have a name and a value".to_string())
+            let (t, v_attr, k) = get_attrs!(
+                for attr in attrs {
+                    Some("type") => obj_type = attr,
+                    Some("value") => value = attr,
+                    "name" => name = attr
+                }
+                (obj_type, value, name)
             );
             let t = t.unwrap_or_else(|| "string".to_owned());
 
