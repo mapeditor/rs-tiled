@@ -246,7 +246,7 @@ impl<'map> InfiniteTileLayer<'map> {
     /// # let map = Loader::new()
     /// #     .load_tmx_map("assets/tiled_base64_zlib_infinite.tmx")
     /// #     .unwrap();
-    /// # if let LayerType::TileLayer(TileLayer::Infinite(infinite_layer)) =
+    /// # if let LayerType::Tiles(TileLayer::Infinite(infinite_layer)) =
     /// #     &map.get_layer(0).unwrap().layer_type()
     /// # {
     /// for (chunk_pos, chunk) in infinite_layer.chunks() {
