@@ -190,7 +190,7 @@ impl ObjectData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
-        let (mut id, mut tile, mut x, mut y, mut n, mut t, mut w, mut h, mut v, mut r, template) = get_attrs!(
+        let (id, mut tile, x, y, mut n, mut t, mut w, mut h, mut v, mut r, template) = get_attrs!(
             attrs,
             optionals: [
                 ("id", id, |v:String| v.parse().ok()),
@@ -210,10 +210,9 @@ impl ObjectData {
 
         // If the template attribute is there, we need to go fetch the template file
         let template = template
-            .map(|template| {
-                let s: String = template;
+            .map(|template_path: String| {
                 let parent_dir = base_path.parent().ok_or(Error::PathIsNotFile)?;
-                let template_path = parent_dir.join(Path::new(&s));
+                let template_path = parent_dir.join(Path::new(&template_path));
 
                 // Check the cache to see if this template exists
                 let template = if let Some(templ) = cache.get_template(&template_path) {
@@ -227,15 +226,12 @@ impl ObjectData {
 
                 // The template sets the default values for the object
                 let obj = &template.object;
-                x.get_or_insert(obj.x);
-                y.get_or_insert(obj.y);
                 v.get_or_insert(obj.visible);
                 #[allow(deprecated)]
                 w.get_or_insert(obj.width);
                 #[allow(deprecated)]
                 h.get_or_insert(obj.height);
                 r.get_or_insert(obj.rotation);
-                id.get_or_insert(obj.id);
                 n.get_or_insert(obj.name.clone());
                 t.get_or_insert(obj.obj_type.clone());
                 if let Some(templ_tile) = obj.tile.clone() {
@@ -283,17 +279,19 @@ impl ObjectData {
             },
         });
 
-        let shape = shape.unwrap_or(ObjectShape::Rect { width, height });
-
         // Possibly copy properties from the template into the object
         // Any that already exist in the object's map don't get copied over
         if let Some(templ) = template {
+            shape.get_or_insert(templ.object.shape.clone());
+
             for (k, v) in &templ.object.properties {
                 if !properties.contains_key(k) {
                     properties.insert(k.clone(), v.clone());
                 }
             }
         }
+
+        let shape = shape.unwrap_or(ObjectShape::Rect { width, height });
 
         #[allow(deprecated)]
         Ok(ObjectData {
