@@ -1,6 +1,73 @@
 /// Loops through the attributes once and pulls out the ones we ask it to. It
-/// will check that the required ones are there. This could have been done with
-/// attrs.find but that would be inefficient.
+/// will check that the required ones are there.
+///
+/// The syntax is:
+/// ```ignore
+/// get_attrs!(
+///     for $attr in $attributes {
+///         $($branch),*
+///     }
+///     $expression_to_return
+/// )
+/// ```
+/// Where `$attributes` is anything that implements `Iterator<Item = OwnedAttribute>`,
+/// and `$attr` is the value of the attribute (a String) going to be used in each branch.
+///
+/// Each branch indicates a variable to be set once a certain attribute is found.
+/// Its syntax is as follows:
+/// ```ignore
+/// "attribute name" => variable_name = expression_using_$attr,
+/// ```
+///
+/// For instance:
+/// ```ignore
+/// "source" => source = v,
+/// ```
+/// The variable set has an inferred type `T`. In this case, `source` is inferred to be a `String`,
+/// and `$attr` has been named `v`.
+///
+/// If `Some` encapsulates the attribute name (like so: `Some("attribute name")`) then the attribute
+/// is meant to be optional, which will make the variable an `Option<T>` rather than `T`. Even if it
+/// is technically an Option, the assignment is still done *as if it was `T`*, for instance:
+/// ```ignore
+/// Some("name") => name = v,
+/// ```
+///
+/// Finally, branches can also use `?=` instead of `=`, which will make them accept a `Result<T, E>`
+/// instead. If the expression results in an Err, the error will be handled internally and the
+/// iteration will return early with a `Result<T, crate::Error>`.
+///
+/// Here are some examples of valid branches:
+/// ```ignore
+/// Some("spacing") => spacing ?= v.parse(),
+/// Some("margin") => margin ?= v.parse(),
+/// Some("columns") => columns ?= v.parse(),
+/// Some("name") => name = v,
+///
+/// "tilecount" => tilecount ?= v.parse::<u32>(),
+/// "tilewidth" => tile_width ?= v.parse::<u32>(),
+/// "tileheight" => tile_height ?= v.parse::<u32>(),
+/// ```
+///
+/// Finally, after the `for` block, `$expression_to_return` indicates what to return once the
+/// iteration has finished. It may refer to variables declared previously.
+///
+/// ## Example
+/// ```ignore
+/// let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
+///     for v in attrs {
+///         Some("backgroundcolor") => colour ?= v.parse(),
+///         Some("infinite") => infinite = v == "1",
+///         "version" => version = v,
+///         "orientation" => orientation ?= v.parse::<Orientation>(),
+///         "width" => width ?= v.parse::<u32>(),
+///         "height" => height ?= v.parse::<u32>(),
+///         "tilewidth" => tile_width ?= v.parse::<u32>(),
+///         "tileheight" => tile_height ?= v.parse::<u32>(),
+///     }
+///     ((colour, infinite), (version, orientation, width, height, tile_width, tile_height))
+/// );
+/// ```
 macro_rules! get_attrs {
     (
         for $attr:ident in $attrs:ident {
