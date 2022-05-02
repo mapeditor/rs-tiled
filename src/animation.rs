@@ -22,12 +22,11 @@ pub struct Frame {
 impl Frame {
     pub(crate) fn new(attrs: Vec<OwnedAttribute>) -> Result<Frame> {
         let (tile_id, duration) = get_attrs!(
-            attrs,
-            required: [
-                ("tileid", tile_id, |v:String| v.parse().ok()),
-                ("duration", duration, |v:String| v.parse().ok()),
-            ],
-            Error::MalformedAttributes("A frame must have tileid and duration".to_string())
+            for v in attrs {
+                "tileid" => tile_id ?= v.parse::<u32>(),
+                "duration" => duration ?= v.parse::<u32>(),
+            }
+            (tile_id, duration)
         );
         Ok(Frame { tile_id, duration })
     }

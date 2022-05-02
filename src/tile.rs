@@ -66,15 +66,12 @@ impl TileData {
         path_relative_to: &Path,
     ) -> Result<(TileId, TileData)> {
         let ((tile_type, probability), id) = get_attrs!(
-            attrs,
-            optionals: [
-                ("type", tile_type, |v:String| v.parse().ok()),
-                ("probability", probability, |v:String| v.parse().ok()),
-            ],
-            required: [
-                ("id", id, |v:String| v.parse::<u32>().ok()),
-            ],
-            Error::MalformedAttributes("tile must have an id with the correct type".to_string())
+            for v in attrs {
+                Some("type") => tile_type ?= v.parse(),
+                Some("probability") => probability ?= v.parse(),
+                "id" => id ?= v.parse::<u32>(),
+            }
+            ((tile_type, probability), id)
         );
 
         let mut image = Option::None;

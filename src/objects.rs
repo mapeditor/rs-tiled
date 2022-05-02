@@ -82,24 +82,22 @@ impl ObjectData {
         tilesets: Option<&[MapTilesetGid]>,
     ) -> Result<ObjectData> {
         let ((id, tile, n, t, w, h, v, r), (x, y)) = get_attrs!(
-            attrs,
-            optionals: [
-                ("id", id, |v:String| v.parse().ok()),
-                ("gid", tile, |v:String| v.parse().ok()
-                                            .and_then(|bits| LayerTileData::from_bits(bits, tilesets?))),
-                ("name", name, |v:String| v.parse().ok()),
-                ("type", obj_type, |v:String| v.parse().ok()),
-                ("width", width, |v:String| v.parse().ok()),
-                ("height", height, |v:String| v.parse().ok()),
-                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                ("rotation", rotation, |v:String| v.parse().ok()),
-            ],
-            required: [
-                ("x", x, |v:String| v.parse().ok()),
-                ("y", y, |v:String| v.parse().ok()),
-            ],
-            Error::MalformedAttributes("objects must have an x and a y number".to_string())
+            for v in attrs {
+                Some("id") => id ?= v.parse(),
+                Some("gid") => tile ?= v.parse(),
+                Some("name") => name ?= v.parse(),
+                Some("type") => obj_type ?= v.parse(),
+                Some("width") => width ?= v.parse(),
+                Some("height") => height ?= v.parse(),
+                Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
+                Some("rotation") => rotation ?= v.parse(),
+
+                "x" => x ?= v.parse::<f32>(),
+                "y" => y ?= v.parse::<f32>(),
+            }
+            ((id, tile, name, obj_type, width, height, visible, rotation), (x, y))
         );
+        let tile = tile.and_then(|bits| LayerTileData::from_bits(bits, tilesets?));
         let visible = v.unwrap_or(true);
         let width = w.unwrap_or(0f32);
         let height = h.unwrap_or(0f32);
@@ -158,26 +156,22 @@ impl ObjectData {
 
 impl ObjectData {
     fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
-        let s = get_attrs!(
-            attrs,
-            required: [
-                ("points", points, Some),
-            ],
-            Error::MalformedAttributes("A polyline must have points".to_string())
+        let points = get_attrs!(
+            for v in attrs {
+                "points" => points ?= ObjectData::parse_points(v),
+            }
+            points
         );
-        let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polyline { points })
     }
 
     fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
-        let s = get_attrs!(
-            attrs,
-            required: [
-                ("points", points, Some),
-            ],
-            Error::MalformedAttributes("A polygon must have points".to_string())
+        let points = get_attrs!(
+            for v in attrs {
+                "points" => points ?= ObjectData::parse_points(v),
+            }
+            points
         );
-        let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polygon { points })
     }
 
