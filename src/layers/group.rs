@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-use std::path::Path;
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use crate::{
     error::Result,
     layers::{LayerData, LayerTag},
-    map::MapTilesetGid,
     properties::{parse_properties, Properties},
     util::*,
-    Error, Layer,
+    Error, Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
 };
 
 /// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -22,6 +20,9 @@ impl GroupLayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
+        for_tileset: Option<Arc<Tileset>>,
+        reader: &mut impl ResourceReader,
+        cache: &mut impl ResourceCache,
     ) -> Result<(Self, Properties)> {
         let mut properties = HashMap::new();
         let mut layers = Vec::new();
@@ -34,6 +35,8 @@ impl GroupLayerData {
                     infinite,
                     map_path,
                     tilesets,
+                    for_tileset.as_ref().cloned(),reader,
+                    cache
                 )?);
                 Ok(())
             },
@@ -45,6 +48,8 @@ impl GroupLayerData {
                     infinite,
                     map_path,
                     tilesets,
+                    for_tileset.as_ref().cloned(),reader,
+                    cache
                 )?);
                 Ok(())
             },
@@ -56,6 +61,8 @@ impl GroupLayerData {
                     infinite,
                     map_path,
                     tilesets,
+                    for_tileset.as_ref().cloned(),reader,
+                    cache
                 )?);
                 Ok(())
             },
@@ -67,6 +74,8 @@ impl GroupLayerData {
                     infinite,
                     map_path,
                     tilesets,
+                    for_tileset.as_ref().cloned(),reader,
+                    cache
                 )?);
                 Ok(())
             },

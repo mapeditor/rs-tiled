@@ -9,7 +9,7 @@ use crate::{
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Result, Tileset,
+    ResourceCache, ResourceReader, Result, Tileset,
 };
 
 /// A tile ID, local to a tileset.
@@ -64,6 +64,8 @@ impl TileData {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
+        reader: &mut impl ResourceReader,
+        cache: &mut impl ResourceCache,
     ) -> Result<(TileId, TileData)> {
         let ((tile_type, probability), id) = get_attrs!(
             attrs,
@@ -91,7 +93,9 @@ impl TileData {
                 Ok(())
             },
             "objectgroup" => |attrs| {
-                objectgroup = Some(ObjectLayerData::new(parser, attrs, None)?.0);
+                // Tile objects are not allowed within tile object groups, so we can pass None as the
+                // tilesets vector
+                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, None, path_relative_to, reader, cache)?.0);
                 Ok(())
             },
             "animation" => |_| {

@@ -1,8 +1,11 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use xml::attribute::OwnedAttribute;
 
-use crate::{error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid};
+use crate::{
+    error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid, ResourceCache,
+    ResourceReader, Tileset,
+};
 
 mod image;
 pub use image::*;
@@ -69,6 +72,9 @@ impl LayerData {
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
+        for_tileset: Option<Arc<Tileset>>,
+        reader: &mut impl ResourceReader,
+        cache: &mut impl ResourceCache,
     ) -> Result<Self> {
         let (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id) = get_attrs!(
             attrs,
@@ -91,7 +97,15 @@ impl LayerData {
                 (LayerDataType::Tiles(ty), properties)
             }
             LayerTag::Objects => {
-                let (ty, properties) = ObjectLayerData::new(parser, attrs, Some(tilesets))?;
+                let (ty, properties) = ObjectLayerData::new(
+                    parser,
+                    attrs,
+                    Some(tilesets),
+                    for_tileset,
+                    map_path,
+                    reader,
+                    cache,
+                )?;
                 (LayerDataType::Objects(ty), properties)
             }
             LayerTag::Image => {
@@ -99,7 +113,15 @@ impl LayerData {
                 (LayerDataType::Image(ty), properties)
             }
             LayerTag::Group => {
-                let (ty, properties) = GroupLayerData::new(parser, infinite, map_path, tilesets)?;
+                let (ty, properties) = GroupLayerData::new(
+                    parser,
+                    infinite,
+                    map_path,
+                    tilesets,
+                    for_tileset,
+                    reader,
+                    cache,
+                )?;
                 (LayerDataType::Group(ty), properties)
             }
         };

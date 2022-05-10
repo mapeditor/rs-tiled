@@ -123,8 +123,8 @@ impl Map {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
         map_path: &Path,
-        cache: &mut impl ResourceCache,
         reader: &mut impl ResourceReader,
+        cache: &mut impl ResourceCache,
     ) -> Result<Map> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
             attrs,
@@ -153,11 +153,18 @@ impl Map {
         let mut tilesets = Vec::new();
 
         parse_tag!(parser, "map", {
-            "tileset" => |attrs| {
-                let res = Tileset::parse_xml_in_map(parser, attrs, map_path)?;
+            "tileset" => |attrs: Vec<OwnedAttribute>| {
+                let res = Tileset::parse_xml_in_map(parser, &attrs, map_path,  reader, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
-                        let tileset = cache.get_or_try_insert_tileset_with(tileset_path.clone(), || crate::parse::xml::parse_tileset(&tileset_path, reader))?;
+                        let tileset = if let Some(ts) = cache.get_tileset(&tileset_path) {
+                            ts
+                        } else {
+                            let tileset = Arc::new(crate::parse::xml::parse_tileset(&tileset_path,  reader, cache)?);
+                            cache.insert_tileset(tileset_path.clone(), tileset.clone());
+                            tileset
+                        };
+
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
@@ -174,6 +181,9 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
+                    None,
+                    reader,
+                    cache
                 )?);
                 Ok(())
             },
@@ -185,6 +195,9 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
+                    None,
+                    reader,
+                    cache
                 )?);
                 Ok(())
             },
@@ -196,6 +209,9 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
+                    None,
+                    reader,
+                    cache
                 )?);
                 Ok(())
             },
@@ -207,6 +223,9 @@ impl Map {
                     infinite,
                     map_path,
                     &tilesets,
+                    None,
+                    reader,
+                    cache
                 )?);
                 Ok(())
             },
