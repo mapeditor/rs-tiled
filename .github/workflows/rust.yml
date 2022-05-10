@@ -59,7 +59,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Install dependencies
-      run: sudo apt-get install -y libasound2-dev
+      run: sudo apt-get install -y libasound2-dev libudev-dev
 
     - name: Get stable Rust toolchain with clippy
       uses: actions-rs/toolchain@v1
