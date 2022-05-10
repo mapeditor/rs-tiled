@@ -1,3 +1,8 @@
+//! ## rs-tiled demo with ggez
+//! --------------------------
+//! Displays an entire map, drag with left/middle click and zoom with scroll wheel.
+//! Right click to get a nice animation effect on the tiles.
+
 mod map;
 mod res_reader;
 
@@ -27,7 +32,7 @@ fn main() -> GameResult {
 
     let (mut ctx, event_loop) = cb.build()?;
 
-    // construct and start the Game
+    // Construct and start the Game
     let state = Game::new(&mut ctx)?;
     event::run(ctx, event_loop, state)
 }
@@ -42,7 +47,7 @@ impl Game {
     fn new(ctx: &mut ggez::Context) -> GameResult<Self> {
         graphics::set_default_filter(ctx, graphics::FilterMode::Nearest);
 
-        // load the map
+        // Load the map, using a loader with `GgezResourceReader` for reading from the ggez filesystem
         let mut loader = tiled::Loader::with_cache_and_reader(
             tiled::DefaultResourceCache::new(),
             GgezResourceReader(ctx),
@@ -65,7 +70,7 @@ impl event::EventHandler<ggez::GameError> for Game {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        // fill background color
+        // Clear using the map's background color
         let bg_color: ggez::graphics::Color = self
             .map
             .background_color()
@@ -88,7 +93,7 @@ impl event::EventHandler<ggez::GameError> for Game {
         _x: f32,
         _y: f32,
     ) {
-        // right click toggles demo animation effect
+        // Right click toggles the demo animation effect
         if button == MouseButton::Right {
             self.map.example_animate = !self.map.example_animate;
             self.map.invalidate_batch_cache();
@@ -96,25 +101,25 @@ impl event::EventHandler<ggez::GameError> for Game {
     }
 
     fn mouse_motion_event(&mut self, ctx: &mut Context, _x: f32, _y: f32, dx: f32, dy: f32) {
-        // left or middle click + drag pans the map around
+        // Left or middle click + drag pans the map around
         if input::mouse::button_pressed(ctx, event::MouseButton::Left)
             || input::mouse::button_pressed(ctx, event::MouseButton::Middle)
         {
             self.pan.0 += dx;
             self.pan.1 += dy;
 
-            // need to invalidate for parallax to work
+            // Need to invalidate for parallax to work
             self.map.invalidate_batch_cache();
         }
     }
 
     fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
-        // scroll wheel zooms
+        // Scroll wheel zooms
 
         let old_scale = self.scale;
         self.scale *= 1.0 + y as f32 * 0.1;
 
-        // zoom to mouse cursor
+        // Zoom to mouse cursor
         let Point2 {
             x: mouse_x,
             y: mouse_y,
@@ -122,14 +127,14 @@ impl event::EventHandler<ggez::GameError> for Game {
         self.pan.0 = (self.pan.0 - mouse_x) / old_scale * self.scale + mouse_x;
         self.pan.1 = (self.pan.1 - mouse_y) / old_scale * self.scale + mouse_y;
 
-        // need to invalidate for parallax to work
+        // Need to invalidate for parallax to work
         self.map.invalidate_batch_cache();
     }
 }
 
 impl Game {
     fn draw_map(&mut self, ctx: &mut Context) -> GameResult {
-        // draw tiles + objects
+        // Draw tiles + objects
 
         let draw_param = DrawParam::default()
             .dest([self.pan.0, self.pan.1])
@@ -137,7 +142,7 @@ impl Game {
 
         self.map.draw(ctx, draw_param, self.pan)?;
 
-        // draw bounds
+        // Draw bounds
 
         let rect = self.map.bounds();
         let r1 = graphics::Mesh::new_rectangle(
