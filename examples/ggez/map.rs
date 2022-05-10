@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
 use ggez::{
     graphics::{self, spritebatch::SpriteBatch, DrawParam},
@@ -55,7 +55,7 @@ impl MapHandler {
         graphics::Rect::new(
             0.0,
             0.0,
-            (self.height() * self.tile_height()) as f32,
+            (self.width() * self.tile_width()) as f32,
             (self.height() * self.tile_height()) as f32,
         )
     }
