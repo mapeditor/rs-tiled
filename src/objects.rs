@@ -232,10 +232,10 @@ impl ObjectData {
                 #[allow(deprecated)]
                 h.get_or_insert(obj.height);
                 r.get_or_insert(obj.rotation);
-                n.get_or_insert(obj.name.clone());
-                t.get_or_insert(obj.obj_type.clone());
-                if let Some(templ_tile) = obj.tile.clone() {
-                    tile.get_or_insert(templ_tile);
+                n.get_or_insert_with(|| obj.name.clone());
+                t.get_or_insert_with(|| obj.obj_type.clone());
+                if let Some(templ_tile) = &obj.tile {
+                    tile.get_or_insert_with(|| templ_tile.clone());
                 }
                 Ok(template)
             })
