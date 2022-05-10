@@ -31,10 +31,7 @@ pub struct Image {
     /// use tiled::*;
     ///
     /// # fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    /// let map = Map::parse_file(
-    ///     "assets/folder/tiled_relative_paths.tmx",
-    ///     &mut FilesystemResourceCache::new(),
-    /// )?;
+    /// let map = Loader::new().load_tmx_map("assets/folder/tiled_relative_paths.tmx")?;
     ///
     /// let image_layer = match map
     ///     .layers()
@@ -42,7 +39,7 @@ pub struct Image {
     ///     .unwrap()
     ///     .layer_type()
     /// {
-    ///     LayerType::ImageLayer(layer) => layer,
+    ///     LayerType::Image(layer) => layer,
     ///     _ => panic!(),
     /// };
     ///
@@ -67,7 +64,6 @@ pub struct Image {
     /// Check the assets/tiled_relative_paths.tmx file at the crate root to see the structure of the
     /// file this example is referring to.
     // TODO: Embedded images
-    // TODO: Figure out how to serve crate users paths in a better way
     pub source: PathBuf,
     /// The width in pixels of the image.
     pub width: i32,

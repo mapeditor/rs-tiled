@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use xml::attribute::OwnedAttribute;
@@ -8,7 +7,7 @@ use crate::error::{Error, Result};
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
 use crate::tile::TileData;
-use crate::{util::*, Gid, Tile, TileId};
+use crate::{util::*, Gid, ResourceCache, ResourceReader, Tile, TileId};
 
 /// A collection of tiles for usage in maps and template objects.
 ///
@@ -81,27 +80,6 @@ struct TilesetProperties {
 }
 
 impl Tileset {
-    /// Parses a tileset out of a reader hopefully containing the contents of a Tiled tileset.
-    /// Uses the `path` parameter as the root for any relative paths found in the tileset.
-    ///
-    /// ## Example
-    /// ```
-    /// use std::fs::File;
-    /// use std::path::PathBuf;
-    /// use std::io::BufReader;
-    /// use tiled::Tileset;
-    ///
-    /// let path = "assets/tilesheet.tsx";
-    /// let reader = BufReader::new(File::open(path).unwrap());
-    /// let tileset = Tileset::parse_reader(reader, path).unwrap();
-    ///
-    /// assert_eq!(tileset.image.unwrap().source, PathBuf::from("assets/tilesheet.png"));
-    /// ```
-    #[deprecated(since = "0.10.1", note = "Use `Loader::load_tsx_tileset_from` instead")]
-    pub fn parse_reader<R: Read>(reader: R, path: impl AsRef<Path>) -> Result<Self> {
-        crate::parse::xml::parse_tileset(reader, path.as_ref())
-    }
-
     /// Gets the tile with the specified ID from the tileset.
     #[inline]
     pub fn get_tile(&self, id: TileId) -> Option<Tile> {
@@ -120,12 +98,14 @@ impl Tileset {
 impl Tileset {
     pub(crate) fn parse_xml_in_map(
         parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
-        map_path: &Path,
+        attrs: &[OwnedAttribute],
+        path: &Path, // Template or Map file
+        reader: &mut impl ResourceReader,
+        cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
-        Tileset::parse_xml_embedded(parser, &attrs, map_path).or_else(|err| {
+        Tileset::parse_xml_embedded(parser, attrs, path, reader, cache).or_else(|err| {
             if matches!(err, Error::MalformedAttributes(_)) {
-                Tileset::parse_xml_reference(&attrs, map_path)
+                Tileset::parse_xml_reference(attrs, path)
             } else {
                 Err(err)
             }
@@ -135,7 +115,9 @@ impl Tileset {
     fn parse_xml_embedded(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &[OwnedAttribute],
-        map_path: &Path,
+        path: &Path, // Template or Map file
+        reader: &mut impl ResourceReader,
+        cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
         let ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height)) = get_attrs!(
            attrs,
@@ -154,7 +136,7 @@ impl Tileset {
             Error::MalformedAttributes("tileset must have a firstgid, tilecount, tilewidth, and tileheight with correct types".to_string())
         );
 
-        let root_path = map_path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
+        let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
 
         Self::finish_parsing_xml(
             parser,
@@ -168,6 +150,8 @@ impl Tileset {
                 tile_height,
                 tile_width,
             },
+            reader,
+            cache,
         )
         .map(|tileset| EmbeddedParseResult {
             first_gid,
@@ -200,6 +184,8 @@ impl Tileset {
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: &[OwnedAttribute],
         path: &Path,
+        reader: &mut impl ResourceReader,
+        cache: &mut impl ResourceCache,
     ) -> Result<Tileset> {
         let ((spacing, margin, columns, name), (tilecount, tile_width, tile_height)) = get_attrs!(
             attrs,
@@ -231,12 +217,16 @@ impl Tileset {
                 tile_height,
                 tile_width,
             },
+            reader,
+            cache,
         )
     }
 
     fn finish_parsing_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         prop: TilesetProperties,
+        reader: &mut impl ResourceReader,
+        cache: &mut impl ResourceCache,
     ) -> Result<Tileset> {
         let mut image = Option::None;
         let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
@@ -252,7 +242,7 @@ impl Tileset {
                 Ok(())
             },
             "tile" => |attrs| {
-                let (id, tile) = TileData::new(parser, attrs, &prop.root_path)?;
+                let (id, tile) = TileData::new(parser, attrs, &prop.root_path, reader, cache)?;
                 tiles.insert(id, tile);
                 Ok(())
             },

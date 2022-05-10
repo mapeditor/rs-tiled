@@ -1,4 +1,5 @@
 mod map;
+mod res_reader;
 
 use ggez::{
     event::{self, MouseButton},
@@ -8,9 +9,10 @@ use ggez::{
     Context, GameResult,
 };
 use map::MapHandler;
+use res_reader::GgezResourceReader;
 
 fn main() -> GameResult {
-    // init ggez
+    // Initialize ggez
     let cb = ggez::ContextBuilder::new("rs-tiled + ggez", "rs-tiled")
         .window_setup(
             ggez::conf::WindowSetup::default()
@@ -18,8 +20,10 @@ fn main() -> GameResult {
                 .vsync(false),
         )
         .window_mode(ggez::conf::WindowMode::default().dimensions(1000.0, 800.0))
-        // add repo root to ggez filesystem (our example map looks for `assets/tilesheet.png`)
-        .add_resource_path(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+        // Add the repository `/assets` directory as a resource search path
+        .add_resource_path(
+            std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("assets"),
+        );
 
     let (mut ctx, event_loop) = cb.build()?;
 
@@ -39,10 +43,11 @@ impl Game {
         graphics::set_default_filter(ctx, graphics::FilterMode::Nearest);
 
         // load the map
-        let mut loader = tiled::Loader::new();
-        let map = loader
-            .load_tmx_map("assets/tiled_base64_external.tmx")
-            .unwrap();
+        let mut loader = tiled::Loader::with_cache_and_reader(
+            tiled::DefaultResourceCache::new(),
+            GgezResourceReader(ctx),
+        );
+        let map = loader.load_tmx_map("/tiled_base64_external.tmx").unwrap();
 
         let map_handler = MapHandler::new(map, ctx).unwrap();
 

@@ -19,14 +19,8 @@ impl MapHandler {
         let mut tileset_image_cache = HashMap::new();
         for ts in map.tilesets().iter() {
             if let Some(image) = &ts.image {
-                // image path comes in as "assets/tilesheet.png"
-                // but ggez needs it like "/assets/tilesheet.png" or it will complain
-                let mut pb = PathBuf::new();
-                pb.push("/");
-                pb.push(image.source.clone());
-
                 // load the image
-                let mut img = graphics::Image::new(ctx, pb)?;
+                let mut img = graphics::Image::new(ctx, &image.source)?;
                 img.set_filter(graphics::FilterMode::Nearest);
 
                 tileset_image_cache.insert(ts.name.clone(), img);
@@ -102,12 +96,12 @@ impl MapHandler {
 
         for l in self.map.layers() {
             match &l.layer_type() {
-                tiled::LayerType::ObjectLayer(ol) => {
+                tiled::LayerType::Objects(ol) => {
                     for o in ol.objects() {
                         Self::draw_object(&o, ctx, draw_param.clone())?;
                     }
                 }
-                tiled::LayerType::TileLayer(_tl) => {
+                tiled::LayerType::Tiles(_tl) => {
                     let batches = layer_batches.get(&l.id()).unwrap();
 
                     // each tileset in the layer gets a different batch
@@ -131,7 +125,7 @@ impl MapHandler {
         let mut layer_batches: HashMap<u32, Vec<SpriteBatch>> = HashMap::new();
 
         let tile_layers = self.map.layers().filter_map(|l| match l.layer_type() {
-            tiled::LayerType::TileLayer(tl) => Some((l, tl)),
+            tiled::LayerType::Tiles(tl) => Some((l, tl)),
             _ => None,
         });
 

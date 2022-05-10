@@ -5,10 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0]
+### Added
+- Template support!
+Templates are loaded automatically when they are encountered, and are treated as intermediate
+objects. As such, `ResourceCache` has now methods for both getting and inserting them (#170).
+- VFS support (#199).
+- `cache_mut` loader property (#207).
+
+### Changed
+- `LayerType` variants have been stripped from the `Layer` suffix (#203).
+- `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
+
 ## [0.10.2]
 ### Added
+- Map-wrapped chunks: `ChunkWrapper`.
+- Ability to access infinite tile layer chunks via `InfiniteTileLayer::chunks`, 
+`InfiniteTileLayerData::chunk_data`, `InfiniteTileLayerData::get_chunk_data` &
+`InfiniteTileLayer::get_chunk`, as well as chunk data via `Chunk::get_tile_data` &
+`ChunkWrapper::get_tile`.
 - `TileLayer::width` & `TileLayer::height` for ergonomic access of width/height.
 - `FiniteTileLayerData::get_tile_data`, `InfiniteTileLayerData::get_tile_data`.
+- `Default` derived implementation for `Loader` & `FilesystemResourceCache`
+
+### Changed
+- Update `zstd` to `0.11.0`.
 
 ## [0.10.1]
 ### Added

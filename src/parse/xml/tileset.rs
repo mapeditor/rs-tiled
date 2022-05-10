@@ -1,11 +1,23 @@
-use std::{io::Read, path::Path};
+use std::path::Path;
 
 use xml::{reader::XmlEvent, EventReader};
 
-use crate::{Error, Result, Tileset};
+use crate::{Error, ResourceCache, ResourceReader, Result, Tileset};
 
-pub fn parse_tileset<R: Read>(reader: R, path: &Path) -> Result<Tileset> {
-    let mut tileset_parser = EventReader::new(reader);
+pub fn parse_tileset(
+    path: &Path,
+    reader: &mut impl ResourceReader,
+    cache: &mut impl ResourceCache,
+) -> Result<Tileset> {
+    let mut tileset_parser =
+        EventReader::new(
+            reader
+                .read_from(path)
+                .map_err(|err| Error::ResourceLoadingError {
+                    path: path.to_owned(),
+                    err: Box::new(err),
+                })?,
+        );
     loop {
         match tileset_parser.next().map_err(Error::XmlDecodingError)? {
             XmlEvent::StartElement {
@@ -15,6 +27,8 @@ pub fn parse_tileset<R: Read>(reader: R, path: &Path) -> Result<Tileset> {
                     &mut tileset_parser.into_iter(),
                     &attributes,
                     path,
+                    reader,
+                    cache,
                 );
             }
             XmlEvent::EndDocument => {
