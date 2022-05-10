@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tiled::{
-    Color, FiniteTileLayer, GroupLayer, Layer, LayerType, Loader, Map, ObjectLayer, PropertyValue,
-    ResourceCache, TileLayer,
+    Color, FiniteTileLayer, GroupLayer, Layer, LayerType, Loader, Map, ObjectLayer, ObjectShape,
+    PropertyValue, ResourceCache, TileLayer, TilesetLocation,
 };
 
 fn as_tile_layer<'map>(layer: Layer<'map>) -> TileLayer<'map> {
@@ -418,4 +418,52 @@ fn test_group_layers() {
         Some(&PropertyValue::StringValue("value3".to_string())),
         layer_tile_3.properties.get("key")
     );
+}
+
+#[test]
+fn test_object_template_property() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_template.tmx")
+        .unwrap();
+
+    let object_layer = as_object_layer(r.get_layer(1).unwrap());
+    let object = object_layer.get_object(0).unwrap(); // The templated object
+    let object_nt = object_layer.get_object(1).unwrap(); // The non-templated object
+
+    // Test core properties
+    assert_eq!(
+        object.shape,
+        ObjectShape::Rect {
+            width: 32.0,
+            height: 32.0
+        }
+    );
+    assert_eq!(object.x, 32.0);
+    assert_eq!(object.y, 32.0);
+
+    // Test properties are copied over
+    assert_eq!(
+        Some(&PropertyValue::IntValue(1)),
+        object.properties.get("property")
+    );
+
+    // Test tileset handling
+    assert_eq!(
+        object.get_tile().unwrap().get_tileset().name,
+        "tilesheet_template"
+    );
+    assert_eq!(
+        object_nt.get_tile().unwrap().get_tileset().name,
+        "tilesheet"
+    );
+    assert!(matches!(
+        object.get_tile().unwrap().tileset_location(),
+        TilesetLocation::Template(..)
+    ));
+    assert_eq!(
+        object_nt.get_tile().unwrap().tileset_location(),
+        &TilesetLocation::Map(0)
+    );
+    assert_eq!(object.get_tile().unwrap().id(), 44);
+    assert_eq!(object_nt.get_tile().unwrap().id(), 44);
 }

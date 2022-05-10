@@ -2,9 +2,13 @@ use std::path::Path;
 
 use xml::{reader::XmlEvent, EventReader};
 
-use crate::{Error, ResourceReader, Result, Tileset};
+use crate::{Error, ResourceCache, ResourceReader, Result, Tileset};
 
-pub fn parse_tileset(path: &Path, reader: &mut impl ResourceReader) -> Result<Tileset> {
+pub fn parse_tileset(
+    path: &Path,
+    reader: &mut impl ResourceReader,
+    cache: &mut impl ResourceCache,
+) -> Result<Tileset> {
     let mut tileset_parser =
         EventReader::new(
             reader
@@ -23,6 +27,8 @@ pub fn parse_tileset(path: &Path, reader: &mut impl ResourceReader) -> Result<Ti
                     &mut tileset_parser.into_iter(),
                     &attributes,
                     path,
+                    reader,
+                    cache,
                 );
             }
             XmlEvent::EndDocument => {

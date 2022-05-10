@@ -28,8 +28,8 @@ pub fn parse_map(
                         &mut parser.into_iter(),
                         attributes,
                         path,
-                        cache,
                         reader,
+                        cache,
                     );
                 }
             }

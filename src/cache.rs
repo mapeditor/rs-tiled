@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::Tileset;
+use crate::{Template, Tileset};
 
 /// A reference type that is used to refer to a resource. For the owned variant, see [`ResourcePathBuf`].
 pub type ResourcePath = Path;
@@ -23,42 +23,37 @@ pub trait ResourceCache {
     /// # Example
     /// ```
     /// use std::fs::File;
-    /// use tiled::{FilesystemResourceReader, Tileset, Loader, ResourceCache};
+    /// use tiled::{Tileset, Loader, ResourceCache};
     /// # use tiled::Result;
+    /// # use std::sync::Arc;
+    ///
     /// # fn main() -> Result<()> {
     /// let mut loader = Loader::new();
     /// let path = "assets/tilesheet.tsx";
     ///
     /// assert!(loader.cache().get_tileset(path).is_none());
-    /// loader.load_tmx_map("assets/tiled_base64_external.tmx");
+    /// let tileset = Arc::new(loader.load_tsx_tileset(path)?);
+    /// loader.cache_mut().insert_tileset(path, tileset);
     /// assert!(loader.cache().get_tileset(path).is_some());
     /// # Ok(())
     /// # }
     /// ```
     fn get_tileset(&self, path: impl AsRef<ResourcePath>) -> Option<Arc<Tileset>>;
-
-    /// Returns the tileset mapped to `path` if it exists, otherwise calls `f` and, depending on its
-    /// result, it will:
-    /// - Insert the object into the cache, if the result was [`Ok`].
-    /// - Return the error and leave the cache intact, if the result was [`Err`].
+    /// Insert a new tileset into the cache.
     ///
-    /// ## Note
-    /// This function is normally only used internally; there are not many instances where it is
-    /// callable outside of the library implementation, since the cache is normally owned by the
-    /// loader anyways.
-    fn get_or_try_insert_tileset_with<F, E>(
-        &mut self,
-        path: ResourcePathBuf,
-        f: F,
-    ) -> Result<Arc<Tileset>, E>
-    where
-        F: FnOnce() -> Result<Tileset, E>;
+    /// See [`Self::get_tileset()`] for an example.
+    fn insert_tileset(&mut self, path: impl AsRef<ResourcePath>, tileset: Arc<Tileset>);
+    /// Obtains a template from the cache, if it exists.
+    fn get_template(&self, path: impl AsRef<ResourcePath>) -> Option<Arc<Template>>;
+    /// Insert a new template into the cache.
+    fn insert_template(&mut self, path: impl AsRef<ResourcePath>, tileset: Arc<Template>);
 }
 
 /// A cache that identifies resources by their path, storing a map of them.
 #[derive(Debug)]
 pub struct DefaultResourceCache {
     tilesets: HashMap<ResourcePathBuf, Arc<Tileset>>,
+    templates: HashMap<ResourcePathBuf, Arc<Template>>,
 }
 
 impl DefaultResourceCache {
@@ -66,6 +61,7 @@ impl DefaultResourceCache {
     pub fn new() -> Self {
         Self {
             tilesets: HashMap::new(),
+            templates: HashMap::new(),
         }
     }
 }
@@ -75,18 +71,15 @@ impl ResourceCache for DefaultResourceCache {
         self.tilesets.get(path.as_ref()).map(Clone::clone)
     }
 
-    fn get_or_try_insert_tileset_with<F, E>(
-        &mut self,
-        path: ResourcePathBuf,
-        f: F,
-    ) -> Result<Arc<Tileset>, E>
-    where
-        F: FnOnce() -> Result<Tileset, E>,
-    {
-        Ok(match self.tilesets.entry(path) {
-            std::collections::hash_map::Entry::Occupied(o) => o.into_mut(),
-            std::collections::hash_map::Entry::Vacant(v) => v.insert(Arc::new(f()?)),
-        }
-        .clone())
+    fn insert_tileset(&mut self, path: impl AsRef<ResourcePath>, tileset: Arc<Tileset>) {
+        self.tilesets.insert(path.as_ref().to_path_buf(), tileset);
+    }
+
+    fn get_template(&self, path: impl AsRef<ResourcePath>) -> Option<Arc<Template>> {
+        self.templates.get(path.as_ref()).map(Clone::clone)
+    }
+
+    fn insert_template(&mut self, path: impl AsRef<ResourcePath>, tileset: Arc<Template>) {
+        self.templates.insert(path.as_ref().to_path_buf(), tileset);
     }
 }

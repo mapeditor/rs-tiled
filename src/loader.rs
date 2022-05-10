@@ -92,16 +92,24 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
     ///         None
     ///     }
     ///
-    ///     fn get_or_try_insert_tileset_with<F, E>(
-    ///         &mut self,
-    ///         _path: tiled::ResourcePathBuf,
-    ///         f: F,
-    ///     ) -> Result<std::sync::Arc<tiled::Tileset>, E>
-    ///     where
-    ///         F: FnOnce() -> Result<tiled::Tileset, E>,
-    ///     {
-    ///         f().map(Arc::new)
+    ///     fn get_template(
+    ///         &self,
+    ///         _path: impl AsRef<tiled::ResourcePath>,
+    ///     ) -> Option<std::sync::Arc<tiled::Template>> {
+    ///         None
     ///     }
+    ///
+    ///     fn insert_tileset(
+    ///         &mut self,
+    ///         _path: impl AsRef<tiled::ResourcePath>,
+    ///         _tileset: Arc<tiled::Tileset>
+    ///     ) {}
+    ///
+    ///     fn insert_template(
+    ///         &mut self,
+    ///         _path: impl AsRef<tiled::ResourcePath>,
+    ///         _template: Arc<tiled::Template>
+    ///     ) {}
     /// }
     ///
     /// let mut loader = Loader::with_cache_and_reader(NoopResourceCache, FilesystemResourceReader);
@@ -140,7 +148,7 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
     /// This function will **not** cache the tileset inside the internal [`ResourceCache`], since
     /// in this context it is not an intermediate object.
     pub fn load_tsx_tileset(&mut self, path: impl AsRef<Path>) -> Result<Tileset> {
-        crate::parse::xml::parse_tileset(path.as_ref(), &mut self.reader)
+        crate::parse::xml::parse_tileset(path.as_ref(), &mut self.reader, &mut self.cache)
     }
 
     /// Returns a reference to the loader's internal [`ResourceCache`].

@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.11.0]
 ### Added
-- VFS support (#199)
-- `cache_mut` loader property (#207)
+- Template support!
+Templates are loaded automatically when they are encountered, and are treated as intermediate
+objects. As such, `ResourceCache` has now methods for both getting and inserting them (#170).
+- VFS support (#199).
+- `cache_mut` loader property (#207).
 
 ### Changed
-- `LayerType` variants have been stripped from the `Layer` suffix. (#203)
+- `LayerType` variants have been stripped from the `Layer` suffix (#203).
+- `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
 
 ## [0.10.2]
 ### Added
