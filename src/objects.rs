@@ -211,8 +211,7 @@ impl ObjectData {
         // If the template attribute is there, we need to go fetch the template file
         let template = template
             .map(|template_path: String| {
-                let parent_dir = base_path.parent().ok_or(Error::PathIsNotFile)?;
-                let template_path = parent_dir.join(Path::new(&template_path));
+                let template_path = base_path.join(Path::new(&template_path));
 
                 // Check the cache to see if this template exists
                 let template = if let Some(templ) = cache.get_template(&template_path) {
