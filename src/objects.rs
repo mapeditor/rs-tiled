@@ -211,7 +211,11 @@ impl ObjectData {
         // If the template attribute is there, we need to go fetch the template file
         let template = template
             .map(|template_path: String| {
-                let parent_dir = base_path.parent().ok_or(Error::PathIsNotFile)?;
+                let parent_dir = if std::fs::metadata(base_path).or(Err(Error::PathIsNotFile))?.is_file() {
+                    base_path.parent().ok_or(Error::PathIsNotFile)?
+                } else {
+                    base_path
+                };
                 let template_path = parent_dir.join(Path::new(&template_path));
 
                 // Check the cache to see if this template exists
