@@ -16,6 +16,7 @@ objects. As such, `ResourceCache` has now methods for both getting and inserting
 ### Changed
 - `LayerType` variants have been stripped from the `Layer` suffix (#203).
 - `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
+- `DefaultResourceCache`'s members have been made public.
 
 ## [0.10.2]
 ### Added
