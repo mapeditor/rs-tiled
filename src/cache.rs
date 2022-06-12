@@ -49,11 +49,13 @@ pub trait ResourceCache {
     fn insert_template(&mut self, path: impl AsRef<ResourcePath>, tileset: Arc<Template>);
 }
 
-/// A cache that identifies resources by their path, storing a map of them.
+/// A cache that identifies resources by their path, storing them in a [`HashMap`].
 #[derive(Debug, Default)]
 pub struct DefaultResourceCache {
-    tilesets: HashMap<ResourcePathBuf, Arc<Tileset>>,
-    templates: HashMap<ResourcePathBuf, Arc<Template>>,
+    /// The tilesets cached until now.
+    pub tilesets: HashMap<ResourcePathBuf, Arc<Tileset>>,
+    /// The templates cached until now.
+    pub templates: HashMap<ResourcePathBuf, Arc<Template>>,
 }
 
 impl DefaultResourceCache {
