@@ -40,11 +40,7 @@ impl WangColor {
             (name, color, tile, probability)
         );
 
-        let tile = if tile >= 0 {
-            Some(tile as u32)
-        } else {
-            None
-        };
+        let tile = if tile >= 0 { Some(tile as u32) } else { None };
 
         // Gather variable data
         let mut properties = HashMap::new();

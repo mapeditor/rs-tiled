@@ -28,7 +28,7 @@ impl Default for WangType {
     }
 }
 
-/// Raw data belonging to a tile.
+/// Raw data belonging to a WangSet.
 #[derive(Debug, PartialEq, Clone)]
 pub struct WangSet {
     /// The name of the Wang set
@@ -65,11 +65,7 @@ impl WangSet {
             "edge" => WangType::Edge,
             _ => WangType::default(),
         };
-        let tile = if tile >= 0 {
-            Some(tile as u32)
-        } else {
-            None
-        };
+        let tile = if tile >= 0 { Some(tile as u32) } else { None };
 
         // Gather variable data
         let mut wang_color = Vec::new();

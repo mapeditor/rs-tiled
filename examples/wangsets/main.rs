@@ -1,11 +1,11 @@
 use std::{env, path::PathBuf};
 use tiled::Loader;
 
-const MAP_PATH: &str = "assets/Chapter1.tmx";
+const MAP_PATH: &str = "assets/tiled_csv_wangsets.tmx";
 
 fn main() {
     let mut loader = Loader::new();
-        let map = loader
+    let map = loader
         .load_tmx_map(
             PathBuf::from(
                 env::var("CARGO_MANIFEST_DIR")
