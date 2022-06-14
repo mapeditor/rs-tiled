@@ -11,7 +11,7 @@ use crate::tile::TileData;
 use crate::{util::*, Gid, Tile, TileId};
 
 mod wangset;
-use wangset::WangSet;
+pub use wangset::{WangColor, WangId, WangSet, WangTile};
 
 /// A collection of tiles for usage in maps and template objects.
 ///

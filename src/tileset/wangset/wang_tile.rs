@@ -12,7 +12,7 @@ use crate::{
 The Wang ID, given by a comma-separated list of indexes (starting from 1, because 0 means _unset_) referring to the Wang colors in the Wang set in the following order: top, top right, right, bottom right, bottom, bottom left, left, top left (since Tiled 1.5). Before Tiled 1.5, the Wang ID was saved as a 32-bit unsigned integer stored in the format 0xCECECECE (where each C is a corner color and each E is an edge color, in reverse order).
 */
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct WangId([u32; 8]);
+pub struct WangId(pub [u32; 8]);
 
 impl FromStr for WangId {
     type Err = ();
@@ -45,6 +45,7 @@ pub struct WangTile {
 }
 
 impl WangTile {
+    /// Reads data from XML parser to create a WangTile.
     pub fn new(
         _parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,

@@ -25,6 +25,7 @@ pub struct WangColor {
 }
 
 impl WangColor {
+    /// Reads data from XML parser to create a WangColor.
     pub fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,

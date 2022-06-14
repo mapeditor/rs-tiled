@@ -10,9 +10,9 @@ use crate::{
 };
 
 mod wang_color;
-use wang_color::WangColor;
+pub use wang_color::WangColor;
 mod wang_tile;
-use wang_tile::WangTile;
+pub use wang_tile::{WangId, WangTile};
 
 /// Undocummented WangSet types
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -46,6 +46,7 @@ pub struct WangSet {
 }
 
 impl WangSet {
+    /// Reads data from XML parser to create a WangSet.
     pub fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
