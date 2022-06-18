@@ -25,6 +25,7 @@ impl ObjectLayerData {
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
+        // path_relative_to is a directory to which all other files are relative to
         path_relative_to: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
