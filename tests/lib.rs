@@ -467,3 +467,30 @@ fn test_object_template_property() {
     assert_eq!(object.get_tile().unwrap().id(), 44);
     assert_eq!(object_nt.get_tile().unwrap().id(), 44);
 }
+
+#[test]
+fn test_templates() {
+    let mut loader = Loader::new();
+    let map = loader.load_tmx_map("assets/templates/example.tmx").unwrap();
+
+    assert_eq!(loader.cache().templates.len(), 3);
+    assert_eq!(
+        if let LayerType::Tiles(x) = map.get_layer(0).unwrap().layer_type() {
+            x
+        } else {
+            panic!()
+        }
+        .get_tile(0, 0)
+        .unwrap()
+        .get_tileset()
+        .image
+        .as_ref()
+        .unwrap()
+        .source
+        .canonicalize()
+        .unwrap(),
+        PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/tilesheet.png"))
+            .canonicalize()
+            .unwrap()
+    );
+}

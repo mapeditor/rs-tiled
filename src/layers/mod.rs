@@ -102,7 +102,7 @@ impl LayerData {
                     attrs,
                     Some(tilesets),
                     for_tileset,
-                    map_path,
+                    map_path.parent().ok_or(crate::Error::PathIsNotFile)?,
                     reader,
                     cache,
                 )?;

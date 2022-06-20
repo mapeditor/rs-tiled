@@ -73,7 +73,7 @@ impl Template {
 
         parse_tag!(parser, "template", {
             "object" => |attrs| {
-                object = Some(ObjectData::new(parser, attrs, Some(&tileset_gid), tileset.clone(), template_path, reader, cache)?);
+                object = Some(ObjectData::new(parser, attrs, Some(&tileset_gid), tileset.clone(), template_path.parent().ok_or(Error::PathIsNotFile)?, reader, cache)?);
                 Ok(())
             },
             "tileset" => |attrs: Vec<OwnedAttribute>| {

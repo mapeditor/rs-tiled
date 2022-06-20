@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="simple_figure.tsx"/>
+ <object name="simple_figure" type="simple_figure" gid="1" width="32" height="32">
+  <properties>
+   <property name="playable" type="bool" value="false"/>
+  </properties>
+ </object>
+</template>
