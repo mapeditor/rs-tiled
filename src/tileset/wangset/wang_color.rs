@@ -14,7 +14,7 @@ use crate::{
 pub struct WangColor {
     /// The name of this color.
     pub name: String,
-    /// The color in #RRGGBB format (example: #c17d11).
+    #[allow(missing_docs)]
     pub color: Color,
     /// The tile ID of the tile representing this color.
     pub tile: Option<TileId>,

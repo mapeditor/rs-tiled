@@ -421,7 +421,7 @@ fn test_group_layers() {
 }
 
 #[test]
-fn test_reading_wangsets() {
+fn test_reading_wang_sets() {
     let mut loader = Loader::new();
     let map = loader
         .load_tmx_map("assets/tiled_csv_wangsets.tmx")
@@ -429,12 +429,12 @@ fn test_reading_wangsets() {
 
     // We will pick some random data from the wangsets for tessting
     let tileset = map.tilesets().get(0).unwrap();
-    assert_eq!(tileset.wangsets.len(), 3);
-    let wangset_2 = tileset.wangsets.get(1).unwrap();
+    assert_eq!(tileset.wang_sets.len(), 3);
+    let wangset_2 = tileset.wang_sets.get(1).unwrap();
     let tile_10 = wangset_2.wang_tiles.get(&10).unwrap();
     assert_eq!(tile_10.wang_id, WangId([2u32, 2, 0, 2, 0, 2, 2, 2]));
-    let wangset_3 = tileset.wangsets.get(2).unwrap();
-    let color_2 = wangset_3.wang_color.get(1).unwrap();
+    let wangset_3 = tileset.wang_sets.get(2).unwrap();
+    let color_2 = wangset_3.wang_colors.get(1).unwrap();
     let readed_damage = color_2.properties.get("Damage").unwrap();
     let damage_value = &PropertyValue::FloatValue(32.1);
     assert_eq!(readed_damage, damage_value);

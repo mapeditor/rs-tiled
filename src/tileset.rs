@@ -57,7 +57,7 @@ pub struct Tileset {
     tiles: HashMap<TileId, TileData>,
 
     /// All the wangsets present in this tileset
-    pub wangsets: Vec<WangSet>,
+    pub wang_sets: Vec<WangSet>,
 
     /// The custom properties of the tileset.
     pub properties: Properties,
@@ -241,7 +241,7 @@ impl Tileset {
         let mut image = Option::None;
         let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
         let mut properties = HashMap::new();
-        let mut wangsets = Vec::new();
+        let mut wang_sets = Vec::new();
 
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
@@ -259,7 +259,7 @@ impl Tileset {
             },
             "wangset" => |attrs| {
                 let set = WangSet::new(parser, attrs)?;
-                wangsets.push(set);
+                wang_sets.push(set);
                 Ok(())
             },
         });
@@ -290,7 +290,7 @@ impl Tileset {
             tilecount: prop.tilecount,
             image,
             tiles,
-            wangsets,
+            wang_sets,
             properties,
         })
     }

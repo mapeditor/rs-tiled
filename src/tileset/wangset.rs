@@ -16,15 +16,15 @@ pub use wang_tile::{WangId, WangTile};
 
 /// Undocummented WangSet types
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum WangType {
+pub enum WangSetType {
     Corner,
     Edge,
     Mixed,
 }
 
-impl Default for WangType {
+impl Default for WangSetType {
     fn default() -> Self {
-        WangType::Mixed
+        WangSetType::Mixed
     }
 }
 
@@ -34,11 +34,11 @@ pub struct WangSet {
     /// The name of the Wang set
     pub name: String,
     /// Type of wangset
-    pub wang_type: WangType,
+    pub wang_type: WangSetType,
     /// The tile ID of the tile representing this Wang set.
     pub tile: Option<TileId>,
     /// A color that can be used to define the corner and/or edge of a Wang tile.
-    pub wang_color: Vec<WangColor>,
+    pub wang_colors: Vec<WangColor>,
     /// A color that can be used to define the corner and/or edge of a Wang tile.
     pub wang_tiles: HashMap<TileId, WangTile>,
     /// The custom properties of this tile.
@@ -62,20 +62,20 @@ impl WangSet {
         );
 
         let wang_type = match wang_type.as_str() {
-            "corner" => WangType::Corner,
-            "edge" => WangType::Edge,
-            _ => WangType::default(),
+            "corner" => WangSetType::Corner,
+            "edge" => WangSetType::Edge,
+            _ => WangSetType::default(),
         };
         let tile = if tile >= 0 { Some(tile as u32) } else { None };
 
         // Gather variable data
-        let mut wang_color = Vec::new();
+        let mut wang_colors = Vec::new();
         let mut wang_tiles = HashMap::new();
         let mut properties = HashMap::new();
         parse_tag!(parser, "wangset", {
             "wangcolor" => |attrs| {
                 let color = WangColor::new(parser, attrs)?;
-                wang_color.push(color);
+                wang_colors.push(color);
                 Ok(())
             },
             "wangtile" => |attrs| {
@@ -93,7 +93,7 @@ impl WangSet {
             name,
             wang_type,
             tile,
-            wang_color,
+            wang_colors,
             wang_tiles,
             properties,
         })

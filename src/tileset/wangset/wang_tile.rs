@@ -9,33 +9,33 @@ use crate::{
 };
 
 /**
-The Wang ID, given by a comma-separated list of indexes (starting from 1, because 0 means _unset_) referring to the Wang colors in the Wang set in the following order: top, top right, right, bottom right, bottom, bottom left, left, top left (since Tiled 1.5). Before Tiled 1.5, the Wang ID was saved as a 32-bit unsigned integer stored in the format 0xCECECECE (where each C is a corner color and each E is an edge color, in reverse order).
+The Wang ID, stored as an array of 8 u32 values.
 */
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WangId(pub [u32; 8]);
 
 impl FromStr for WangId {
-    type Err = ();
+    type Err = Error;
 
-    fn from_str(s: &str) -> std::result::Result<WangId, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<WangId, Error> {
         let mut ret = [0u32; 8];
-        let s: Vec<&str> = s
+        let values: Vec<&str> = s
             .trim_start_matches('[')
             .trim_end_matches(']')
             .split(',')
             .collect();
-        if s.len() != 8 {
-            return Err(());
+        if values.len() != 8 {
+            return Err(Error::InvalidWangIdEncoding(s.to_string()));
         }
         for i in 0..8 {
-            ret[i] = s[i].parse::<u32>().unwrap_or(0);
+            ret[i] = values[i].parse::<u32>().unwrap_or(0);
         }
 
         Ok(WangId(ret))
     }
 }
 
-/// Raw data belonging to a tile.
+/// Stores a tile reference along with its associated Wang ID.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WangTile {
     /// The tile ID.
