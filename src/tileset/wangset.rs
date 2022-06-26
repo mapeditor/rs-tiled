@@ -14,7 +14,7 @@ pub use wang_color::WangColor;
 mod wang_tile;
 pub use wang_tile::{WangId, WangTile};
 
-/// Undocummented WangSet types
+/// Wang set's terrain brush connection type.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum WangSetType {
     Corner,
@@ -31,17 +31,17 @@ impl Default for WangSetType {
 /// Raw data belonging to a WangSet.
 #[derive(Debug, PartialEq, Clone)]
 pub struct WangSet {
-    /// The name of the Wang set
+    /// The name of the Wang set.
     pub name: String,
-    /// Type of wangset
-    pub wang_type: WangSetType,
+    /// Type of Wang set.
+    pub wang_set_type: WangSetType,
     /// The tile ID of the tile representing this Wang set.
     pub tile: Option<TileId>,
-    /// A color that can be used to define the corner and/or edge of a Wang tile.
+    /// The colors color that can be used to define the corner and/or edge of each Wang tile.
     pub wang_colors: Vec<WangColor>,
-    /// A color that can be used to define the corner and/or edge of a Wang tile.
+    ///  All the Wang tiles present in this Wang set, indexed by their local IDs.
     pub wang_tiles: HashMap<TileId, WangTile>,
-    /// The custom properties of this tile.
+    /// The custom properties of this Wang set.
     pub properties: Properties,
 }
 
@@ -52,16 +52,16 @@ impl WangSet {
         attrs: Vec<OwnedAttribute>,
     ) -> Result<WangSet> {
         // Get common data
-        let (name, wang_type, tile) = get_attrs!(
+        let (name, wang_set_type, tile) = get_attrs!(
             for v in attrs {
                 "name" => name ?= v.parse::<String>(),
-                "type" => wang_type ?= v.parse::<String>(),
+                "type" => wang_set_type ?= v.parse::<String>(),
                 "tile" => tile ?= v.parse::<i64>(),
             }
-            (name, wang_type, tile)
+            (name, wang_set_type, tile)
         );
 
-        let wang_type = match wang_type.as_str() {
+        let wang_set_type = match wang_set_type.as_str() {
             "corner" => WangSetType::Corner,
             "edge" => WangSetType::Edge,
             _ => WangSetType::default(),
@@ -91,7 +91,7 @@ impl WangSet {
 
         Ok(WangSet {
             name,
-            wang_type,
+            wang_set_type,
             tile,
             wang_colors,
             wang_tiles,

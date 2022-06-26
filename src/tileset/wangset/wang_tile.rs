@@ -25,7 +25,9 @@ impl FromStr for WangId {
             .split(',')
             .collect();
         if values.len() != 8 {
-            return Err(Error::InvalidWangIdEncoding(s.to_string()));
+            return Err(Error::InvalidWangIdEncoding {
+                read_string: s.to_string(),
+            });
         }
         for i in 0..8 {
             ret[i] = values[i].parse::<u32>().unwrap_or(0);
@@ -38,8 +40,6 @@ impl FromStr for WangId {
 /// Stores a tile reference along with its associated Wang ID.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WangTile {
-    /// The tile ID.
-    pub tile_id: TileId,
     /// The Wang ID,
     pub wang_id: WangId,
 }
@@ -59,6 +59,6 @@ impl WangTile {
             (tile_id, wang_id)
         );
 
-        Ok((tile_id, WangTile { tile_id, wang_id }))
+        Ok((tile_id, WangTile { wang_id }))
     }
 }

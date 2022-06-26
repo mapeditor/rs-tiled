@@ -49,8 +49,11 @@ pub enum Error {
         /// Supported types are `string`, `int`, `float`, `bool`, `color`, `file` and `object`.
         type_name: String,
     },
-    /// WangId not properly formated. Stores the wrongly parsed String.
-    InvalidWangIdEncoding(String),
+    /// WangId not properly formatted.
+    InvalidWangIdEncoding {
+        /// Stores the wrongly parsed String.
+        read_string: String,
+    },
 }
 
 /// A result with an error variant of [`crate::Error`].
@@ -95,8 +98,8 @@ impl fmt::Display for Error {
                 write!(fmt, "Invalid property value: {}", description),
             Error::UnknownPropertyType { type_name } =>
                 write!(fmt, "Unknown property value type '{}'", type_name),
-            Error::InvalidWangIdEncoding(s) =>
-                write!(fmt, "\"{}\" Is not a valid WangId format", s),
+            Error::InvalidWangIdEncoding{read_string} =>
+                write!(fmt, "\"{}\" Is not a valid WangId format", read_string),
         }
     }
 }
