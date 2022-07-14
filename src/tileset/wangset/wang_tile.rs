@@ -37,16 +37,16 @@ impl FromStr for WangId {
     }
 }
 
-/// Stores a tile reference along with its associated Wang ID.
+/// Stores the Wang ID.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WangTile {
-#[allow(missing_docs)]
+    #[allow(missing_docs)]
     pub wang_id: WangId,
 }
 
 impl WangTile {
     /// Reads data from XML parser to create a WangTile.
-    pub fn new(
+    pub(crate) fn new(
         _parser: &mut impl Iterator<Item = XmlEventResult>,
         attrs: Vec<OwnedAttribute>,
     ) -> Result<(TileId, WangTile)> {

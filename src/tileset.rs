@@ -56,7 +56,7 @@ pub struct Tileset {
     /// All the tiles present in this tileset, indexed by their local IDs.
     tiles: HashMap<TileId, TileData>,
 
-    /// All the wangsets present in this tileset
+    /// All the wangsets present in this tileset.
     pub wang_sets: Vec<WangSet>,
 
     /// The custom properties of the tileset.

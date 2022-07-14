@@ -49,7 +49,7 @@ pub enum Error {
         /// Supported types are `string`, `int`, `float`, `bool`, `color`, `file` and `object`.
         type_name: String,
     },
-    /// WangId not properly formatted.
+    /// Found a WangId that was not properly formatted.
     InvalidWangIdEncoding {
         /// Stores the wrongly parsed String.
         read_string: String,
@@ -99,7 +99,7 @@ impl fmt::Display for Error {
             Error::UnknownPropertyType { type_name } =>
                 write!(fmt, "Unknown property value type '{}'", type_name),
             Error::InvalidWangIdEncoding{read_string} =>
-                write!(fmt, "\"{}\" Is not a valid WangId format", read_string),
+                write!(fmt, "\"{}\" is not a valid WangId format", read_string),
         }
     }
 }
