@@ -40,7 +40,7 @@ impl FromStr for WangId {
 /// Stores a tile reference along with its associated Wang ID.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WangTile {
-    /// The Wang ID,
+#[allow(missing_docs)]
     pub wang_id: WangId,
 }
 
