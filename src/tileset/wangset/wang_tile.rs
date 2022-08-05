@@ -9,16 +9,16 @@ use crate::{
 };
 
 /**
-The Wang ID, stored as an array of 8 u32 values.
+The Wang ID, stored as an array of 8 u8 values.
 */
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct WangId(pub [u32; 8]);
+pub struct WangId(pub [u8; 8]);
 
 impl FromStr for WangId {
     type Err = Error;
 
     fn from_str(s: &str) -> std::result::Result<WangId, Error> {
-        let mut ret = [0u32; 8];
+        let mut ret = [0u8; 8];
         let values: Vec<&str> = s
             .trim_start_matches('[')
             .trim_end_matches(']')
@@ -30,7 +30,7 @@ impl FromStr for WangId {
             });
         }
         for i in 0..8 {
-            ret[i] = values[i].parse::<u32>().unwrap_or(0);
+            ret[i] = values[i].parse::<u8>().unwrap_or(0);
         }
 
         Ok(WangId(ret))
