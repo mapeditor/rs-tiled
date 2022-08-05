@@ -10,6 +10,9 @@ use crate::properties::{parse_properties, Properties};
 use crate::tile::TileData;
 use crate::{util::*, Gid, Tile, TileId};
 
+mod wangset;
+pub use wangset::{WangColor, WangId, WangSet, WangTile};
+
 /// A collection of tiles for usage in maps and template objects.
 ///
 /// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset).
@@ -52,6 +55,9 @@ pub struct Tileset {
 
     /// All the tiles present in this tileset, indexed by their local IDs.
     tiles: HashMap<TileId, TileData>,
+
+    /// All the wangsets present in this tileset.
+    pub wang_sets: Vec<WangSet>,
 
     /// The custom properties of the tileset.
     pub properties: Properties,
@@ -235,6 +241,7 @@ impl Tileset {
         let mut image = Option::None;
         let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
         let mut properties = HashMap::new();
+        let mut wang_sets = Vec::new();
 
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
@@ -248,6 +255,11 @@ impl Tileset {
             "tile" => |attrs| {
                 let (id, tile) = TileData::new(parser, attrs, &prop.root_path)?;
                 tiles.insert(id, tile);
+                Ok(())
+            },
+            "wangset" => |attrs| {
+                let set = WangSet::new(parser, attrs)?;
+                wang_sets.push(set);
                 Ok(())
             },
         });
@@ -278,6 +290,7 @@ impl Tileset {
             tilecount: prop.tilecount,
             image,
             tiles,
+            wang_sets,
             properties,
         })
     }
