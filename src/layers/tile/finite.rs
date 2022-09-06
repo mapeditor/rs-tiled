@@ -46,11 +46,11 @@ impl FiniteTileLayerData {
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
-            attrs,
-            optionals: [
-                ("encoding", encoding, Some),
-                ("compression", compression, Some),
-            ]
+            for v in attrs {
+                Some("encoding") => encoding = v,
+                Some("compression") => compression = v,
+            }
+            (encoding, compression)
         );
 
         let tiles = parse_data_line(e, c, parser, tilesets)?;

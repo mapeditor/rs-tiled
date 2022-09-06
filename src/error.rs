@@ -52,6 +52,11 @@ pub enum Error {
     },
     /// A template was found that does not have an object element in it.
     TemplateHasNoObject,
+    /// Found a WangId that was not properly formatted.
+    InvalidWangIdEncoding {
+        /// Stores the wrongly parsed String.
+        read_string: String,
+    },
 }
 
 /// A result with an error variant of [`crate::Error`].
@@ -97,6 +102,8 @@ impl fmt::Display for Error {
             Error::UnknownPropertyType { type_name } =>
                 write!(fmt, "Unknown property value type '{}'", type_name),
             Error::TemplateHasNoObject => write!(fmt, "A template was found with no object element"),
+            Error::InvalidWangIdEncoding{read_string} =>
+                write!(fmt, "\"{}\" is not a valid WangId format", read_string),
         }
     }
 }

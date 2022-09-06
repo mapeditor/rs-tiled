@@ -9,6 +9,9 @@ use crate::properties::{parse_properties, Properties};
 use crate::tile::TileData;
 use crate::{util::*, Gid, ResourceCache, ResourceReader, Tile, TileId};
 
+mod wangset;
+pub use wangset::{WangColor, WangId, WangSet, WangTile};
+
 /// A collection of tiles for usage in maps and template objects.
 ///
 /// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset).
@@ -51,6 +54,9 @@ pub struct Tileset {
 
     /// All the tiles present in this tileset, indexed by their local IDs.
     tiles: HashMap<TileId, TileData>,
+
+    /// All the wangsets present in this tileset.
+    pub wang_sets: Vec<WangSet>,
 
     /// The custom properties of the tileset.
     pub properties: Properties,
@@ -120,20 +126,17 @@ impl Tileset {
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
         let ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height)) = get_attrs!(
-           attrs,
-           optionals: [
-                ("spacing", spacing, |v:String| v.parse().ok()),
-                ("margin", margin, |v:String| v.parse().ok()),
-                ("columns", columns, |v:String| v.parse().ok()),
-                ("name", name, Some),
-            ],
-           required: [
-                ("tilecount", tilecount, |v:String| v.parse().ok()),
-                ("firstgid", first_gid, |v:String| v.parse().ok().map(Gid)),
-                ("tilewidth", width, |v:String| v.parse().ok()),
-                ("tileheight", height, |v:String| v.parse().ok()),
-            ],
-            Error::MalformedAttributes("tileset must have a firstgid, tilecount, tilewidth, and tileheight with correct types".to_string())
+           for v in attrs {
+            Some("spacing") => spacing ?= v.parse(),
+            Some("margin") => margin ?= v.parse(),
+            Some("columns") => columns ?= v.parse(),
+            Some("name") => name = v,
+            "tilecount" => tilecount ?= v.parse::<u32>(),
+            "firstgid" => first_gid ?= v.parse::<u32>().map(Gid),
+            "tilewidth" => tile_width ?= v.parse::<u32>(),
+            "tileheight" => tile_height ?= v.parse::<u32>(),
+           }
+           ((spacing, margin, columns, name), (tilecount, first_gid, tile_width, tile_height))
         );
 
         let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
@@ -164,12 +167,11 @@ impl Tileset {
         map_path: &Path,
     ) -> Result<EmbeddedParseResult> {
         let (first_gid, source) = get_attrs!(
-            attrs,
-            required: [
-                ("firstgid", first_gid, |v:String| v.parse().ok().map(Gid)),
-                ("source", name, Some),
-            ],
-            Error::MalformedAttributes("Tileset reference must have a firstgid and source with correct types".to_string())
+            for v in attrs {
+                "firstgid" => first_gid ?= v.parse::<u32>().map(Gid),
+                "source" => source = v,
+            }
+            (first_gid, source)
         );
 
         let tileset_path = map_path.parent().ok_or(Error::PathIsNotFile)?.join(source);
@@ -188,19 +190,17 @@ impl Tileset {
         cache: &mut impl ResourceCache,
     ) -> Result<Tileset> {
         let ((spacing, margin, columns, name), (tilecount, tile_width, tile_height)) = get_attrs!(
-            attrs,
-            optionals: [
-                ("spacing", spacing, |v:String| v.parse().ok()),
-                ("margin", margin, |v:String| v.parse().ok()),
-                ("columns", columns, |v:String| v.parse().ok()),
-                ("name", name, Some),
-            ],
-            required: [
-                ("tilecount", tilecount, |v:String| v.parse().ok()),
-                ("tilewidth", width, |v:String| v.parse().ok()),
-                ("tileheight", height, |v:String| v.parse().ok()),
-            ],
-            Error::MalformedAttributes("tileset must have a name, tile width and height with correct types".to_string())
+            for v in attrs {
+                Some("spacing") => spacing ?= v.parse(),
+                Some("margin") => margin ?= v.parse(),
+                Some("columns") => columns ?= v.parse(),
+                Some("name") => name = v,
+
+                "tilecount" => tilecount ?= v.parse::<u32>(),
+                "tilewidth" => tile_width ?= v.parse::<u32>(),
+                "tileheight" => tile_height ?= v.parse::<u32>(),
+            }
+            ((spacing, margin, columns, name), (tilecount, tile_width, tile_height))
         );
 
         let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
@@ -231,6 +231,7 @@ impl Tileset {
         let mut image = Option::None;
         let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
         let mut properties = HashMap::new();
+        let mut wang_sets = Vec::new();
 
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
@@ -244,6 +245,11 @@ impl Tileset {
             "tile" => |attrs| {
                 let (id, tile) = TileData::new(parser, attrs, &prop.root_path, reader, cache)?;
                 tiles.insert(id, tile);
+                Ok(())
+            },
+            "wangset" => |attrs| {
+                let set = WangSet::new(parser, attrs)?;
+                wang_sets.push(set);
                 Ok(())
             },
         });
@@ -274,6 +280,7 @@ impl Tileset {
             tilecount: prop.tilecount,
             image,
             tiles,
+            wang_sets,
             properties,
         })
     }

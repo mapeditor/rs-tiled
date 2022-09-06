@@ -31,10 +31,10 @@ impl ObjectLayerData {
         cache: &mut impl ResourceCache,
     ) -> Result<(ObjectLayerData, Properties)> {
         let c = get_attrs!(
-            attrs,
-            optionals: [
-                ("color", colour, |v:String| v.parse().ok()),
-            ]
+            for v in attrs {
+                Some("color") => color ?= v.parse(),
+            }
+            color
         );
         let mut objects = Vec::new();
         let mut properties = HashMap::new();

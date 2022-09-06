@@ -80,16 +80,13 @@ impl Image {
         path_relative_to: impl AsRef<Path>,
     ) -> Result<Image> {
         let (c, (s, w, h)) = get_attrs!(
-            attrs,
-            optionals: [
-                ("trans", trans, |v:String| v.parse().ok()),
-            ],
-            required: [
-                ("source", source, Some),
-                ("width", width, |v:String| v.parse().ok()),
-                ("height", height, |v:String| v.parse().ok()),
-            ],
-            Error::MalformedAttributes("Image must have a source, width and height with correct types".to_string())
+            for v in attrs {
+                Some("trans") => trans ?= v.parse(),
+                "source" => source = v,
+                "width" => width ?= v.parse::<i32>(),
+                "height" => height ?= v.parse::<i32>(),
+            }
+            (trans, (source, width, height))
         );
 
         parse_tag!(parser, "image", {});
