@@ -28,11 +28,11 @@ impl InfiniteTileLayerData {
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
-            attrs,
-            optionals: [
-                ("encoding", encoding, Some),
-                ("compression", compression, Some),
-            ]
+            for v in attrs {
+                Some("encoding") => encoding = v,
+                Some("compression") => compression = v,
+            }
+            (encoding, compression)
         );
 
         let mut chunks = HashMap::<(i32, i32), ChunkData>::new();
@@ -188,14 +188,13 @@ impl InternalChunk {
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (x, y, width, height) = get_attrs!(
-            attrs,
-            required: [
-                ("x", x, |v: String| v.parse().ok()),
-                ("y", y, |v: String| v.parse().ok()),
-                ("width", width, |v: String| v.parse().ok()),
-                ("height", height, |v: String| v.parse().ok()),
-            ],
-            Error::MalformedAttributes("chunk must have x, y, width & height attributes".to_string())
+            for v in attrs {
+                "x" => x ?= v.parse::<i32>(),
+                "y" => y ?= v.parse::<i32>(),
+                "width" => width ?= v.parse::<u32>(),
+                "height" => height ?= v.parse::<u32>(),
+            }
+            (x, y, width, height)
         );
 
         let tiles = parse_data_line(encoding, compression, parser, tilesets)?;

@@ -101,12 +101,11 @@ impl TileLayerData {
         tilesets: &[MapTilesetGid],
     ) -> Result<(Self, Properties)> {
         let (width, height) = get_attrs!(
-            attrs,
-            required: [
-                ("width", width, |v: String| v.parse().ok()),
-                ("height", height, |v: String| v.parse().ok()),
-            ],
-            Error::MalformedAttributes("layer parsing error, width and height attributes required".to_string())
+            for v in attrs {
+                "width" => width ?= v.parse::<u32>(),
+                "height" => height ?= v.parse::<u32>(),
+            }
+            (width, height)
         );
         let mut result = Self::Finite(Default::default());
         let mut properties = HashMap::new();

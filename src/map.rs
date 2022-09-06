@@ -127,20 +127,17 @@ impl Map {
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
         let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
-            attrs,
-            optionals: [
-                ("backgroundcolor", colour, |v:String| v.parse().ok()),
-                ("infinite", infinite, |v:String| Some(v == "1")),
-            ],
-            required: [
-                ("version", version, Some),
-                ("orientation", orientation, |v:String| v.parse().ok()),
-                ("width", width, |v:String| v.parse().ok()),
-                ("height", height, |v:String| v.parse().ok()),
-                ("tilewidth", tile_width, |v:String| v.parse().ok()),
-                ("tileheight", tile_height, |v:String| v.parse().ok()),
-            ],
-            Error::MalformedAttributes("map must have version, width, height, tilewidth, tileheight and orientation with correct types".to_string())
+            for v in attrs {
+                Some("backgroundcolor") => colour ?= v.parse(),
+                Some("infinite") => infinite = v == "1",
+                "version" => version = v,
+                "orientation" => orientation ?= v.parse::<Orientation>(),
+                "width" => width ?= v.parse::<u32>(),
+                "height" => height ?= v.parse::<u32>(),
+                "tilewidth" => tile_width ?= v.parse::<u32>(),
+                "tileheight" => tile_height ?= v.parse::<u32>(),
+            }
+            ((colour, infinite), (version, orientation, width, height, tile_width, tile_height))
         );
 
         let infinite = infinite.unwrap_or(false);
@@ -265,6 +262,7 @@ pub enum Orientation {
 }
 
 impl FromStr for Orientation {
+    // TODO(0.11): Change error type to OrientationParseErr or similar
     type Err = ();
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {

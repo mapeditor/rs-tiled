@@ -18,6 +18,10 @@ objects. As such, `ResourceCache` has now methods for both getting and inserting
 - `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
 - `DefaultResourceCache`'s members have been made public.
 
+## [Unreleased]
+### Added
+- Support for Wang sets.
+
 ## [0.10.2]
 ### Added
 - Map-wrapped chunks: `ChunkWrapper`.

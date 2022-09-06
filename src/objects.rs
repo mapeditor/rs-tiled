@@ -191,24 +191,27 @@ impl ObjectData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
-        let (id, mut tile, x, y, mut n, mut t, mut w, mut h, mut v, mut r, template) = get_attrs!(
-            attrs,
-            optionals: [
-                ("id", id, |v:String| v.parse().ok()),
-                ("gid", tile, |v:String| v.parse().ok()
-                                            .and_then(|bits| ObjectTileData::from_bits(bits, tilesets?, for_tileset.as_ref().cloned()))),
-                ("x", x, |v:String| v.parse().ok()),
-                ("y", y, |v:String| v.parse().ok()),
-                ("name", name, |v:String| v.parse().ok()),
-                ("type", obj_type, |v:String| v.parse().ok()),
-                ("width", width, |v:String| v.parse().ok()),
-                ("height", height, |v:String| v.parse().ok()),
-                ("visible", visible, |v:String| v.parse().ok().map(|x:i32| x == 1)),
-                ("rotation", rotation, |v:String| v.parse().ok()),
-                ("template", template, |v:String| v.parse().ok()),
-            ]
+        let (id, tile, mut n, mut t, mut w, mut h, mut v, mut r, template, x, y) = get_attrs!(
+            for v in attrs {
+                Some("id") => id ?= v.parse(),
+                Some("gid") => tile ?= v.parse::<u32>(),
+                Some("name") => name ?= v.parse(),
+                Some("type") => obj_type ?= v.parse(),
+                Some("width") => width ?= v.parse(),
+                Some("height") => height ?= v.parse(),
+                Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
+                Some("rotation") => rotation ?= v.parse(),
+                Some("template") => template ?= v.parse(),
+                Some("x") => x ?= v.parse::<f32>(),
+                Some("y") => y ?= v.parse::<f32>(),
+            }
+            (id, tile, name, obj_type, width, height, visible, rotation, template, x, y)
         );
-
+        let x = x.unwrap_or(0.);
+        let y = y.unwrap_or(0.);
+        let mut tile = tile.and_then(|bits| {
+            ObjectTileData::from_bits(bits, tilesets?, for_tileset.as_ref().cloned())
+        });
         // If the template attribute is there, we need to go fetch the template file
         let template = template
             .map(|template_path: String| {
@@ -241,8 +244,6 @@ impl ObjectData {
             })
             .transpose()?;
 
-        let x = x.unwrap_or(0f32);
-        let y = y.unwrap_or(0f32);
         let visible = v.unwrap_or(true);
         let width = w.unwrap_or(0f32);
         let height = h.unwrap_or(0f32);
@@ -313,26 +314,22 @@ impl ObjectData {
 
 impl ObjectData {
     fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
-        let s = get_attrs!(
-            attrs,
-            required: [
-                ("points", points, Some),
-            ],
-            Error::MalformedAttributes("A polyline must have points".to_string())
+        let points = get_attrs!(
+            for v in attrs {
+                "points" => points ?= ObjectData::parse_points(v),
+            }
+            points
         );
-        let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polyline { points })
     }
 
     fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
-        let s = get_attrs!(
-            attrs,
-            required: [
-                ("points", points, Some),
-            ],
-            Error::MalformedAttributes("A polygon must have points".to_string())
+        let points = get_attrs!(
+            for v in attrs {
+                "points" => points ?= ObjectData::parse_points(v),
+            }
+            points
         );
-        let points = ObjectData::parse_points(s)?;
         Ok(ObjectShape::Polygon { points })
     }
 
