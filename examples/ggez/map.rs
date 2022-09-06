@@ -260,7 +260,7 @@ impl MapHandler {
                 )?;
                 graphics::draw(ctx, &shape, draw_param)?;
             }
-            tiled::ObjectShape::Point(_, _) => {
+            tiled::ObjectShape::Point(_, _) | tiled::ObjectShape::Text { .. } => {
                 // Left as an exercise for the reader
             }
         }

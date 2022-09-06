@@ -7,7 +7,7 @@ use crate::{
     properties::{parse_properties, Properties},
     template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
+    Color, Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
 };
 
 /// The location of the tileset this tile is in
@@ -120,11 +120,55 @@ impl<'map> ObjectTile<'map> {
 #[derive(Debug, PartialEq, Clone)]
 #[allow(missing_docs)]
 pub enum ObjectShape {
-    Rect { width: f32, height: f32 },
-    Ellipse { width: f32, height: f32 },
-    Polyline { points: Vec<(f32, f32)> },
-    Polygon { points: Vec<(f32, f32)> },
+    Rect {
+        width: f32,
+        height: f32,
+    },
+    Ellipse {
+        width: f32,
+        height: f32,
+    },
+    Polyline {
+        points: Vec<(f32, f32)>,
+    },
+    Polygon {
+        points: Vec<(f32, f32)>,
+    },
     Point(f32, f32),
+    Text {
+        font_family: String,
+        pixel_size: usize,
+        wrap: bool,
+        color: Color,
+        bold: bool,
+        italic: bool,
+        underline: bool,
+        strikeout: bool,
+        kerning: bool,
+        halign: HorizontalAlignment,
+        valign: VerticalAlignment,
+    },
+}
+
+/// The horizontal alignment of an [`ObjectShape::Text`].
+#[derive(Debug, PartialEq, Clone, Copy, Default)]
+#[allow(missing_docs)]
+pub enum HorizontalAlignment {
+    #[default]
+    Left,
+    Center,
+    Right,
+    Justify,
+}
+
+/// The vertical alignment of an [`ObjectShape::Text`].
+#[derive(Debug, PartialEq, Clone, Copy, Default)]
+#[allow(missing_docs)]
+pub enum VerticalAlignment {
+    #[default]
+    Top,
+    Center,
+    Bottom,
 }
 
 /// Raw data belonging to an object. Used internally and for tile collisions.
@@ -274,6 +318,10 @@ impl ObjectData {
                 shape = Some(ObjectShape::Point(x, y));
                 Ok(())
             },
+            "text" => |attrs| {
+                shape = Some(ObjectData::new_text(attrs)?);
+                Ok(())
+            },
             "properties" => |_| {
                 properties = parse_properties(parser)?;
                 Ok(())
@@ -331,6 +379,95 @@ impl ObjectData {
             points
         );
         Ok(ObjectShape::Polygon { points })
+    }
+
+    fn new_text(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
+        let (
+            font_family,
+            pixel_size,
+            wrap,
+            color,
+            bold,
+            italic,
+            underline,
+            strikeout,
+            kerning,
+            halign,
+            valign,
+        ) = get_attrs!(
+            for v in attrs {
+                Some("fontfamily") => font_family = v,
+                Some("pixelsize") => pixel_size ?= v.parse(),
+                Some("wrap") => wrap ?= v.parse(),
+                Some("color") => color ?= v.parse(),
+                Some("bold") => bold ?= v.parse(),
+                Some("italic") => italic ?= v.parse(),
+                Some("underline") => underline ?= v.parse(),
+                Some("strikeout") => strikeout ?= v.parse(),
+                Some("kerning") => kerning ?= v.parse(),
+                Some("halign") => halign = match v.as_str() {
+                    "left" => HorizontalAlignment::Left,
+                    "center" => HorizontalAlignment::Center,
+                    "right" => HorizontalAlignment::Right,
+                    "justify" => HorizontalAlignment::Justify,
+                    _ => return Err(Error::MalformedAttributes("`halign` property did not contain a valid value of 'left', 'center', 'right' or 'justify'".to_string()))
+                },
+                Some("valign") => valign = match v.as_str() {
+                    "top" => VerticalAlignment::Top,
+                    "center" => VerticalAlignment::Center,
+                    "bottom" => VerticalAlignment::Bottom,
+                    _ => return Err(Error::MalformedAttributes(
+                        "`halign` property did not contain a valid value of 'top', 'center' or 'bottom'"
+                            .to_string(),
+                    )),
+                },
+            }
+            (
+
+                font_family,
+                pixel_size,
+                wrap,
+                color,
+                bold,
+                italic,
+                underline,
+                strikeout,
+                kerning,
+                halign,
+                valign,
+
+        )
+        );
+        let font_family = font_family.unwrap_or_else(|| "sans-serif".to_string());
+        let pixel_size = pixel_size.unwrap_or(16);
+        let wrap = if wrap == Some(1) { true } else { false };
+        let color = color.unwrap_or(Color {
+            red: 0,
+            green: 0,
+            blue: 0,
+            alpha: 255,
+        });
+        let bold = if bold == Some(1) { true } else { false };
+        let italic = if italic == Some(1) { true } else { false };
+        let underline = if underline == Some(1) { true } else { false };
+        let strikeout = if strikeout == Some(1) { true } else { false };
+        let kerning = if kerning == Some(0) { false } else { true };
+        let halign = halign.unwrap_or_default();
+        let valign = valign.unwrap_or_default();
+
+        Ok(ObjectShape::Text {
+            font_family,
+            pixel_size,
+            wrap,
+            color,
+            bold,
+            italic,
+            underline,
+            strikeout,
+            kerning,
+            halign,
+            valign,
+        })
     }
 
     fn parse_points(s: String) -> Result<Vec<(f32, f32)>> {
