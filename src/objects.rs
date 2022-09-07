@@ -423,7 +423,6 @@ impl ObjectData {
                 },
             }
             (
-
                 font_family,
                 pixel_size,
                 wrap,
@@ -435,23 +434,22 @@ impl ObjectData {
                 kerning,
                 halign,
                 valign,
-
-        )
+            )
         );
         let font_family = font_family.unwrap_or_else(|| "sans-serif".to_string());
         let pixel_size = pixel_size.unwrap_or(16);
-        let wrap = if wrap == Some(1) { true } else { false };
         let color = color.unwrap_or(Color {
             red: 0,
             green: 0,
             blue: 0,
             alpha: 255,
         });
-        let bold = if bold == Some(1) { true } else { false };
-        let italic = if italic == Some(1) { true } else { false };
-        let underline = if underline == Some(1) { true } else { false };
-        let strikeout = if strikeout == Some(1) { true } else { false };
-        let kerning = if kerning == Some(0) { false } else { true };
+        let wrap = wrap == Some(1);
+        let bold = bold == Some(1);
+        let italic = italic == Some(1);
+        let underline = underline == Some(1);
+        let strikeout = strikeout == Some(1);
+        let kerning = kerning == Some(1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
 
