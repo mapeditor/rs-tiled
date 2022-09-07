@@ -1,9 +1,8 @@
 use std::{collections::HashMap, path::Path};
 
 use crate::{
-    parse_properties,
     util::{map_wrapper, parse_tag, XmlEventResult},
-    Error, Image, Properties, Result,
+    Error, Image, Properties, Result, parse::xml::properties::parse_properties,
 };
 
 /// The raw data of an [`ImageLayer`]. Does not include a reference to its parent [`Map`](crate::Map).

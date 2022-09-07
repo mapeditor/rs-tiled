@@ -4,9 +4,9 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::Error,
-    properties::{parse_properties, Color, Properties},
+    properties::{Color, Properties},
     util::{get_attrs, parse_tag, XmlEventResult},
-    Result, TileId,
+    Result, TileId, parse::xml::properties::parse_properties,
 };
 
 /// Stores the data of the Wang color.

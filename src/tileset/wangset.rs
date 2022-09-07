@@ -4,7 +4,8 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::Error,
-    properties::{parse_properties, Properties},
+    parse::xml::properties::parse_properties,
+    properties::Properties,
     util::{get_attrs, parse_tag, XmlEventResult},
     Result, TileId,
 };

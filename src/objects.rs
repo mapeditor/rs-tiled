@@ -4,10 +4,10 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::{Error, Result},
-    properties::{parse_properties, Properties},
+    properties::Properties,
     template::Template,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
+    Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset, parse::xml::properties::parse_properties,
 };
 
 /// The location of the tileset this tile is in

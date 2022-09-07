@@ -3,9 +3,9 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use crate::{
     error::Result,
     layers::{LayerData, LayerTag},
-    properties::{parse_properties, Properties},
+    properties::Properties,
     util::*,
-    Error, Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
+    Error, Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset, parse::xml::properties::parse_properties,
 };
 
 /// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).

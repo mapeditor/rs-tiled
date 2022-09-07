@@ -2,6 +2,8 @@ use std::{fs::File, io::Read, path::Path};
 
 use crate::{DefaultResourceCache, Map, ResourceCache, Result, Tileset};
 
+use crate::parse;
+
 /// A trait defining types that can load data from a [`ResourcePath`](crate::ResourcePath).
 ///
 /// This trait should be implemented if you wish to load data from a virtual filesystem.
@@ -135,7 +137,7 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
     ///
     /// [internal loader cache]: Loader::cache()
     pub fn load_tmx_map(&mut self, path: impl AsRef<Path>) -> Result<Map> {
-        crate::parse::xml::parse_map(path.as_ref(), &mut self.reader, &mut self.cache)
+        parse::xml::map::parse_map(path.as_ref(), &mut self.reader, &mut self.cache)
     }
 
     /// Parses a file hopefully containing a Tiled tileset and tries to parse it. All external files
@@ -148,7 +150,7 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
     /// This function will **not** cache the tileset inside the internal [`ResourceCache`], since
     /// in this context it is not an intermediate object.
     pub fn load_tsx_tileset(&mut self, path: impl AsRef<Path>) -> Result<Tileset> {
-        crate::parse::xml::parse_tileset(path.as_ref(), &mut self.reader, &mut self.cache)
+        Tileset::parse_xml(path.as_ref(), &mut self.reader, &mut self.cache)
     }
 
     /// Returns a reference to the loader's internal [`ResourceCache`].

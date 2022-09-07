@@ -166,7 +166,7 @@ macro_rules! handle_attr_branches {
     ($attr_pat_opt:literal => $opt_var:ident $(?)?= $opt_expr:expr $(, $($tail:tt)*)?) => {
         let $opt_var = $opt_var
             .ok_or_else(||
-                Error::MalformedAttributes(
+                $crate::Error::MalformedAttributes(
                     concat!("Missing attribute: ", $attr_pat_opt).to_owned()
                 )
             )?;
@@ -182,7 +182,7 @@ pub(crate) use handle_attr_branches;
 macro_rules! parse_tag {
     ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
         while let Some(next) = $parser.next() {
-            match next.map_err(Error::XmlDecodingError)? {
+            match next.map_err($crate::Error::XmlDecodingError)? {
                 #[allow(unused_variables)]
                 $(
                     xml::reader::XmlEvent::StartElement {name, attributes, ..}
@@ -195,7 +195,7 @@ macro_rules! parse_tag {
                 }
 
                 xml::reader::XmlEvent::EndDocument => {
-                    return Err(Error::PrematureEnd("Document ended before we expected.".to_string()));
+                    return Err($crate::Error::PrematureEnd("Document ended before we expected.".to_string()));
                 }
                 _ => {}
             }

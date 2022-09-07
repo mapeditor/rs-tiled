@@ -3,9 +3,8 @@ use std::collections::HashMap;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    parse_properties,
     util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Error, Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset,
+    Error, Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset, parse::xml::properties::parse_properties,
 };
 
 mod finite;
