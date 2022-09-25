@@ -43,15 +43,14 @@ impl Level {
 
         let layers = map
             .layers()
-            .filter_map(|layer| match &layer.layer_type() {
-                tiled::LayerType::Tiles(l) => Some(generate_mesh(
-                    match l {
+            .filter_map(|layer| {
+                Some(generate_mesh(
+                    match &layer.layer_type().as_tiles()? {
                         tiled::TileLayer::Finite(f) => f,
                         tiled::TileLayer::Infinite(_) => panic!("Infinite maps not supported"),
                     },
                     &tilesheet,
-                )),
-                _ => None,
+                ))
             })
             .collect();
 
