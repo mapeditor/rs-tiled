@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support for Wang sets.
 
+### Changed
+- Update `zstd` to `0.12.0`.
+- Update `sfml` dev dependency to `0.19.0`.
+
 ## [0.10.2]
 ### Added
 - Map-wrapped chunks: `ChunkWrapper`.
