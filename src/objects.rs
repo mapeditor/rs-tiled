@@ -81,12 +81,13 @@ impl ObjectData {
         attrs: Vec<OwnedAttribute>,
         tilesets: Option<&[MapTilesetGid]>,
     ) -> Result<ObjectData> {
-        let ((id, tile, n, t, w, h, v, r), (x, y)) = get_attrs!(
+        let ((id, tile, n, t, c, w, h, v, r), (x, y)) = get_attrs!(
             for v in attrs {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse(),
                 Some("name") => name ?= v.parse(),
                 Some("type") => obj_type ?= v.parse(),
+                Some("class") => obj_class ?= v.parse(),
                 Some("width") => width ?= v.parse(),
                 Some("height") => height ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
@@ -95,8 +96,9 @@ impl ObjectData {
                 "x" => x ?= v.parse::<f32>(),
                 "y" => y ?= v.parse::<f32>(),
             }
-            ((id, tile, name, obj_type, width, height, visible, rotation), (x, y))
+            ((id, tile, name, obj_type, obj_class, width, height, visible, rotation), (x, y))
         );
+        let t = t.or(c);
         let tile = tile.and_then(|bits| LayerTileData::from_bits(bits, tilesets?));
         let visible = v.unwrap_or(true);
         let width = w.unwrap_or(0f32);
