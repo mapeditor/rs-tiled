@@ -51,6 +51,8 @@ pub struct LayerData {
     pub tint_color: Option<Color>,
     /// The layer's custom properties, as arbitrarily set by the user.
     pub properties: Properties,
+    /// The layer's type, which is arbitrarily setby the user.
+    pub user_type: String,
     layer_type: LayerDataType,
 }
 
@@ -70,7 +72,18 @@ impl LayerData {
         map_path: &Path,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
-        let (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id) = get_attrs!(
+        let (
+            opacity,
+            tint_color,
+            visible,
+            offset_x,
+            offset_y,
+            parallax_x,
+            parallax_y,
+            name,
+            id,
+            user_type,
+        ) = get_attrs!(
             for v in attrs {
                 Some("opacity") => opacity ?= v.parse(),
                 Some("tintcolor") => tint_color ?= v.parse(),
@@ -81,8 +94,9 @@ impl LayerData {
                 Some("parallaxy") => parallax_y ?= v.parse(),
                 Some("name") => name = v,
                 Some("id") => id ?= v.parse(),
+                Some("class") => user_type ?= v.parse(),
             }
-            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id)
+            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type)
         );
 
         let (ty, properties) = match tag {
@@ -114,6 +128,7 @@ impl LayerData {
             tint_color,
             name: name.unwrap_or_default(),
             id: id.unwrap_or(0),
+            user_type: user_type.unwrap_or_default(),
             properties,
             layer_type: ty,
         })
