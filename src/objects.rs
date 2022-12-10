@@ -32,6 +32,9 @@ pub struct ObjectData {
     /// The name of the object, which is arbitrary and set by the user.
     pub name: String,
     /// The type of the object, which is arbitrary and set by the user.
+    pub user_type: String,
+    /// This property has been renamed to `user_type`.
+    #[deprecated(since = "0.11.0", note = "Use [`ObjectData::user_type`] instead")]
     pub obj_type: String,
     /// The width of the object, if applicable. This refers to the attribute in `object`.
     /// Since it is duplicate or irrelevant information in all cases, use the equivalent
@@ -86,8 +89,8 @@ impl ObjectData {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse(),
                 Some("name") => name ?= v.parse(),
-                Some("type") => obj_type ?= v.parse(),
-                Some("class") => obj_class ?= v.parse(),
+                Some("type") => user_type ?= v.parse(),
+                Some("class") => user_class ?= v.parse(),
                 Some("width") => width ?= v.parse(),
                 Some("height") => height ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
@@ -96,9 +99,8 @@ impl ObjectData {
                 "x" => x ?= v.parse::<f32>(),
                 "y" => y ?= v.parse::<f32>(),
             }
-            ((id, tile, name, obj_type, obj_class, width, height, visible, rotation), (x, y))
+            ((id, tile, name, user_type, user_class, width, height, visible, rotation), (x, y))
         );
-        let t = t.or(c);
         let tile = tile.and_then(|bits| LayerTileData::from_bits(bits, tilesets?));
         let visible = v.unwrap_or(true);
         let width = w.unwrap_or(0f32);
@@ -106,7 +108,7 @@ impl ObjectData {
         let rotation = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
         let name = n.unwrap_or_default();
-        let obj_type = t.unwrap_or_default();
+        let user_type: String = t.or(c).unwrap_or_default();
         let mut shape = None;
         let mut properties = HashMap::new();
 
@@ -143,7 +145,8 @@ impl ObjectData {
             id,
             tile,
             name,
-            obj_type,
+            obj_type: user_type.clone(),
+            user_type,
             width,
             height,
             x,

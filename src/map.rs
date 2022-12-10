@@ -58,7 +58,7 @@ pub struct Map {
     pub background_color: Option<Color>,
     infinite: bool,
     /// The type of the map, which is arbitrary and set by the user.
-    pub map_type: String,
+    pub user_type: Option<String>,
 }
 
 impl Map {
@@ -159,11 +159,12 @@ impl Map {
         map_path: &Path,
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
-        let ((c, infinite, user_type), (v, o, w, h, tw, th)) = get_attrs!(
+        let ((c, infinite, user_type, user_class), (v, o, w, h, tw, th)) = get_attrs!(
             for v in attrs {
                 Some("backgroundcolor") => colour ?= v.parse(),
                 Some("infinite") => infinite = v == "1",
-                Some("class") => user_type ?= v.parse(),
+                Some("type") => user_type ?= v.parse(),
+                Some("class") => user_class ?= v.parse(),
                 "version" => version = v,
                 "orientation" => orientation ?= v.parse::<Orientation>(),
                 "width" => width ?= v.parse::<u32>(),
@@ -171,11 +172,11 @@ impl Map {
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((colour, infinite, user_type), (version, orientation, width, height, tile_width, tile_height))
+            ((colour, infinite, user_type, user_class), (version, orientation, width, height, tile_width, tile_height))
         );
 
         let infinite = infinite.unwrap_or(false);
-        let map_type = user_type.unwrap_or_default();
+        let user_type = user_type.or(user_class);
 
         // We can only parse sequentally, but tilesets are guaranteed to appear before layers.
         // So we can pass in tileset data to layer construction without worrying about unfinished
@@ -264,7 +265,7 @@ impl Map {
             properties,
             background_color: c,
             infinite,
-            map_type,
+            user_type,
         })
     }
 }

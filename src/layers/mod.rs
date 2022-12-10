@@ -52,7 +52,7 @@ pub struct LayerData {
     /// The layer's custom properties, as arbitrarily set by the user.
     pub properties: Properties,
     /// The layer's type, which is arbitrarily setby the user.
-    pub user_type: String,
+    pub user_type: Option<String>,
     layer_type: LayerDataType,
 }
 
@@ -83,6 +83,7 @@ impl LayerData {
             name,
             id,
             user_type,
+            user_class,
         ) = get_attrs!(
             for v in attrs {
                 Some("opacity") => opacity ?= v.parse(),
@@ -94,9 +95,10 @@ impl LayerData {
                 Some("parallaxy") => parallax_y ?= v.parse(),
                 Some("name") => name = v,
                 Some("id") => id ?= v.parse(),
-                Some("class") => user_type ?= v.parse(),
+                Some("type") => user_type ?= v.parse(),
+                Some("class") => user_class ?= v.parse(),
             }
-            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type)
+            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
         );
 
         let (ty, properties) = match tag {
@@ -128,7 +130,7 @@ impl LayerData {
             tint_color,
             name: name.unwrap_or_default(),
             id: id.unwrap_or(0),
-            user_type: user_type.unwrap_or_default(),
+            user_type: user_type.or(user_class),
             properties,
             layer_type: ty,
         })
