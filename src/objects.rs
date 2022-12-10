@@ -34,7 +34,7 @@ pub struct ObjectData {
     /// The type of the object, which is arbitrary and set by the user.
     pub user_type: String,
     /// This property has been renamed to `user_type`.
-    #[deprecated(since = "0.11.0", note = "Use [`ObjectData::user_type`] instead")]
+    #[deprecated(since = "0.10.3", note = "Use [`ObjectData::user_type`] instead")]
     pub obj_type: String,
     /// The width of the object, if applicable. This refers to the attribute in `object`.
     /// Since it is duplicate or irrelevant information in all cases, use the equivalent

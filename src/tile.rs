@@ -29,7 +29,7 @@ pub struct TileData {
     /// The type of this tile.
     pub user_type: Option<String>,
     /// This property has been renamed to `user_type`.
-    #[deprecated(since = "0.11.0", note = "Use [`TileData::user_type`] instead")]
+    #[deprecated(since = "0.10.3", note = "Use [`TileData::user_type`] instead")]
     pub tile_type: Option<String>,
     /// The probability of this tile.
     pub probability: f32,
