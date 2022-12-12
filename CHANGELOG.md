@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Support for Wang sets.
+- Support for Tiled 1.9 `Class` property. Maps, tilesets and layers now have a `user_type` property. 
+
+### Deprecated
+- `Tile::tile_type`: Use `Tile::user_type` instead.
+- `Object::obj_type` Use `Object::user_type` instead.
 
 ### Changed
 - Update `zstd` to `0.12.0`.

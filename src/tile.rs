@@ -27,6 +27,9 @@ pub struct TileData {
     /// The animation frames of this tile.
     pub animation: Option<Vec<Frame>>,
     /// The type of this tile.
+    pub user_type: Option<String>,
+    /// This property has been renamed to `user_type`.
+    #[deprecated(since = "0.10.3", note = "Use [`TileData::user_type`] instead")]
     pub tile_type: Option<String>,
     /// The probability of this tile.
     pub probability: f32,
@@ -65,15 +68,16 @@ impl TileData {
         attrs: Vec<OwnedAttribute>,
         path_relative_to: &Path,
     ) -> Result<(TileId, TileData)> {
-        let ((tile_type, probability), id) = get_attrs!(
+        let ((user_type, user_class, probability), id) = get_attrs!(
             for v in attrs {
-                Some("type") => tile_type ?= v.parse(),
+                Some("type") => user_type ?= v.parse(),
+                Some("class") => user_class ?= v.parse(),
                 Some("probability") => probability ?= v.parse(),
                 "id" => id ?= v.parse::<u32>(),
             }
-            ((tile_type, probability), id)
+            ((user_type, user_class, probability), id)
         );
-
+        let user_type = user_type.or(user_class);
         let mut image = Option::None;
         let mut properties = HashMap::new();
         let mut objectgroup = None;
@@ -98,12 +102,14 @@ impl TileData {
         });
         Ok((
             id,
+            #[allow(deprecated)]
             TileData {
                 image,
                 properties,
                 collision: objectgroup,
                 animation,
-                tile_type,
+                tile_type: user_type.clone(),
+                user_type,
                 probability: probability.unwrap_or(1.0),
             },
         ))
