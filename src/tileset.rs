@@ -43,6 +43,10 @@ pub struct Tileset {
     /// calculated using [image](Self::image) width, [tile width](Self::tile_width),
     /// [spacing](Self::spacing) and [margin](Self::margin).
     pub columns: u32,
+    /// The x-offset to be used when drawing tiles of this tileset.
+    pub offset_x: i32,
+    /// The y-offset to be used when drawing tiles of this tileset.
+    pub offset_y: i32,
 
     /// A tileset can either:
     /// * have a single spritesheet `image` in `tileset` ("regular" tileset);
@@ -259,10 +263,15 @@ impl Tileset {
         let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
         let mut properties = HashMap::new();
         let mut wang_sets = Vec::new();
+        let mut offset = (0i32, 0i32);
 
         parse_tag!(parser, "tileset", {
             "image" => |attrs| {
                 image = Some(Image::new(parser, attrs, &prop.root_path)?);
+                Ok(())
+            },
+            "tileoffset" => |attrs| {
+                offset = parse_tileoffset(attrs)?;
                 Ok(())
             },
             "properties" => |_| {
@@ -305,6 +314,8 @@ impl Tileset {
             spacing,
             margin,
             columns,
+            offset_x: offset.0,
+            offset_y: offset.1,
             tilecount: prop.tilecount,
             image,
             tiles,
@@ -328,4 +339,15 @@ impl Tileset {
                 )
             })
     }
+}
+
+fn parse_tileoffset(attrs: Vec<OwnedAttribute>) -> Result<(i32, i32)> {
+    // Get common data
+    Ok(get_attrs!(
+        for v in attrs {
+            "x" => offset_x ?= v.parse::<i32>(),
+            "y" => offset_y ?= v.parse::<i32>(),
+        }
+        (offset_x, offset_y)
+    ))
 }
