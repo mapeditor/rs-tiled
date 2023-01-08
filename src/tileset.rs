@@ -341,8 +341,8 @@ impl Tileset {
     }
 }
 
+/// Parse the optional <tileoffset x=... y=.../> tag.
 fn parse_tileoffset(attrs: Vec<OwnedAttribute>) -> Result<(i32, i32)> {
-    // Get common data
     Ok(get_attrs!(
         for v in attrs {
             "x" => offset_x ?= v.parse::<i32>(),
