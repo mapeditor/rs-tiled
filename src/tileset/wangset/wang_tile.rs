@@ -8,9 +8,7 @@ use crate::{
     Result, TileId,
 };
 
-/**
-The Wang ID, stored as an array of 8 u8 values.
-*/
+/// The Wang ID, stored as an array of 8 u8 values.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WangId(pub [u8; 8]);
 
