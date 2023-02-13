@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for tile offsets. Tilesets now have an `offset_x` and `offset_y` property.
 
 ### Deprecated
-- `Tile::tile_type`: Use `Tile::user_type` instead.
 - `Object::obj_type` Use `Object::user_type` instead.
 
 ### Changed
