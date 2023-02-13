@@ -27,11 +27,11 @@ name = "sfml"
 path = "examples/sfml/main.rs"
 
 [dependencies]
-base64 = "0.13.0"
+base64 = "0.21.0"
 xml-rs = "0.8.4"
 libflate = "1.1.2"
 zstd = { version = "0.12.0", optional = true }
 
 [dev-dependencies.sfml]
-version = "0.19.0"
+version = "0.20.0"
 features = ["graphics"]
