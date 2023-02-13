@@ -1,11 +1,11 @@
 # rs-tiled
 ```toml
-tiled = "0.10.2"
+tiled = "0.10.3"
 ```
 
 [![Rust](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml/badge.svg)](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml)
 [![Crates.io](https://img.shields.io/crates/v/tiled.svg)](https://crates.io/crates/tiled)
-[![dependency status](https://deps.rs/crate/tiled/0.10.2/status.svg)](https://deps.rs/crate/tiled/0.10.2)
+[![dependency status](https://deps.rs/crate/tiled/latest/status.svg)](https://deps.rs/crate/tiled)
 
 A crate for reading TMX (map) and TSX (tileset) files from the [Tiled Map Editor](http://www.mapeditor.org/) into Rust.
 It provides a huge set of features as well as a strong wrapper over internal features such as GIDs.
