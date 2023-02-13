@@ -302,7 +302,7 @@ impl fmt::Display for Orientation {
 /// Tiled also treats GID 0 as empty space, which means that the first tileset in the map will have
 /// a starting GID of 1.
 ///
-/// See also: https://doc.mapeditor.org/en/latest/reference/global-tile-ids/
+/// See also: <https://doc.mapeditor.org/en/latest/reference/global-tile-ids/>
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Gid(pub u32);
 

@@ -19,19 +19,19 @@ objects. As such, `ResourceCache` has now methods for both getting and inserting
 - `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
 - `DefaultResourceCache`'s members have been made public.
 
-## [Unreleased]
+## [0.10.3]
 ### Added
 - Support for Wang sets.
 - Support for Tiled 1.9 `Class` property. Maps, tilesets and layers now have a `user_type` property.
 - Support for tile offsets. Tilesets now have an `offset_x` and `offset_y` property.
 
 ### Deprecated
-- `Tile::tile_type`: Use `Tile::user_type` instead.
 - `Object::obj_type` Use `Object::user_type` instead.
 
 ### Changed
 - Update `zstd` to `0.12.0`.
-- Update `sfml` dev dependency to `0.19.0`.
+- Update `sfml` dev dependency to `0.20.0`.
+- Update `base64` to `0.21.0`.
 
 ## [0.10.2]
 ### Added
