@@ -57,7 +57,7 @@ impl LayerTileData {
         | Self::FLIPPED_VERTICALLY_FLAG
         | Self::FLIPPED_DIAGONALLY_FLAG;
 
-    /// Creates a new [`LayerTileData`] from a [`GID`] plus its flipping bits.
+    /// Creates a new [`LayerTileData`] from a [`Gid`] plus its flipping bits.
     pub(crate) fn from_bits(bits: u32, tilesets: &[MapTilesetGid]) -> Option<Self> {
         let flags = bits & Self::ALL_FLIP_FLAGS;
         let gid = Gid(bits & !Self::ALL_FLIP_FLAGS);
