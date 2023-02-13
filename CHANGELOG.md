@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Update `zstd` to `0.12.0`.
-- Update `sfml` dev dependency to `0.19.0`.
+- Update `sfml` dev dependency to `0.20.0`.
+- Update `base64` to `0.21.0`.
 
 ## [0.10.2]
 ### Added

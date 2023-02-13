@@ -1,5 +1,6 @@
 use std::{convert::TryInto, io::Read};
 
+use base64::Engine;
 use xml::reader::XmlEvent;
 
 use crate::{util::XmlEventResult, Error, LayerTileData, MapTilesetGid, Result};
@@ -36,7 +37,12 @@ fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec
     for next in parser {
         match next.map_err(Error::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
-                return base64::decode(s.trim().as_bytes()).map_err(Error::Base64DecodingError)
+                return base64::engine::GeneralPurpose::new(
+                    &base64::alphabet::STANDARD,
+                    base64::engine::general_purpose::PAD,
+                )
+                .decode(s.trim().as_bytes())
+                .map_err(Error::Base64DecodingError)
             }
             XmlEvent::EndElement { name, .. } if name.local_name == "data" => {
                 return Ok(Vec::new());
