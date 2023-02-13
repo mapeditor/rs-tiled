@@ -12,6 +12,7 @@ Templates are loaded automatically when they are encountered, and are treated as
 objects. As such, `ResourceCache` has now methods for both getting and inserting them (#170).
 - Text object support (#230).
 - VFS support (#199).
+- `as_x` functions for layer types (#235).
 - `cache_mut` loader property (#207).
 
 ### Changed
