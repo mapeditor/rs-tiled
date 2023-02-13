@@ -27,9 +27,8 @@ pub struct TileData {
     /// The animation frames of this tile.
     pub animation: Option<Vec<Frame>>,
     /// The type of this tile.
-    pub user_type: Option<String>,
-    /// This property has been renamed to `user_type`.
-    #[deprecated(since = "0.10.3", note = "Use [`TileData::user_type`] instead")]
+    // TODO(0.11.0): Rename to `user_type` (https://github.com/mapeditor/rs-tiled/pull/238, postponed because of
+    // breaking change)
     pub tile_type: Option<String>,
     /// The probability of this tile.
     pub probability: f32,
@@ -108,8 +107,7 @@ impl TileData {
                 properties,
                 collision: objectgroup,
                 animation,
-                tile_type: user_type.clone(),
-                user_type,
+                tile_type: user_type,
                 probability: probability.unwrap_or(1.0),
             },
         ))
