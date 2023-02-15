@@ -103,7 +103,6 @@ impl TileData {
         });
         Ok((
             id,
-            #[allow(deprecated)]
             TileData {
                 image,
                 properties,
