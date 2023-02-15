@@ -92,7 +92,7 @@ impl<'map> ObjectLayer<'map> {
     ///         _ => None,
     ///     })
     ///     .flat_map(|layer| layer.objects())
-    ///     .filter(|object| object.obj_type == "spawn")
+    ///     .filter(|object| object.user_type == "spawn")
     ///     .collect();
     ///
     /// dbg!(spawnpoints);
