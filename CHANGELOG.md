@@ -16,6 +16,8 @@ objects. As such, `ResourceCache` has now methods for both getting and inserting
 
 ### Changed
 - `LayerType` variants have been stripped from the `Layer` suffix (#203).
+- `TileData::tile_type` has been renamed to `TileData::user_type`.
+- `Orientation`'s `FromStr` impl now returns `OrientationParseError` as the error type.
 - `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
 - `DefaultResourceCache`'s members have been made public.
 
