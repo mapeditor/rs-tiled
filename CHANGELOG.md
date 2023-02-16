@@ -10,14 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template support!
 Templates are loaded automatically when they are encountered, and are treated as intermediate
 objects. As such, `ResourceCache` has now methods for both getting and inserting them (#170).
-- Text object support (#230).
 - VFS support (#199).
+- Text object support (#230).
 - `cache_mut` loader property (#207).
 
 ### Changed
 - `LayerType` variants have been stripped from the `Layer` suffix (#203).
+- `TileData::tile_type` has been renamed to `TileData::user_type`. (#253)
+- `Orientation`'s `FromStr` impl now returns `OrientationParseError` as the error type. (#253)
 - `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
 - `DefaultResourceCache`'s members have been made public.
+
+### Removed
+- `ObjectData::obj_type`, `ObjectData::width`, `ObjectData::height`. (#253)
+- `TileData::tile_type` (which has been renamed to `TileData::user_type`) (#253)
 
 ## [0.10.3]
 ### Added

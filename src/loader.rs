@@ -7,7 +7,25 @@ use crate::{DefaultResourceCache, Map, ResourceCache, Result, Tileset};
 /// This trait should be implemented if you wish to load data from a virtual filesystem.
 ///
 /// ## Example
-/// TODO: ResourceReader example
+/// ```
+/// use std::io::Cursor;
+///
+/// /// Basic example reader impl that just keeps a few resources in memory
+/// struct MemoryReader;
+///
+/// impl tiled::ResourceReader for MemoryReader {
+///     type Resource = Cursor<&'static [u8]>;
+///     type Error = std::io::Error;
+///
+///     fn read_from(&mut self, path: &std::path::Path) -> std::result::Result<Self::Resource, Self::Error> {
+///         if path == std::path::Path::new("my_map.tmx") {
+///             Ok(Cursor::new(include_bytes!("../assets/tiled_xml.tmx")))
+///         } else {
+///             Err(std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"))
+///         }
+///     }
+/// }
+/// ```
 pub trait ResourceReader {
     /// The type of the resource that the reader provides. For example, for
     /// [`FilesystemResourceReader`], this is defined as [`File`].

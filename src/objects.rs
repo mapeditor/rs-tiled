@@ -182,19 +182,6 @@ pub struct ObjectData {
     pub name: String,
     /// The type of the object, which is arbitrary and set by the user.
     pub user_type: String,
-    /// This property has been renamed to `user_type`.
-    #[deprecated(since = "0.10.3", note = "Use [`ObjectData::user_type`] instead")]
-    pub obj_type: String,
-    /// The width of the object, if applicable. This refers to the attribute in `object`.
-    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
-    /// member in [`ObjectShape`] instead.
-    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
-    pub width: f32,
-    /// The height of the object, if applicable. This refers to the attribute in `object`.
-    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
-    /// member in [`ObjectShape`] instead.
-    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
-    pub height: f32,
     /// The X coordinate of this object in pixels.
     pub x: f32,
     /// The Y coordinate of this object in pixels.
@@ -238,7 +225,7 @@ impl ObjectData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
-        let (id, tile, mut n, mut t, c, mut w, mut h, mut v, mut r, template, x, y) = get_attrs!(
+        let (id, tile, mut n, mut t, c, w, h, mut v, mut r, template, x, y) = get_attrs!(
             for v in attrs {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse::<u32>(),
@@ -278,10 +265,6 @@ impl ObjectData {
                 // The template sets the default values for the object
                 let obj = &template.object;
                 v.get_or_insert(obj.visible);
-                #[allow(deprecated)]
-                w.get_or_insert(obj.width);
-                #[allow(deprecated)]
-                h.get_or_insert(obj.height);
                 r.get_or_insert(obj.rotation);
                 n.get_or_insert_with(|| obj.name.clone());
                 t.get_or_insert_with(|| obj.user_type.clone());
@@ -346,15 +329,11 @@ impl ObjectData {
 
         let shape = shape.unwrap_or(ObjectShape::Rect { width, height });
 
-        #[allow(deprecated)]
         Ok(ObjectData {
             id,
             tile,
             name,
-            obj_type: user_type.clone(),
             user_type,
-            width,
-            height,
             x,
             y,
             rotation,

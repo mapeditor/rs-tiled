@@ -267,9 +267,24 @@ pub enum Orientation {
     Hexagonal,
 }
 
+#[derive(Debug)]
+/// An error arising from trying to parse an [`Orientation`] that is not valid.
+pub struct OrientationParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl std::fmt::Display for OrientationParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("failed to parse orientation, valid options are `orthogonal`, `isometric`, `staggered` \
+        and `hexagonal` but got `{}` instead", self.str_found))
+    }
+}
+
+impl std::error::Error for OrientationParseError {}
+
 impl FromStr for Orientation {
-    // TODO(0.11): Change error type to OrientationParseErr or similar
-    type Err = ();
+    type Err = OrientationParseError;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
@@ -277,7 +292,9 @@ impl FromStr for Orientation {
             "isometric" => Ok(Orientation::Isometric),
             "staggered" => Ok(Orientation::Staggered),
             "hexagonal" => Ok(Orientation::Hexagonal),
-            _ => Err(()),
+            _ => Err(OrientationParseError {
+                str_found: s.to_owned(),
+            }),
         }
     }
 }
