@@ -167,7 +167,7 @@ impl<'map> TileLayer<'map> {
     /// Obtains the tile present at the position given.
     ///
     /// If the position given is invalid or the position is empty, this function will return [`None`].
-    pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile> {
+    pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile<'map>> {
         match self {
             TileLayer::Finite(finite) => finite.get_tile(x, y),
             TileLayer::Infinite(infinite) => infinite.get_tile(x, y),
