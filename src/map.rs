@@ -132,7 +132,10 @@ impl Map {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
-        let ((c, infinite, user_type, user_class, stagger_axis, stagger_index), (v, o, w, h, tw, th)) = get_attrs!(
+        let (
+            (c, infinite, user_type, user_class, stagger_axis, stagger_index),
+            (v, o, w, h, tw, th),
+        ) = get_attrs!(
             for v in attrs {
                 Some("backgroundcolor") => colour ?= v.parse(),
                 Some("infinite") => infinite = v == "1",
