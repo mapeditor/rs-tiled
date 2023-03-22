@@ -48,6 +48,10 @@ pub struct Map {
     /// individual tiles may have different sizes. As such, there is no guarantee that this value
     /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
+    /// The stagger axis of Hexagonal/Staggered map.
+    pub stagger_axis: StaggerAxis,
+    /// The stagger index of Hexagonal/Staggered map.
+    pub stagger_index: StaggerIndex,
     /// The tilesets present on this map.
     tilesets: Vec<Arc<Tileset>>,
     /// The layers present in this map.
@@ -128,12 +132,17 @@ impl Map {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
-        let ((c, infinite, user_type, user_class), (v, o, w, h, tw, th)) = get_attrs!(
+        let (
+            (c, infinite, user_type, user_class, stagger_axis, stagger_index),
+            (v, o, w, h, tw, th),
+        ) = get_attrs!(
             for v in attrs {
                 Some("backgroundcolor") => colour ?= v.parse(),
                 Some("infinite") => infinite = v == "1",
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
+                Some("staggeraxis") => stagger_axis ?= v.parse::<StaggerAxis>(),
+                Some("staggerindex") => stagger_index ?= v.parse::<StaggerIndex>(),
                 "version" => version = v,
                 "orientation" => orientation ?= v.parse::<Orientation>(),
                 "width" => width ?= v.parse::<u32>(),
@@ -141,11 +150,13 @@ impl Map {
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((colour, infinite, user_type, user_class), (version, orientation, width, height, tile_width, tile_height))
+            ((colour, infinite, user_type, user_class, stagger_axis, stagger_index), (version, orientation, width, height, tile_width, tile_height))
         );
 
         let infinite = infinite.unwrap_or(false);
         let user_type = user_type.or(user_class);
+        let stagger_axis = stagger_axis.unwrap_or_default();
+        let stagger_index = stagger_index.unwrap_or_default();
 
         // We can only parse sequentally, but tilesets are guaranteed to appear before layers.
         // So we can pass in tileset data to layer construction without worrying about unfinished
@@ -247,6 +258,8 @@ impl Map {
             height: h,
             tile_width: tw,
             tile_height: th,
+            stagger_axis,
+            stagger_index,
             tilesets,
             layers,
             properties,
@@ -254,6 +267,86 @@ impl Map {
             infinite,
             user_type,
         })
+    }
+}
+
+// Specifies whether the odd or even rows/columns are shifted half a tile
+// right/down. Only applies to Staggered and Hexagonal map orientations.
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
+#[allow(missing_docs)]
+pub enum StaggerIndex {
+    Even,
+    #[default]
+    Odd,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse an [`StaggerIndex`] that is not valid.
+pub struct StaggerIndexError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl std::fmt::Display for StaggerIndexError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse stagger index, valid options are `even`, `odd` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for StaggerIndex {
+    type Err = StaggerIndexError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "even" => Ok(StaggerIndex::Even),
+            "odd" => Ok(StaggerIndex::Odd),
+            _ => Err(StaggerIndexError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+// Specifies which axis is staggered. Only applies to Staggered and Hexagonal
+// map orientations.
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
+#[allow(missing_docs)]
+pub enum StaggerAxis {
+    X,
+    #[default]
+    Y,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse an [`StaggerAxis`] that is not valid.
+pub struct StaggerAxisError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl std::fmt::Display for StaggerAxisError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse stagger axis, valid options are `x`, `y` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for StaggerAxis {
+    type Err = StaggerAxisError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "x" => Ok(StaggerAxis::X),
+            "y" => Ok(StaggerAxis::Y),
+            _ => Err(StaggerAxisError {
+                str_found: s.to_owned(),
+            }),
+        }
     }
 }
 
