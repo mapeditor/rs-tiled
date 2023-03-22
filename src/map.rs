@@ -154,7 +154,6 @@ impl Map {
         let user_type = user_type.or(user_class);
         let staggeraxis = staggeraxis.unwrap_or_default();
         let staggerindex = staggerindex.unwrap_or_default();
-        
 
         // We can only parse sequentally, but tilesets are guaranteed to appear before layers.
         // So we can pass in tileset data to layer construction without worrying about unfinished
@@ -268,7 +267,6 @@ impl Map {
     }
 }
 
-
 /// Represents the way tiles are laid out in a map.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 #[allow(missing_docs)]
@@ -287,8 +285,11 @@ pub struct StaggerIndexError {
 
 impl std::fmt::Display for StaggerIndexError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("failed to parse orientation, valid options are `even`, `odd` \
-        but got `{}` instead", self.str_found))
+        f.write_fmt(format_args!(
+            "failed to parse orientation, valid options are `even`, `odd` \
+        but got `{}` instead",
+            self.str_found
+        ))
     }
 }
 
@@ -323,8 +324,11 @@ pub struct StaggerAxisError {
 
 impl std::fmt::Display for StaggerAxisError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("failed to parse orientation, valid options are `x`, `y` \
-        but got `{}` instead", self.str_found))
+        f.write_fmt(format_args!(
+            "failed to parse orientation, valid options are `x`, `y` \
+        but got `{}` instead",
+            self.str_found
+        ))
     }
 }
 
