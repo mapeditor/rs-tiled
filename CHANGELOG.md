@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Support for staggered map. Map now have an `stagger_axis` and `stagger_index` property.
+### Added
+- Support for staggered maps. Maps now have an `stagger_axis` and `stagger_index` property.
 
 ## [0.11.0]
 ### Added
