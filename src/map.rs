@@ -48,10 +48,10 @@ pub struct Map {
     /// individual tiles may have different sizes. As such, there is no guarantee that this value
     /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
-    /// The stagger axis of Hexagonal tiled map.
-    pub staggeraxis: StaggerAxis,
-    /// The stagger index of Hexagonal tiled map.
-    pub staggerindex: StaggerIndex,
+    /// The stagger axis of Hexagonal/Staggered map.
+    pub stagger_axis: StaggerAxis,
+    /// The stagger index of Hexagonal/Staggered map.
+    pub stagger_index: StaggerIndex,
     /// The tilesets present on this map.
     tilesets: Vec<Arc<Tileset>>,
     /// The layers present in this map.
@@ -132,14 +132,14 @@ impl Map {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
-        let ((c, infinite, user_type, user_class, staggeraxis, staggerindex), (v, o, w, h, tw, th)) = get_attrs!(
+        let ((c, infinite, user_type, user_class, stagger_axis, stagger_index), (v, o, w, h, tw, th)) = get_attrs!(
             for v in attrs {
                 Some("backgroundcolor") => colour ?= v.parse(),
                 Some("infinite") => infinite = v == "1",
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
-                Some("staggeraxis") => staggeraxis ?= v.parse::<StaggerAxis>(),
-                Some("staggerindex") => staggerindex ?= v.parse::<StaggerIndex>(),
+                Some("staggeraxis") => stagger_axis ?= v.parse::<StaggerAxis>(),
+                Some("staggerindex") => stagger_index ?= v.parse::<StaggerIndex>(),
                 "version" => version = v,
                 "orientation" => orientation ?= v.parse::<Orientation>(),
                 "width" => width ?= v.parse::<u32>(),
@@ -147,13 +147,13 @@ impl Map {
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((colour, infinite, user_type, user_class, staggeraxis, staggerindex), (version, orientation, width, height, tile_width, tile_height))
+            ((colour, infinite, user_type, user_class, stagger_axis, stagger_index), (version, orientation, width, height, tile_width, tile_height))
         );
 
         let infinite = infinite.unwrap_or(false);
         let user_type = user_type.or(user_class);
-        let staggeraxis = staggeraxis.unwrap_or_default();
-        let staggerindex = staggerindex.unwrap_or_default();
+        let stagger_axis = stagger_axis.unwrap_or_default();
+        let stagger_index = stagger_index.unwrap_or_default();
 
         // We can only parse sequentally, but tilesets are guaranteed to appear before layers.
         // So we can pass in tileset data to layer construction without worrying about unfinished
@@ -255,8 +255,8 @@ impl Map {
             height: h,
             tile_width: tw,
             tile_height: th,
-            staggeraxis,
-            staggerindex,
+            stagger_axis,
+            stagger_index,
             tilesets,
             layers,
             properties,
@@ -267,12 +267,13 @@ impl Map {
     }
 }
 
-/// Represents the way tiles are laid out in a map.
+// Specifies whether the odd or even rows/columns are shifted half a tile
+// right/down. Only applies to Staggered and Hexagonal map orientations.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 #[allow(missing_docs)]
 pub enum StaggerIndex {
-    #[default]
     Even,
+    #[default]
     Odd,
 }
 
@@ -286,7 +287,7 @@ pub struct StaggerIndexError {
 impl std::fmt::Display for StaggerIndexError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
-            "failed to parse orientation, valid options are `even`, `odd` \
+            "failed to parse stagger index, valid options are `even`, `odd` \
         but got `{}` instead",
             self.str_found
         ))
@@ -306,7 +307,8 @@ impl FromStr for StaggerIndex {
     }
 }
 
-/// Represents the way tiles are laid out in a map.
+// Specifies which axis is staggered. Only applies to Staggered and Hexagonal
+// map orientations.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 #[allow(missing_docs)]
 pub enum StaggerAxis {
@@ -325,7 +327,7 @@ pub struct StaggerAxisError {
 impl std::fmt::Display for StaggerAxisError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
-            "failed to parse orientation, valid options are `x`, `y` \
+            "failed to parse stagger axis, valid options are `x`, `y` \
         but got `{}` instead",
             self.str_found
         ))
