@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- WASM support + `wasm` feature; Check `README.md` for instructions on how to set it up.
 - Support for staggered maps. Maps now have an `stagger_axis` and `stagger_index` property.
 
 ## [0.11.0]
