@@ -170,6 +170,74 @@ impl<'map> Layer<'map> {
     pub fn layer_type(&self) -> LayerType<'map> {
         LayerType::new(self.map, &self.data.layer_type)
     }
+
+    /// Convenience method to return this layer as a tile layer, only if it is one.
+    ///
+    /// Identical to:
+    /// ```ignore
+    /// match layer.layer_type() {
+    ///     LayerType::Tiles(x) => Some(x),
+    ///     _ => None,
+    /// }
+    /// ```
+    #[inline]
+    pub fn as_tile_layer(self) -> Option<TileLayer<'map>> {
+        match self.layer_type() {
+            LayerType::Tiles(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    /// Convenience method to return this layer as an object group, only if it is one.
+    ///
+    /// Identical to:
+    /// ```ignore
+    /// match layer.layer_type() {
+    ///     LayerType::Objects(x) => Some(x),
+    ///     _ => None,
+    /// }
+    /// ```
+    #[inline]
+    pub fn as_object_layer(self) -> Option<ObjectLayer<'map>> {
+        match self.layer_type() {
+            LayerType::Objects(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    /// Convenience method to return this layer as an image layer, only if it is one.
+    ///
+    /// Identical to:
+    /// ```ignore
+    /// match layer.layer_type() {
+    ///     LayerType::Image(x) => Some(x),
+    ///     _ => None,
+    /// }
+    /// ```
+    #[inline]
+    pub fn as_image_layer(self) -> Option<ImageLayer<'map>> {
+        match self.layer_type() {
+            LayerType::Image(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    /// Convenience method to return this layer as a group layer, only if it is one.
+    ///
+    /// Identical to:
+    /// ```ignore
+    /// match layer.layer_type() {
+    ///     LayerType::Group(x) => Some(x),
+    ///     _ => None,
+    /// }
+    /// ```
+    #[inline]
+    pub fn as_group_layer(self) -> Option<GroupLayer<'map>> {
+        match self.layer_type() {
+            LayerType::Group(x) => Some(x),
+            _ => None,
+        }
+    }
 }
 
 /// Represents some kind of map layer.
@@ -192,70 +260,6 @@ impl<'map> LayerType<'map> {
             LayerDataType::Objects(data) => Self::Objects(ObjectLayer::new(map, data)),
             LayerDataType::Image(data) => Self::Image(ImageLayer::new(map, data)),
             LayerDataType::Group(data) => Self::Group(GroupLayer::new(map, data)),
-        }
-    }
-
-    /// Casts this layer to a tile layer, only if it is one.
-    ///
-    /// Identical to:
-    /// ```ignore
-    /// match layer {
-    ///     LayerType::Tiles(x) => Some(x),
-    ///     _ => None,
-    /// }
-    /// ```
-    pub fn as_tiles(self) -> Option<TileLayer<'map>> {
-        match self {
-            Self::Tiles(x) => Some(x),
-            _ => None,
-        }
-    }
-
-    /// Casts this layer to an object group, only if it is one.
-    ///
-    /// Identical to:
-    /// ```ignore
-    /// match layer {
-    ///     LayerType::Objects(x) => Some(x),
-    ///     _ => None,
-    /// }
-    /// ```
-    pub fn as_objects(self) -> Option<ObjectLayer<'map>> {
-        match self {
-            Self::Objects(x) => Some(x),
-            _ => None,
-        }
-    }
-
-    /// Casts this layer to an image layer, only if it is one.
-    ///
-    /// Identical to:
-    /// ```ignore
-    /// match layer {
-    ///     LayerType::Image(x) => Some(x),
-    ///     _ => None,
-    /// }
-    /// ```
-    pub fn as_image(self) -> Option<ImageLayer<'map>> {
-        match self {
-            Self::Image(x) => Some(x),
-            _ => None,
-        }
-    }
-
-    /// Casts this layer to a group layer, only if it is one.
-    ///
-    /// Identical to:
-    /// ```ignore
-    /// match layer {
-    ///     LayerType::Group(x) => Some(x),
-    ///     _ => None,
-    /// }
-    /// ```
-    pub fn as_group(self) -> Option<GroupLayer<'map>> {
-        match self {
-            Self::Group(x) => Some(x),
-            _ => None,
         }
     }
 }

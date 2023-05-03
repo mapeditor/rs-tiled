@@ -127,7 +127,7 @@ impl MapHandler {
         let tile_layers = self
             .map
             .layers()
-            .filter_map(|l| Some((l, l.layer_type().as_tiles()?)));
+            .filter_map(|l| Some((l, l.as_tile_layer()?)));
 
         for (i, (layer, tl)) in tile_layers.enumerate() {
             match &tl {

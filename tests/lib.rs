@@ -43,7 +43,7 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     compare_everything_but_tileset_sources(&z, &c);
     compare_everything_but_tileset_sources(&z, &zstd);
 
-    let layer = as_finite(c.get_layer(0).unwrap().layer_type().as_tiles().unwrap());
+    let layer = as_finite(c.get_layer(0).unwrap().as_tile_layer().unwrap());
     {
         assert_eq!(layer.width(), 100);
         assert_eq!(layer.height(), 100);
@@ -101,14 +101,14 @@ fn test_infinite_map() {
         .load_tmx_map("assets/tiled_base64_zlib_infinite.tmx")
         .unwrap();
 
-    if let TileLayer::Infinite(inf) = &r.get_layer(1).unwrap().layer_type().as_tiles().unwrap() {
+    if let TileLayer::Infinite(inf) = &r.get_layer(1).unwrap().as_tile_layer().unwrap() {
         assert_eq!(inf.get_tile(2, 10).unwrap().id(), 5);
         assert_eq!(inf.get_tile(5, 36).unwrap().id(), 73);
         assert_eq!(inf.get_tile(15, 15).unwrap().id(), 22);
     } else {
         panic!("It is wrongly recognised as a finite map");
     }
-    if let TileLayer::Infinite(inf) = &r.get_layer(0).unwrap().layer_type().as_tiles().unwrap() {
+    if let TileLayer::Infinite(inf) = &r.get_layer(0).unwrap().as_tile_layer().unwrap() {
         // NW corner
         assert_eq!(inf.get_tile(-16, 0).unwrap().id(), 17);
         assert!(inf.get_tile(-17, 0).is_none());
@@ -208,7 +208,7 @@ fn test_object_group_property() {
         .load_tmx_map("assets/tiled_object_groups.tmx")
         .unwrap();
     let group_layer = r.get_layer(1).unwrap();
-    let group_layer = group_layer.layer_type().as_group().unwrap();
+    let group_layer = group_layer.as_group_layer().unwrap();
     let sub_layer = group_layer.get_layer(0).unwrap();
     let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) =
         sub_layer.properties.get("an object group property")
@@ -239,7 +239,7 @@ fn test_flipped() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_flipped.tmx")
         .unwrap();
-    let layer = r.get_layer(0).unwrap().layer_type().as_tiles().unwrap();
+    let layer = r.get_layer(0).unwrap().as_tile_layer().unwrap();
 
     let t1 = layer.get_tile(0, 0).unwrap();
     let t2 = layer.get_tile(1, 0).unwrap();
@@ -267,7 +267,7 @@ fn test_ldk_export() {
     let r = Loader::new()
         .load_tmx_map("assets/ldk_tiled_export.tmx")
         .unwrap();
-    let layer = as_finite(r.get_layer(0).unwrap().layer_type().as_tiles().unwrap());
+    let layer = as_finite(r.get_layer(0).unwrap().as_tile_layer().unwrap());
     {
         assert_eq!(layer.width(), 8);
         assert_eq!(layer.height(), 8);
@@ -310,8 +310,7 @@ fn test_object_property() {
         .unwrap();
     let layer = r.get_layer(1).unwrap();
     let prop_value = if let Some(PropertyValue::ObjectValue(v)) = layer
-        .layer_type()
-        .as_objects()
+        .as_object_layer()
         .unwrap()
         .get_object(0)
         .unwrap()
@@ -380,9 +379,9 @@ fn test_group_layers() {
     );
 
     // Depth = 1
-    let layer_group_1 = layer_group_1.layer_type().as_group().unwrap();
+    let layer_group_1 = layer_group_1.as_group_layer().unwrap();
     let layer_tile_2 = layer_group_1.get_layer(0).unwrap();
-    let layer_group_2 = layer_group_2.layer_type().as_group().unwrap();
+    let layer_group_2 = layer_group_2.as_group_layer().unwrap();
     let layer_group_3 = layer_group_2.get_layer(0).unwrap();
     assert_eq!(
         Some(&PropertyValue::StringValue("value2".to_string())),
@@ -394,7 +393,7 @@ fn test_group_layers() {
     );
 
     // Depth = 2
-    let layer_group_3 = layer_group_3.layer_type().as_group().unwrap();
+    let layer_group_3 = layer_group_3.as_group_layer().unwrap();
     let layer_tile_3 = layer_group_3.get_layer(0).unwrap();
     assert_eq!(
         Some(&PropertyValue::StringValue("value3".to_string())),
@@ -408,7 +407,7 @@ fn test_object_template_property() {
         .load_tmx_map("assets/tiled_object_template.tmx")
         .unwrap();
 
-    let object_layer = r.get_layer(1).unwrap().layer_type().as_objects().unwrap();
+    let object_layer = r.get_layer(1).unwrap().as_object_layer().unwrap();
     let object = object_layer.get_object(0).unwrap(); // The templated object
     let object_nt = object_layer.get_object(1).unwrap(); // The non-templated object
 
