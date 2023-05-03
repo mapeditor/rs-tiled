@@ -5,6 +5,7 @@ tiled = "0.11.0"
 
 [![Rust](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml/badge.svg)](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml)
 [![Crates.io](https://img.shields.io/crates/v/tiled.svg)](https://crates.io/crates/tiled)
+[![Docs Status](https://docs.rs/tiled/badge.svg)](https://docs.rs/tiled)
 [![dependency status](https://deps.rs/crate/tiled/latest/status.svg)](https://deps.rs/crate/tiled)
 
 A crate for reading TMX (map) and TSX (tileset) files from the [Tiled Map Editor](http://www.mapeditor.org/) into Rust.
