@@ -28,9 +28,6 @@ pub struct TileData {
     pub animation: Option<Vec<Frame>>,
     /// The type of this tile.
     pub user_type: Option<String>,
-    /// This property has been renamed to `user_type`.
-    #[deprecated(since = "0.10.3", note = "Use [`TileData::user_type`] instead")]
-    pub tile_type: Option<String>,
     /// The probability of this tile.
     pub probability: f32,
 }
@@ -106,13 +103,11 @@ impl TileData {
         });
         Ok((
             id,
-            #[allow(deprecated)]
             TileData {
                 image,
                 properties,
                 collision: objectgroup,
                 animation,
-                tile_type: user_type.clone(),
                 user_type,
                 probability: probability.unwrap_or(1.0),
             },
