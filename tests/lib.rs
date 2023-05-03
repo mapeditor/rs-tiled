@@ -49,7 +49,7 @@ fn compare_everything_but_tileset_sources(r: &Map, e: &Map) {
         .for_each(|(r, e)| assert_eq!(r, e)); */
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     let mut loader = Loader::new();
     let z = loader.load_tmx_map("assets/tiled_base64_zlib.tmx").unwrap();
@@ -77,7 +77,7 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
     assert!((0..99).map(|x| layer.get_tile(x, 99)).all(|t| t.is_none()));
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_external_tileset() {
     let mut loader = Loader::new();
 
@@ -88,7 +88,7 @@ fn test_external_tileset() {
     compare_everything_but_tileset_sources(&r, &e);
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_sources() {
     let mut loader = Loader::new();
     let e = loader
@@ -104,7 +104,7 @@ fn test_sources() {
     );
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_just_tileset() {
     let mut loader = Loader::new();
     let r = loader
@@ -116,7 +116,7 @@ fn test_just_tileset() {
     );
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_infinite_map() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64_zlib_infinite.tmx")
@@ -154,7 +154,7 @@ fn test_infinite_map() {
     }
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_image_layers() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_image_layers.tmx")
@@ -190,7 +190,7 @@ fn test_image_layers() {
     }
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_tile_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
@@ -208,7 +208,7 @@ fn test_tile_property() {
     assert_eq!("123", prop_value);
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_layer_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
@@ -223,7 +223,7 @@ fn test_layer_property() {
     assert_eq!("Line 1\r\nLine 2\r\nLine 3,\r\n  etc\r\n   ", prop_value);
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_object_group_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_object_groups.tmx")
@@ -240,7 +240,7 @@ fn test_object_group_property() {
     };
     assert!(prop_value);
 }
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_tileset_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
@@ -255,7 +255,7 @@ fn test_tileset_property() {
     assert_eq!("tsp", prop_value);
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_flipped() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_flipped.tmx")
@@ -283,7 +283,7 @@ fn test_flipped() {
     assert!(!t4.flip_v);
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_ldk_export() {
     let r = Loader::new()
         .load_tmx_map("assets/ldk_tiled_export.tmx")
@@ -297,7 +297,7 @@ fn test_ldk_export() {
     assert_eq!(layer.get_tile(0, 1).unwrap().id(), 0);
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_parallax_layers() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_parallax.tmx")
@@ -324,7 +324,7 @@ fn test_parallax_layers() {
     }
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_object_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_object_property.tmx")
@@ -343,7 +343,7 @@ fn test_object_property() {
     assert_eq!(3, prop_value);
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_tint_color() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_image_layers.tmx")
@@ -368,7 +368,7 @@ fn test_tint_color() {
     );
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_group_layers() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_group_layers.tmx")
@@ -420,7 +420,7 @@ fn test_group_layers() {
     );
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_object_template_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_object_template.tmx")
@@ -468,7 +468,7 @@ fn test_object_template_property() {
     assert_eq!(object_nt.get_tile().unwrap().id(), 44);
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_templates() {
     let mut loader = Loader::new();
     let map = loader.load_tmx_map("assets/templates/example.tmx").unwrap();
@@ -495,7 +495,7 @@ fn test_templates() {
     );
 }
 
-#[test]
+#[cfg_attr(not(target = "wasm32-unknown-unknown"), test)]
 fn test_reading_wang_sets() {
     let mut loader = Loader::new();
     let map = loader
