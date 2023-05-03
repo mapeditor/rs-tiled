@@ -181,17 +181,7 @@ pub struct ObjectData {
     /// The name of the object, which is arbitrary and set by the user.
     pub name: String,
     /// The type of the object, which is arbitrary and set by the user.
-    pub obj_type: String,
-    /// The width of the object, if applicable. This refers to the attribute in `object`.
-    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
-    /// member in [`ObjectShape`] instead.
-    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
-    pub width: f32,
-    /// The height of the object, if applicable. This refers to the attribute in `object`.
-    /// Since it is duplicate or irrelevant information in all cases, use the equivalent
-    /// member in [`ObjectShape`] instead.
-    #[deprecated(since = "0.10.0", note = "Use [`ObjectShape`] members instead")]
-    pub height: f32,
+    pub user_type: String,
     /// The X coordinate of this object in pixels.
     pub x: f32,
     /// The Y coordinate of this object in pixels.
@@ -235,12 +225,13 @@ impl ObjectData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
-        let (id, tile, mut n, mut t, mut w, mut h, mut v, mut r, template, x, y) = get_attrs!(
+        let (id, tile, mut n, mut t, c, w, h, mut v, mut r, template, x, y) = get_attrs!(
             for v in attrs {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse::<u32>(),
                 Some("name") => name ?= v.parse(),
-                Some("type") => obj_type ?= v.parse(),
+                Some("type") => user_type ?= v.parse(),
+                Some("class") => user_class ?= v.parse(),
                 Some("width") => width ?= v.parse(),
                 Some("height") => height ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
@@ -249,7 +240,7 @@ impl ObjectData {
                 Some("x") => x ?= v.parse::<f32>(),
                 Some("y") => y ?= v.parse::<f32>(),
             }
-            (id, tile, name, obj_type, width, height, visible, rotation, template, x, y)
+            (id, tile, name, user_type, user_class, width, height, visible, rotation, template, x, y)
         );
         let x = x.unwrap_or(0.);
         let y = y.unwrap_or(0.);
@@ -274,13 +265,9 @@ impl ObjectData {
                 // The template sets the default values for the object
                 let obj = &template.object;
                 v.get_or_insert(obj.visible);
-                #[allow(deprecated)]
-                w.get_or_insert(obj.width);
-                #[allow(deprecated)]
-                h.get_or_insert(obj.height);
                 r.get_or_insert(obj.rotation);
                 n.get_or_insert_with(|| obj.name.clone());
-                t.get_or_insert_with(|| obj.obj_type.clone());
+                t.get_or_insert_with(|| obj.user_type.clone());
                 if let Some(templ_tile) = &obj.tile {
                     tile.get_or_insert_with(|| templ_tile.clone());
                 }
@@ -294,7 +281,7 @@ impl ObjectData {
         let rotation = r.unwrap_or(0f32);
         let id = id.unwrap_or(0u32);
         let name = n.unwrap_or_default();
-        let obj_type = t.unwrap_or_default();
+        let user_type: String = t.or(c).unwrap_or_default();
         let mut shape = None;
         let mut properties = HashMap::new();
 
@@ -342,14 +329,11 @@ impl ObjectData {
 
         let shape = shape.unwrap_or(ObjectShape::Rect { width, height });
 
-        #[allow(deprecated)]
         Ok(ObjectData {
             id,
             tile,
             name,
-            obj_type,
-            width,
-            height,
+            user_type,
             x,
             y,
             rotation,

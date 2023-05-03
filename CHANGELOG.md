@@ -5,24 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Support for staggered maps. Maps now have an `stagger_axis` and `stagger_index` property.
+
 ## [0.11.0]
 ### Added
 - Template support!
 Templates are loaded automatically when they are encountered, and are treated as intermediate
 objects. As such, `ResourceCache` has now methods for both getting and inserting them (#170).
-- Text object support (#230).
 - VFS support (#199).
 - `as_x` functions for layer types (#235).
+- Text object support (#230).
 - `cache_mut` loader property (#207).
 
 ### Changed
 - `LayerType` variants have been stripped from the `Layer` suffix (#203).
+- `TileData::tile_type` has been renamed to `TileData::user_type`. (#253)
+- `Orientation`'s `FromStr` impl now returns `OrientationParseError` as the error type. (#253)
 - `ResourceCache::get_or_try_insert_tileset_with` has been replaced by `ResourceCache::insert_tileset`.
 - `DefaultResourceCache`'s members have been made public.
 
-## [Unreleased]
+### Removed
+- `ObjectData::obj_type`, `ObjectData::width`, `ObjectData::height`. (#253)
+- `TileData::tile_type` (which has been renamed to `TileData::user_type`) (#253)
+
+## [0.10.3]
 ### Added
 - Support for Wang sets.
+- Support for Tiled 1.9 `Class` property. Maps, tilesets and layers now have a `user_type` property.
+- Support for tile offsets. Tilesets now have an `offset_x` and `offset_y` property.
+
+### Deprecated
+- `Object::obj_type` Use `Object::user_type` instead.
+
+### Changed
+- Update `zstd` to `0.12.0`.
+- Update `sfml` dev dependency to `0.20.0`.
+- Update `base64` to `0.21.0`.
 
 ## [0.10.2]
 ### Added

@@ -10,12 +10,13 @@ use crate::{
 };
 
 mod wang_color;
-pub use wang_color::WangColor;
+pub use wang_color::*;
 mod wang_tile;
-pub use wang_tile::{WangId, WangTile};
+pub use wang_tile::*;
 
 /// Wang set's terrain brush connection type.
 #[derive(Debug, PartialEq, Clone, Copy)]
+#[allow(missing_docs)]
 pub enum WangSetType {
     Corner,
     Edge,

@@ -136,8 +136,10 @@ fn main() {
 
 /// Creates the window of the application
 fn create_window() -> RenderWindow {
-    let mut context_settings = ContextSettings::default();
-    context_settings.set_antialiasing_level(2);
+    let context_settings = ContextSettings {
+        antialiasing_level: 2,
+        ..Default::default()
+    };
     let mut window = RenderWindow::new(
         (1080, 720),
         "rs-tiled demo",
