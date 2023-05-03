@@ -34,15 +34,14 @@ fn main() {
 ```
 
 ### WASM
-The crate supports WASM, but since it does not currently support asynchronous loading and it uses zstd by default, there are some gotchas.
+The crate supports WASM, but since it does not currently support asynchronous loading, there are some gotchas.
 
-- First, to make it work on any WASM target, **disable the zstd feature**, like so:
+- First, to make it work on any WASM target, **enable the wasm feature**, like so:
 ```toml
 [dependencies]
 # ...
-tiled = { version = ".....", default_features = false }
+tiled = { version = ".....", features = ["wasm"] }
 ```
-The crate does not currently support zstd-compressed maps or tilesets when targeting WASM.
 
 - Second, since you cannot use the filesystem as normally on the web, you cannot use `FilesystemResourceReader`. As such,
 you'll need to implement your own `ResourceReader`. This is a pretty simple task, as you just need to return anything
