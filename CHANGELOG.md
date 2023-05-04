@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Templates are loaded automatically when they are encountered, and are treated as intermediate
 objects. As such, `ResourceCache` has now methods for both getting and inserting them (#170).
 - VFS support (#199).
+- `as_x` functions for layer types (#235).
 - Text object support (#230).
 - `cache_mut` loader property (#207).
 

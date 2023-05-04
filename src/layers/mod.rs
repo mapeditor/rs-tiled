@@ -170,6 +170,74 @@ impl<'map> Layer<'map> {
     pub fn layer_type(&self) -> LayerType<'map> {
         LayerType::new(self.map, &self.data.layer_type)
     }
+
+    /// Convenience method to return this layer as a tile layer, only if it is one.
+    ///
+    /// Identical to:
+    /// ```ignore
+    /// match layer.layer_type() {
+    ///     LayerType::Tiles(x) => Some(x),
+    ///     _ => None,
+    /// }
+    /// ```
+    #[inline]
+    pub fn as_tile_layer(self) -> Option<TileLayer<'map>> {
+        match self.layer_type() {
+            LayerType::Tiles(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    /// Convenience method to return this layer as an object group, only if it is one.
+    ///
+    /// Identical to:
+    /// ```ignore
+    /// match layer.layer_type() {
+    ///     LayerType::Objects(x) => Some(x),
+    ///     _ => None,
+    /// }
+    /// ```
+    #[inline]
+    pub fn as_object_layer(self) -> Option<ObjectLayer<'map>> {
+        match self.layer_type() {
+            LayerType::Objects(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    /// Convenience method to return this layer as an image layer, only if it is one.
+    ///
+    /// Identical to:
+    /// ```ignore
+    /// match layer.layer_type() {
+    ///     LayerType::Image(x) => Some(x),
+    ///     _ => None,
+    /// }
+    /// ```
+    #[inline]
+    pub fn as_image_layer(self) -> Option<ImageLayer<'map>> {
+        match self.layer_type() {
+            LayerType::Image(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    /// Convenience method to return this layer as a group layer, only if it is one.
+    ///
+    /// Identical to:
+    /// ```ignore
+    /// match layer.layer_type() {
+    ///     LayerType::Group(x) => Some(x),
+    ///     _ => None,
+    /// }
+    /// ```
+    #[inline]
+    pub fn as_group_layer(self) -> Option<GroupLayer<'map>> {
+        match self.layer_type() {
+            LayerType::Group(x) => Some(x),
+            _ => None,
+        }
+    }
 }
 
 /// Represents some kind of map layer.

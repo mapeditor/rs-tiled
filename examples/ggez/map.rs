@@ -124,10 +124,10 @@ impl MapHandler {
     ) -> HashMap<u32, Vec<SpriteBatch>> {
         let mut layer_batches: HashMap<u32, Vec<SpriteBatch>> = HashMap::new();
 
-        let tile_layers = self.map.layers().filter_map(|l| match l.layer_type() {
-            tiled::LayerType::Tiles(tl) => Some((l, tl)),
-            _ => None,
-        });
+        let tile_layers = self
+            .map
+            .layers()
+            .filter_map(|l| Some((l, l.as_tile_layer()?)));
 
         for (i, (layer, tl)) in tile_layers.enumerate() {
             match &tl {
