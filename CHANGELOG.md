@@ -30,6 +30,38 @@ objects. As such, `ResourceCache` has now methods for both getting and inserting
 ### Removed
 - `ObjectData::obj_type`, `ObjectData::width`, `ObjectData::height`. (#253)
 - `TileData::tile_type` (which has been renamed to `TileData::user_type`) (#253)
+- `Loader::load_tmx_map_from`, `Loader::load_tsx_tileset_from`: This was a hacky solution to loading embedded maps and tilesets. While there is no direct, ready-to-use replacement for this within the crate, you can create a `ResourceReader` that works like this function previously did:
+```rs
+struct EmbeddedResourceReader<R: Read> {
+    reader: Option<R>,
+}
+
+impl<R: Read> BytesResourceReader<R> {
+    fn new(reader: R) -> Self {
+        Self {
+            reader: Some(reader),
+        }
+    }
+}
+
+impl<R: Read> tiled::ResourceReader for BytesResourceReader<R> {
+    type Resource = R;
+    type Error = std::io::Error;
+
+    fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error> {
+        if path == "the_path_to_load.tmx" {
+            if let Some(x) = self.reader.take() {
+                Ok(x)
+            } else {
+            Err(std::io::Error::from(ErrorKind::ResourceBusy))
+            }
+        } else {
+            Err(std::io::Error::from(ErrorKind::NotFound))
+        }
+    }
+}
+```
+Note: This works for both maps and tilesets, and you can extend to use more than one reader if neccessary, which is something you couldn't do before.
 
 ## [0.10.3]
 ### Added
