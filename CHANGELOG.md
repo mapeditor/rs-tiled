@@ -36,7 +36,7 @@ struct EmbeddedResourceReader<R: Read> {
     reader: Option<R>,
 }
 
-impl<R: Read> BytesResourceReader<R> {
+impl<R: Read> EmbeddedResourceReader<R> {
     fn new(reader: R) -> Self {
         Self {
             reader: Some(reader),
@@ -44,7 +44,7 @@ impl<R: Read> BytesResourceReader<R> {
     }
 }
 
-impl<R: Read> tiled::ResourceReader for BytesResourceReader<R> {
+impl<R: Read> tiled::ResourceReader for EmbeddedResourceReader<R> {
     type Resource = R;
     type Error = std::io::Error;
 
