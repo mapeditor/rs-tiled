@@ -53,7 +53,7 @@ impl<R: Read> tiled::ResourceReader for EmbeddedResourceReader<R> {
             if let Some(x) = self.reader.take() {
                 Ok(x)
             } else {
-            Err(std::io::Error::from(ErrorKind::ResourceBusy))
+                Err(std::io::Error::from(ErrorKind::ResourceBusy))
             }
         } else {
             Err(std::io::Error::from(ErrorKind::NotFound))
