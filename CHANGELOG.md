@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.11.1]
 ### Added
-- WASM support + `wasm` feature; Check `README.md` for instructions on how to set it up.
-- Support for staggered maps. Maps now have an `stagger_axis` and `stagger_index` property.
+- WASM support + `wasm` feature; Check `README.md` for instructions on how to set it up. (#252)
+- Support for staggered maps. Maps now have an `stagger_axis` and `stagger_index` property. (#262)
 
 ## [0.11.0]
 ### Added
@@ -30,6 +30,38 @@ objects. As such, `ResourceCache` has now methods for both getting and inserting
 ### Removed
 - `ObjectData::obj_type`, `ObjectData::width`, `ObjectData::height`. (#253)
 - `TileData::tile_type` (which has been renamed to `TileData::user_type`) (#253)
+- `Loader::load_tmx_map_from`, `Loader::load_tsx_tileset_from`: This was a hacky solution to loading embedded maps and tilesets. While there is no direct, ready-to-use replacement for this within the crate, you can create a `ResourceReader` that works like this function previously did:
+```rs
+struct EmbeddedResourceReader<R: Read> {
+    reader: Option<R>,
+}
+
+impl<R: Read> EmbeddedResourceReader<R> {
+    fn new(reader: R) -> Self {
+        Self {
+            reader: Some(reader),
+        }
+    }
+}
+
+impl<R: Read> tiled::ResourceReader for EmbeddedResourceReader<R> {
+    type Resource = R;
+    type Error = std::io::Error;
+
+    fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error> {
+        if path == "the_path_to_load.tmx" {
+            if let Some(x) = self.reader.take() {
+                Ok(x)
+            } else {
+                Err(std::io::Error::from(ErrorKind::ResourceBusy))
+            }
+        } else {
+            Err(std::io::Error::from(ErrorKind::NotFound))
+        }
+    }
+}
+```
+Note: This works for both maps and tilesets, and you can extend to use more than one reader if neccessary, which is something you couldn't do before.
 
 ## [0.10.3]
 ### Added
