@@ -18,11 +18,7 @@ pub struct Image {
     /// The crate does not currently support embedded images (Even though Tiled
     /// does not allow creating maps with embedded image data, the TMX format does; [source])
     ///
-    /// Currently, the crate is not prepared to handle anything but OS paths. Using VFS is a hard
-    /// task that involves a lot of messy path manipulation. [Tracking issue]
-    ///
     /// [source]: https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#image
-    /// [Tracking issue]: https://github.com/mapeditor/rs-tiled/issues/37
     ///
     /// ## Example
     /// ```
@@ -53,9 +49,7 @@ pub struct Image {
     ///     Path::new("assets/folder/../tilesheet.png")
     /// );
     ///
-    /// // If you are using the OS's filesystem, figuring out the real path of the image is as easy
-    /// // as canonicalizing the path. If you are using some sort of VFS, this task is much harder
-    /// // since std::path is meant to be used with the OS. This will be fixed in the future!
+    /// // Figuring out the real path of the image is as easy as canonicalizing it.
     /// let image_source = image_source.canonicalize()?;
     /// assert!(File::open(image_source).is_ok());
     /// # Ok(())
