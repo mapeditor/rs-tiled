@@ -17,7 +17,7 @@ Code contributions are welcome as are bug reports, documentation, suggestions an
 
 The minimum supported TMX version is 0.13.
 
-### Example
+## Example
 
 ```rust
 use tiled::Loader;
@@ -34,7 +34,35 @@ fn main() {
 
 ```
 
-### WASM
+## FAQ
+### How do I embed a map into my executable? / How do I read a file from anywhere else that isn't the filesystem's OS?
+The crate does all of its reading through the `read_from` function of the [`ResourceReader`](https://docs.rs/tiled/latest/tiled/trait.ResourceReader.html) that you create the loader with. By default, this reader is set to [`FilesystemResourceReader`](https://docs.rs/tiled/latest/tiled/struct.FilesystemResourceReader.html) and all files are read through the OS's filesystem. You can however change this.
+
+Here's an example mostly taken from `Loader::with_cache_and_reader`'s documentation:
+```rust
+use tiled::{DefaultResourceCache, Loader};
+
+let mut loader = Loader::with_cache_and_reader(
+    DefaultResourceCache::new(),
+    // Specify the reader to use. We can use anything that implements `ResourceReader`, e.g. FilesystemResourceReader.
+    // Any function that has the same signature as `ResourceReader::read_from` also implements it.
+    // Here we define a reader that embeds the map at "assets/tiled_xml.csv" into the executable, and allow
+    // accessing it only through "/my-map.tmx"
+    // ALL maps, tilesets and templates will be read through this function, even if you don't explicitly load them
+    // (They can be dependencies of one you did want to load in the first place).
+    // Doing this embedding is useful for places where the OS filesystem is not available (e.g. WASM applications).
+    |path: &std::path::Path| -> std::io::Result<_> {
+        if path == std::path::Path::new("/my-map.tmx") {
+            Ok(std::io::Cursor::new(include_bytes!("../assets/tiled_csv.tmx")))
+        } else {
+            Err(std::io::ErrorKind::NotFound.into())
+        }
+    }
+);
+```
+If the closure approach confuses you or you need more flexibility, you can always implement [`ResourceReader`](https://docs.rs/tiled/latest/tiled/trait.ResourceReader.html) on your own structure.
+
+### How do I get the crate to work on WASM targets?
 The crate supports WASM, but since it does not currently support asynchronous loading, there are some gotchas.
 
 - First, to make it work on any WASM target, **enable the wasm feature**, like so:
