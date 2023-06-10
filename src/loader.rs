@@ -37,8 +37,56 @@ impl Loader {
     }
 }
 
+impl<Reader: ResourceReader> Loader<DefaultResourceCache, Reader> {
+    /// Creates a new loader using a specific reader and the default resource cache ([`DefaultResourceCache`]).
+    /// Shorthand for `Loader::with_cache_and_reader(DefaultResourceCache::new(), reader)`.
+    ///
+    /// ## Example
+    /// ```
+    /// # fn main() -> tiled::Result<()> {
+    /// use std::{sync::Arc, path::Path};
+    ///
+    /// use tiled::{Loader, ResourceCache};
+    ///
+    /// let mut loader = Loader::with_reader(
+    ///     // Specify the reader to use. We can use anything that implements `ResourceReader`, e.g. FilesystemResourceReader.
+    ///     // Any function that has the same signature as `ResourceReader::read_from` also implements it.
+    ///     // Here we define a reader that embeds the map at "assets/tiled_xml.csv" into the executable, and allow
+    ///     // accessing it only through "/my-map.tmx"
+    ///     // ALL maps, tilesets and templates will be read through this function, even if you don't explicitly load them
+    ///     // (They can be dependencies of one you did want to load in the first place).
+    ///     // Doing this embedding is useful for places where the OS filesystem is not available (e.g. WASM applications).
+    ///     |path: &std::path::Path| -> std::io::Result<_> {
+    ///         if path == std::path::Path::new("/my-map.tmx") {
+    ///             Ok(std::io::Cursor::new(include_bytes!("../assets/tiled_csv.tmx")))
+    ///         } else {
+    ///             Err(std::io::ErrorKind::NotFound.into())
+    ///         }
+    ///     }
+    /// );
+    ///
+    /// let map = loader.load_tmx_map("/my-map.tmx")?;
+    ///
+    /// assert_eq!(
+    ///     map.tilesets()[0].image.as_ref().unwrap().source,
+    ///     Path::new("/tilesheet.png")
+    /// );
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_reader(reader: Reader) -> Self {
+        Self {
+            cache: DefaultResourceCache::new(),
+            reader,
+        }
+    }
+}
+
 impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
-    /// Creates a new loader using a specific resource cache and reader.
+    /// Creates a new loader using a specific resource cache and reader. In most cases you won't
+    /// need a custom resource cache; If that is the case you can use [`Loader::with_reader()`] for
+    /// a less verbose version of this function.
     ///
     /// ## Example
     /// ```

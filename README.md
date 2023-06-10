@@ -38,12 +38,11 @@ fn main() {
 ### How do I embed a map into my executable? / How do I read a file from anywhere else that isn't the filesystem's OS?
 The crate does all of its reading through the `read_from` function of the [`ResourceReader`](https://docs.rs/tiled/latest/tiled/trait.ResourceReader.html) that you create the loader with. By default, this reader is set to [`FilesystemResourceReader`](https://docs.rs/tiled/latest/tiled/struct.FilesystemResourceReader.html) and all files are read through the OS's filesystem. You can however change this.
 
-Here's an example mostly taken from `Loader::with_cache_and_reader`'s documentation:
+Here's an example mostly taken from `Loader::with_reader`'s documentation:
 ```rust
 use tiled::{DefaultResourceCache, Loader};
 
-let mut loader = Loader::with_cache_and_reader(
-    DefaultResourceCache::new(),
+let mut loader = Loader::with_reader(
     // Specify the reader to use. We can use anything that implements `ResourceReader`, e.g. FilesystemResourceReader.
     // Any function that has the same signature as `ResourceReader::read_from` also implements it.
     // Here we define a reader that embeds the map at "assets/tiled_xml.csv" into the executable, and allow
@@ -94,7 +93,8 @@ impl tiled::ResourceReader for MyReader {
     }
 }
 ```
-Check the `ResourceReader` docs for more information.
+You can also use a function with the same signature as `tiled::ResourceReader::read_from`; check the
+`ResourceReader` docs for more information.
 
 ### Licences
 
