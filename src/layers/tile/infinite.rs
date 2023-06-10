@@ -91,7 +91,7 @@ impl InfiniteTileLayerData {
     }
 
     /// Obtains a chunk's data by its position. To obtain the position of the chunk that contains a
-    /// tile, use [Chunk::tile_to_chunk_pos()].
+    /// tile, use [`ChunkData::tile_to_chunk_pos()`].
     ///
     /// In 99.99% of cases you'll want to use [`InfiniteTileLayer::get_chunk()`] instead; Using this method is only
     /// needed if you *only* require the tile data of the chunk (and no other utilities provided by
@@ -132,7 +132,7 @@ impl ChunkData {
     ///
     /// If the position given is invalid or the position is empty, this function will return [`None`].
     ///
-    /// If you want to get a [`LayerTile`](`crate::LayerTile`) instead, use [`ChunkWrapper::get_tile()`].
+    /// If you want to get a [`LayerTile`](`crate::LayerTile`) instead, use [`Chunk::get_tile()`].
     pub fn get_tile_data(&self, x: i32, y: i32) -> Option<&LayerTileData> {
         if x < Self::WIDTH as i32 && y < Self::HEIGHT as i32 && x >= 0 && y >= 0 {
             self.tiles[x as usize + y as usize * Self::WIDTH as usize].as_ref()
@@ -227,7 +227,7 @@ impl<'map> InfiniteTileLayer<'map> {
     /// Returns an iterator over different parts of this map called [`Chunk`]s.
     ///
     /// These **may not** correspond with the chunks in the TMX file, as the chunk size is
-    /// implementation defined (see [`Chunk::WIDTH`], [`Chunk::HEIGHT`]).
+    /// implementation defined (see [`ChunkData::WIDTH`], [`ChunkData::HEIGHT`]).
     ///
     /// The iterator item contains the position of the chunk in chunk coordinates along with a
     /// reference to the actual chunk at that position.
@@ -272,7 +272,7 @@ impl<'map> InfiniteTileLayer<'map> {
     }
 
     /// Obtains a chunk by its position. To obtain the position of the chunk that contains a tile,
-    /// use [Chunk::tile_to_chunk_pos].
+    /// use [`ChunkData::tile_to_chunk_pos()`].
     #[inline]
     pub fn get_chunk(&self, x: i32, y: i32) -> Option<Chunk<'map>> {
         let map: &'map crate::Map = self.map;
