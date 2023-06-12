@@ -48,10 +48,7 @@ impl Game {
         graphics::set_default_filter(ctx, graphics::FilterMode::Nearest);
 
         // Load the map, using a loader with `GgezResourceReader` for reading from the ggez filesystem
-        let mut loader = tiled::Loader::with_cache_and_reader(
-            tiled::DefaultResourceCache::new(),
-            GgezResourceReader(ctx),
-        );
+        let mut loader = tiled::Loader::with_reader(GgezResourceReader(ctx));
         let map = loader.load_tmx_map("/tiled_base64_external.tmx").unwrap();
 
         let map_handler = MapHandler::new(map, ctx).unwrap();
