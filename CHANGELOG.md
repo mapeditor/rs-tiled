@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ## Changed
 - Updated `Image` docs. (#270)
+- Fix some doc links. (#273)
 
 ## [0.11.1]
 ### Added

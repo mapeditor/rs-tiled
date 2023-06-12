@@ -71,3 +71,26 @@ jobs:
 
     - name: Run cargo clippy --all-targets --package tiled
       run: cargo clippy --all-targets --package tiled
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Update package manager
+      run: sudo apt-get update
+
+    - name: Install dependencies
+      run: sudo apt-get install -y libsfml-dev libcsfml-dev libasound2-dev libudev-dev
+
+    - name: Get stable Rust toolchain with doc
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        components: rust-docs
+
+    - name: Run cargo doc -p tiled --no-deps
+      run: cargo doc -p tiled --no-deps
