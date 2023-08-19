@@ -64,7 +64,7 @@ impl MapHandler {
             .map(|c| ggez::graphics::Color::from_rgba(c.red, c.green, c.blue, c.alpha))
     }
 
-    /// Clear the tile layer `SpriteBatch` cache.
+    /// Clear the tile layer `InstanceArray` cache.
     /// Required if the tile instances change in any way (e.g. The tile positions change)
     pub fn invalidate_batch_cache(&mut self) {
         self.batch_cache = None;
