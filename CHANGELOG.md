@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Changed
 - Updated `Image` docs. (#270)
 - Fix some doc links. (#273)
+- Update ggez example to 0.9.3.
 
 ## [0.11.1]
 ### Added
