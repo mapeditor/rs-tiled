@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Support for Tile `x`, `y`, `width` and `height` attributes related to image rects. (#277)
 - New `ImageLayer` `repeat_x`/`y` fields are now parsed from map image layers.
 
 ## [0.14.0]
