@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased (next)]
 ### Added
 - Implement `ResourceReader` for appropiate functions. (#272) **Read the README's FAQ for more information about this change.**
+- Support for Tile `x`, `y`, `width` and `height` attributes related to image rects. (#277)
 
 ## [Unreleased]
 ## Changed
