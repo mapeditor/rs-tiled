@@ -148,7 +148,7 @@ pub enum ObjectShape {
         halign: HorizontalAlignment,
         valign: VerticalAlignment,
         /// The actual text content of this object.
-        contents: String,
+        text: String,
     },
 }
 
@@ -465,7 +465,7 @@ impl ObjectData {
             kerning,
             halign,
             valign,
-            contents,
+            text: contents,
         })
     }
 
