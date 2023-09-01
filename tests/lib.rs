@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 use tiled::{
-    Color, FiniteTileLayer, GroupLayer, Layer, LayerType, Loader, Map, ObjectLayer, ObjectShape,
-    PropertyValue, ResourceCache, TileLayer, TilesetLocation, WangId,
+    Color, FiniteTileLayer, GroupLayer, HorizontalAlignment, Layer, LayerType, Loader, Map,
+    ObjectLayer, ObjectShape, PropertyValue, ResourceCache, TileLayer, TilesetLocation,
+    VerticalAlignment, WangId,
 };
 
 fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
@@ -494,4 +495,54 @@ fn test_reading_wang_sets() {
     let readed_damage = color_2.properties.get("Damage").unwrap();
     let damage_value = &PropertyValue::FloatValue(32.1);
     assert_eq!(readed_damage, damage_value);
+}
+
+#[test]
+fn test_text_object() {
+    let mut loader = Loader::new();
+    let map = loader.load_tmx_map("assets/tiled_text_object.tmx").unwrap();
+
+    let group = map.get_layer(0).unwrap().as_object_layer().unwrap();
+    match &group.objects().next().unwrap().shape {
+        ObjectShape::Text {
+            font_family,
+            pixel_size,
+            wrap,
+            color,
+            bold,
+            italic,
+            underline,
+            strikeout,
+            kerning,
+            halign,
+            valign,
+            text,
+            width,
+            height,
+        } => {
+            assert_eq!(font_family.as_str(), "sans-serif");
+            assert_eq!(*pixel_size, 16);
+            assert_eq!(*wrap, false);
+            assert_eq!(
+                *color,
+                Color {
+                    red: 85,
+                    green: 255,
+                    blue: 127,
+                    alpha: 100
+                }
+            );
+            assert_eq!(*bold, true);
+            assert_eq!(*italic, true);
+            assert_eq!(*underline, true);
+            assert_eq!(*strikeout, true);
+            assert_eq!(*kerning, true);
+            assert_eq!(*halign, HorizontalAlignment::Center);
+            assert_eq!(*valign, VerticalAlignment::Bottom);
+            assert_eq!(text.as_str(), "Test");
+            assert_eq!(*width, 87.7188);
+            assert_eq!(*height, 21.7969);
+        }
+        _ => panic!(),
+    };
 }

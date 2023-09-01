@@ -147,6 +147,10 @@ pub enum ObjectShape {
         kerning: bool,
         halign: HorizontalAlignment,
         valign: VerticalAlignment,
+        /// The actual text content of this object.
+        text: String,
+        width: f32,
+        height: f32,
     },
 }
 
@@ -306,7 +310,7 @@ impl ObjectData {
                 Ok(())
             },
             "text" => |attrs| {
-                shape = Some(ObjectData::new_text(attrs)?);
+                shape = Some(ObjectData::new_text(attrs, parser, width, height)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -365,7 +369,12 @@ impl ObjectData {
         Ok(ObjectShape::Polygon { points })
     }
 
-    fn new_text(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
+    fn new_text(
+        attrs: Vec<OwnedAttribute>,
+        parser: &mut impl Iterator<Item = XmlEventResult>,
+        width: f32,
+        height: f32,
+    ) -> Result<ObjectShape> {
         let (
             font_family,
             pixel_size,
@@ -388,7 +397,7 @@ impl ObjectData {
                 Some("italic") => italic ?= v.parse(),
                 Some("underline") => underline ?= v.parse(),
                 Some("strikeout") => strikeout ?= v.parse(),
-                Some("kerning") => kerning ?= v.parse(),
+                Some("kerning") => kerning ?= v.parse::<i32>(),
                 Some("halign") => halign = match v.as_str() {
                     "left" => HorizontalAlignment::Left,
                     "center" => HorizontalAlignment::Center,
@@ -433,9 +442,20 @@ impl ObjectData {
         let italic = italic == Some(1);
         let underline = underline == Some(1);
         let strikeout = strikeout == Some(1);
-        let kerning = kerning == Some(1);
+        let kerning = kerning.map_or(true, |k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
+        let contents = match parser.next().map_or_else(
+            || {
+                Err(Error::PrematureEnd(
+                    "XML stream ended when trying to parse text contents".to_owned(),
+                ))
+            },
+            |r| r.map_err(Error::XmlDecodingError),
+        )? {
+            xml::reader::XmlEvent::Characters(contents) => contents,
+            _ => panic!("Text attribute contained anything but characters as content"),
+        };
 
         Ok(ObjectShape::Text {
             font_family,
@@ -449,6 +469,9 @@ impl ObjectData {
             kerning,
             halign,
             valign,
+            text: contents,
+            width,
+            height,
         })
     }
 
