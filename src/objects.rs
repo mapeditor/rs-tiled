@@ -149,6 +149,8 @@ pub enum ObjectShape {
         valign: VerticalAlignment,
         /// The actual text content of this object.
         text: String,
+        width: f32,
+        height: f32,
     },
 }
 
@@ -308,7 +310,7 @@ impl ObjectData {
                 Ok(())
             },
             "text" => |attrs| {
-                shape = Some(ObjectData::new_text(attrs, parser)?);
+                shape = Some(ObjectData::new_text(attrs, parser, width, height)?);
                 Ok(())
             },
             "properties" => |_| {
@@ -370,6 +372,8 @@ impl ObjectData {
     fn new_text(
         attrs: Vec<OwnedAttribute>,
         parser: &mut impl Iterator<Item = XmlEventResult>,
+        width: f32,
+        height: f32,
     ) -> Result<ObjectShape> {
         let (
             font_family,
@@ -466,6 +470,8 @@ impl ObjectData {
             halign,
             valign,
             text: contents,
+            width,
+            height,
         })
     }
 

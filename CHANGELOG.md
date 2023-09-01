@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased (next)]
 ### Added
-- Add `contents` member to `ObjectShape::Text`. (#278)
+- Add `text`, `width` and `height` members to `ObjectShape::Text`. (#278)
 - Implement `ResourceReader` for appropiate functions. (#272) **Read the README's FAQ for more information about this change.**
 
 ## Fixed
