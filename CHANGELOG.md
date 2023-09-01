@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add `text`, `width` and `height` members to `ObjectShape::Text`. (#278)
 - Implement `ResourceReader` for appropiate functions. (#272) **Read the README's FAQ for more information about this change.**
+- Support for Tile `x`, `y`, `width` and `height` attributes related to image rects. (#277)
 
 ## Fixed
 - `ObjectShape::Text::kerning`'s default value, which should have been set to `true` instead of `false`. (#278)
