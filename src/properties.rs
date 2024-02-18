@@ -82,6 +82,14 @@ pub enum PropertyValue {
     /// An object ID value. Corresponds to the `object` property type.
     /// Holds the id of a referenced object, or 0 if unset.
     ObjectValue(u32),
+    /// A class value. Corresponds to the `class` property type.
+    /// Holds the type name and a set of properties.
+    ClassValue {
+        /// The type name.
+        property_type: String,
+        /// A set of properties.
+        properties: Properties,
+    },
 }
 
 impl PropertyValue {
@@ -135,15 +143,31 @@ pub(crate) fn parse_properties(
     let mut p = HashMap::new();
     parse_tag!(parser, "properties", {
         "property" => |attrs:Vec<OwnedAttribute>| {
-            let (t, v_attr, k) = get_attrs!(
+            let (t, v_attr, k, p_t) = get_attrs!(
                 for attr in attrs {
                     Some("type") => obj_type = attr,
                     Some("value") => value = attr,
+                    Some("propertytype") => propertytype = attr,
                     "name" => name = attr
                 }
-                (obj_type, value, name)
+                (obj_type, value, name, propertytype)
             );
             let t = t.unwrap_or_else(|| "string".to_owned());
+            if t == "class" {
+                // Class properties will have their member values stored in a nested <properties>
+                // element. Only the actually set members are saved. When no members have been set
+                // the properties element is left out entirely.
+                let properties = if has_properties_tag_next(parser) {
+                    parse_properties(parser)?
+                } else {
+                    HashMap::new()
+                };
+                p.insert(k, PropertyValue::ClassValue {
+                    property_type: p_t.unwrap_or_default(),
+                    properties,
+                });
+                return Ok(());
+            }
 
             let v: String = match v_attr {
                 Some(val) => val,
@@ -163,4 +187,27 @@ pub(crate) fn parse_properties(
         },
     });
     Ok(p)
+}
+
+/// Checks if there is a properties tag next in the parser. Will consume any whitespace or comments.
+fn has_properties_tag_next(parser: &mut impl Iterator<Item = XmlEventResult>) -> bool {
+    let mut peekable = parser.by_ref().peekable();
+    while let Some(Ok(next)) = peekable.peek() {
+        match next {
+            XmlEvent::StartElement { name, .. } if name.local_name == "properties" => return true,
+            // Ignore whitespace and comments
+            XmlEvent::Whitespace(_) => {
+                peekable.next();
+            }
+            XmlEvent::Comment(_) => {
+                peekable.next();
+            }
+            // If we encounter anything else than whitespace, comments or the properties tag, we
+            // assume there are no properties.
+            _ => {
+                return false;
+            }
+        }
+    }
+    false
 }
