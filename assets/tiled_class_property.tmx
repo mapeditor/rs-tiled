@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="2" height="2" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="4">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="2" height="2" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="4">
  <layer id="1" name="Tile Layer 1" width="2" height="2">
   <data encoding="csv">
 0,0,
@@ -11,7 +11,7 @@
    <properties>
     <property name="class property" type="class" propertytype="test_type">
      <properties>
-      <property name="test_property_1" value="3" type="int"/>
+      <property name="test_property_1" type="int" value="3"/>
      </properties>
     </property>
     <property name="empty property" type="class" propertytype="empty_type"/>

@@ -163,7 +163,7 @@ pub(crate) fn parse_properties(
                     HashMap::new()
                 };
                 p.insert(k, PropertyValue::ClassValue {
-                    property_type: p_t.unwrap_or_else(|| "class".to_owned()),
+                    property_type: p_t.unwrap_or_default(),
                     properties,
                 });
                 return Ok(());
