@@ -220,6 +220,7 @@ fn test_object_group_property() {
     };
     assert!(prop_value);
 }
+
 #[test]
 fn test_tileset_property() {
     let r = Loader::new()
@@ -326,6 +327,33 @@ fn test_object_property() {
 }
 
 #[test]
+fn test_class_property() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_class_property.tmx")
+        .unwrap();
+    let layer = r.get_layer(1).unwrap();
+    if let Some(PropertyValue::ClassValue {
+        property_type,
+        properties,
+    }) = layer
+        .as_object_layer()
+        .unwrap()
+        .get_object(0)
+        .unwrap()
+        .properties
+        .get("class property")
+    {
+        assert_eq!(property_type, "test_type");
+        assert_eq!(
+            properties.get("test_property_1").unwrap(),
+            &PropertyValue::IntValue(3)
+        );
+    } else {
+        panic!("Expected class property");
+    };
+}
+
+#[test]
 fn test_tint_color() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_image_layers.tmx")
@@ -336,7 +364,7 @@ fn test_tint_color() {
             alpha: 0x12,
             red: 0x34,
             green: 0x56,
-            blue: 0x78
+            blue: 0x78,
         })
     );
     assert_eq!(
@@ -345,7 +373,7 @@ fn test_tint_color() {
             alpha: 0xFF,
             red: 0x12,
             green: 0x34,
-            blue: 0x56
+            blue: 0x56,
         })
     );
 }
@@ -370,7 +398,7 @@ fn test_group_layers() {
             alpha: 0x12,
             red: 0x34,
             green: 0x56,
-            blue: 0x78
+            blue: 0x78,
         })),
         layer_group_1.properties.get("key")
     );
@@ -417,7 +445,7 @@ fn test_object_template_property() {
         object.shape,
         ObjectShape::Rect {
             width: 32.0,
-            height: 32.0
+            height: 32.0,
         }
     );
     assert_eq!(object.x, 32.0);
