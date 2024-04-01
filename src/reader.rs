@@ -1,3 +1,4 @@
+use std::io::BufReader;
 use std::{fs::File, io::Read, path::Path};
 
 /// A trait defining types that can load data from a [`ResourcePath`](crate::ResourcePath).
@@ -48,11 +49,12 @@ impl FilesystemResourceReader {
 }
 
 impl ResourceReader for FilesystemResourceReader {
-    type Resource = File;
+    type Resource = BufReader<File>;
     type Error = std::io::Error;
 
     fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error> {
-        File::open(path)
+        let file = File::open(path)?;
+        Ok(BufReader::new(file))
     }
 }
 
