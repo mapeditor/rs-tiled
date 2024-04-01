@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement `ResourceReader` for appropiate functions. (#272) **Read the README's FAQ for more information about this change.**
 - Support for custom type properties. (#283)
 
+### Changed
+- Underlying reader for maps now uses a BufReader, which should give a large performance boost. (#286)
+
 ## Fixed
 - `ObjectShape::Text::kerning`'s default value, which should have been set to `true` instead of `false`. (#278)
 
