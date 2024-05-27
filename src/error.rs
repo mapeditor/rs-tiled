@@ -12,6 +12,8 @@ pub enum Error {
     DecompressingError(std::io::Error),
     /// An error occured when decoding a base64 encoded dataset.
     Base64DecodingError(base64::DecodeError),
+    /// An error occurred when decoding a csv encoded dataset.
+    CsvDecodingError(String),
     /// An error occured when parsing a XML file, such as a TMX or TSX file.
     XmlDecodingError(xml::reader::Error),
     /// The XML stream ended before the document was fully parsed.
@@ -68,6 +70,7 @@ impl fmt::Display for Error {
             Error::MalformedAttributes(s) => write!(fmt, "{}", s),
             Error::DecompressingError(e) => write!(fmt, "{}", e),
             Error::Base64DecodingError(e) => write!(fmt, "{}", e),
+            Error::CsvDecodingError(e) => write!(fmt, "{}", e),
             Error::XmlDecodingError(e) => write!(fmt, "{}", e),
             Error::PrematureEnd(e) => write!(fmt, "{}", e),
             Error::PathIsNotFile => {
