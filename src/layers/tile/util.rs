@@ -3,7 +3,7 @@ use std::{convert::TryInto, io::Read};
 use base64::Engine;
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, Error, LayerTileData, MapTilesetGid, Result};
+use crate::{util::XmlEventResult, CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,
@@ -74,7 +74,11 @@ fn decode_csv(
                 for v in s.split(',') {
                     match v.trim().parse() {
                         Ok(bits) => tiles.push(LayerTileData::from_bits(bits, tilesets)),
-                        Err(e) => return Err(Error::CsvDecodingError(e.to_string())),
+                        Err(e) => {
+                            return Err(Error::CsvDecodingError(
+                                CsvDecodingError::TileDataParseError(e),
+                            ))
+                        }
                     }
                 }
                 return Ok(tiles);
