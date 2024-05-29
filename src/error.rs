@@ -78,6 +78,11 @@ pub enum Error {
         /// Stores the wrongly parsed String.
         read_string: String,
     },
+    /// There was an error parsing an Object's data.
+    InvalidObjectData {
+        /// A description of the error that occurred.
+        description: String,
+    },
 }
 
 /// A result with an error variant of [`crate::Error`].
@@ -126,6 +131,8 @@ impl fmt::Display for Error {
             Error::TemplateHasNoObject => write!(fmt, "A template was found with no object element"),
             Error::InvalidWangIdEncoding{read_string} =>
                 write!(fmt, "\"{}\" is not a valid WangId format", read_string),
+            Error::InvalidObjectData{description} =>
+                write!(fmt, "Invalid object data: {}", description),
         }
     }
 }
