@@ -1,18 +1,39 @@
+use std::num::ParseIntError;
 use std::{fmt, path::PathBuf};
 
-/// Errors which occured when parsing the file
+/// Errors that can occur while decoding csv data.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CsvDecodingError {
+    /// An error occurred when parsing tile data from a csv encoded dataset.
+    TileDataParseError(ParseIntError),
+}
+
+impl fmt::Display for CsvDecodingError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CsvDecodingError::TileDataParseError(e) => write!(f, "{}", e),
+        }
+    }
+}
+
+impl std::error::Error for CsvDecodingError {}
+
+/// Errors which occurred when parsing the file
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
     /// A attribute was missing, had the wrong type of wasn't formated
     /// correctly.
     MalformedAttributes(String),
-    /// An error occured when decompressing using the
+    /// An error occurred when decompressing using the
     /// [flate2](https://github.com/alexcrichton/flate2-rs) crate.
     DecompressingError(std::io::Error),
-    /// An error occured when decoding a base64 encoded dataset.
+    /// An error occurred when decoding a base64 encoded dataset.
     Base64DecodingError(base64::DecodeError),
-    /// An error occured when parsing a XML file, such as a TMX or TSX file.
+    /// An error occurred when decoding a csv encoded dataset.
+    CsvDecodingError(CsvDecodingError),
+    /// An error occurred when parsing an XML file, such as a TMX or TSX file.
     XmlDecodingError(xml::reader::Error),
     /// The XML stream ended before the document was fully parsed.
     PrematureEnd(String),
@@ -23,7 +44,7 @@ pub enum Error {
     ResourceLoadingError {
         /// The path to the file that was unable to be opened.
         path: PathBuf,
-        /// The error that occured when trying to open the file.
+        /// The error that occurred when trying to open the file.
         err: Box<dyn std::error::Error + Send + Sync + 'static>,
     },
     /// There was an invalid tile in the map parsed.
@@ -39,7 +60,7 @@ pub enum Error {
     ///
     /// [`PropertyValue`]: crate::PropertyValue
     InvalidPropertyValue {
-        /// A description of the error that occured.
+        /// A description of the error that occurred.
         description: String,
     },
     /// Found an unknown property value type while parsing a [`PropertyValue`].
@@ -68,6 +89,7 @@ impl fmt::Display for Error {
             Error::MalformedAttributes(s) => write!(fmt, "{}", s),
             Error::DecompressingError(e) => write!(fmt, "{}", e),
             Error::Base64DecodingError(e) => write!(fmt, "{}", e),
+            Error::CsvDecodingError(e) => write!(fmt, "{}", e),
             Error::XmlDecodingError(e) => write!(fmt, "{}", e),
             Error::PrematureEnd(e) => write!(fmt, "{}", e),
             Error::PathIsNotFile => {

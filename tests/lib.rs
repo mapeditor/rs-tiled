@@ -1,8 +1,8 @@
 use std::path::PathBuf;
+
 use tiled::{
-    Color, FiniteTileLayer, GroupLayer, HorizontalAlignment, Layer, LayerType, Loader, Map,
-    ObjectLayer, ObjectShape, PropertyValue, ResourceCache, TileLayer, TilesetLocation,
-    VerticalAlignment, WangId,
+    Color, FiniteTileLayer, HorizontalAlignment, LayerType, Loader, Map, ObjectShape,
+    PropertyValue, ResourceCache, TileLayer, TilesetLocation, VerticalAlignment, WangId,
 };
 
 fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
