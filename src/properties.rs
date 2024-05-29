@@ -27,7 +27,7 @@ impl FromStr for Color {
             s
         };
         match s.len() {
-            6 => {
+            6 if s.is_ascii() => {
                 let r = u8::from_str_radix(&s[0..2], 16);
                 let g = u8::from_str_radix(&s[2..4], 16);
                 let b = u8::from_str_radix(&s[4..6], 16);
@@ -41,7 +41,7 @@ impl FromStr for Color {
                     _ => Err(()),
                 }
             }
-            8 => {
+            8 if s.is_ascii() => {
                 let a = u8::from_str_radix(&s[0..2], 16);
                 let r = u8::from_str_radix(&s[2..4], 16);
                 let g = u8::from_str_radix(&s[4..6], 16);
