@@ -47,6 +47,10 @@ impl InfiniteTileLayerData {
                         let internal_pos = (x - chunk.x, y - chunk.y);
                         let internal_index = (internal_pos.0 + internal_pos.1 * chunk.width as i32) as usize;
 
+                        if internal_index >= chunk.tiles.len() {
+                            return Err(Error::InvalidTileFound);
+                        }
+
                         chunks.entry(chunk_pos).or_insert_with(ChunkData::new).tiles[chunk_index] = chunk.tiles[internal_index];
                     }
                 }
