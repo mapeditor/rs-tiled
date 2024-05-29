@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Fixed
 - `ObjectShape::Text::kerning`'s default value, which should have been set to `true` instead of `false`. (#278)
+- Unhandled u32 parsing panic in `decode_csv`. (#288)
+- Panic in `<Color as FromStr>::from_str` when parsing non-ascii input. (#290)
 
 ## [Unreleased]
 ## Changed
