@@ -7,7 +7,7 @@ use crate::error::{Error, Result};
 use crate::image::Image;
 use crate::properties::{parse_properties, Properties};
 use crate::tile::TileData;
-use crate::{util::*, Gid, ResourceCache, ResourceReader, Tile, TileId};
+use crate::{util::*, Gid, InvalidTilesetError, ResourceCache, ResourceReader, Tile, TileId};
 
 mod wangset;
 pub use wangset::*;
@@ -284,6 +284,12 @@ impl Tileset {
         let is_image_collection_tileset = image.is_none();
 
         if !is_image_collection_tileset {
+            if prop.tile_width == 0 || prop.tile_height == 0 {
+                return Err(Error::InvalidTileset(
+                    InvalidTilesetError::InvalidTileDimensions,
+                ));
+            }
+
             for tile_id in 0..prop.tilecount {
                 tiles.entry(tile_id).or_default();
             }

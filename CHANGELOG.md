@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Panic in `<Color as FromStr>::from_str` when parsing non-ascii input. (#290)
 - Index out of bounds in `InfiniteTileLayerData` when parsing a chunk. (#289)
 - Panic on unexpected XML in `ObjectData` content. (#291)
+- Divide by zero when parsing a tileset with height/width dimension of 0. (#292)
 
 ## [Unreleased]
 ## Changed
