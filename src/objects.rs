@@ -454,7 +454,12 @@ impl ObjectData {
             |r| r.map_err(Error::XmlDecodingError),
         )? {
             xml::reader::XmlEvent::Characters(contents) => contents,
-            _ => panic!("Text attribute contained anything but characters as content"),
+            _ => {
+                return Err(Error::InvalidObjectData {
+                    description: "Text attribute contained anything but characters as content"
+                        .into(),
+                })
+            }
         };
 
         Ok(ObjectShape::Text {
