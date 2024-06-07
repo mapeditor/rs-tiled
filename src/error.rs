@@ -1,3 +1,4 @@
+use crate::InvalidTilesetError::InvalidTileDimensions;
 use std::num::ParseIntError;
 use std::{fmt, path::PathBuf};
 
@@ -18,6 +19,27 @@ impl fmt::Display for CsvDecodingError {
 }
 
 impl std::error::Error for CsvDecodingError {}
+
+/// Errors that can occur parsing a Tileset.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum InvalidTilesetError {
+    /// An invalid width or height (0) dimension was found in the input.
+    InvalidTileDimensions,
+}
+
+impl fmt::Display for InvalidTilesetError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            InvalidTileDimensions => write!(
+                f,
+                "An invalid width or height (0) dimension was found in the input."
+            ),
+        }
+    }
+}
+
+impl std::error::Error for InvalidTilesetError {}
 
 /// Errors which occurred when parsing the file
 #[derive(Debug)]
@@ -83,6 +105,8 @@ pub enum Error {
         /// A description of the error that occurred.
         description: String,
     },
+    /// There was an invalid tileset in the map parsed.
+    InvalidTileset(InvalidTilesetError),
 }
 
 /// A result with an error variant of [`crate::Error`].
@@ -133,6 +157,7 @@ impl fmt::Display for Error {
                 write!(fmt, "\"{}\" is not a valid WangId format", read_string),
             Error::InvalidObjectData{description} =>
                 write!(fmt, "Invalid object data: {}", description),
+            Error::InvalidTileset(e) => write!(fmt, "{}", e),
         }
     }
 }
