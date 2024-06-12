@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Underlying reader for maps now uses a BufReader, which should give a large performance boost. (#286)
+- Update `base64` to `0.22.1`.
+- Update `libflate` to `2.1.0`.
+- Update `zstd` to `0.13.1`.
 
 ## Fixed
 - `ObjectShape::Text::kerning`'s default value, which should have been set to `true` instead of `false`. (#278)
