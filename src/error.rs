@@ -21,7 +21,7 @@ impl fmt::Display for CsvDecodingError {
 impl std::error::Error for CsvDecodingError {}
 
 /// Errors that can occur parsing a Tileset.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum InvalidTilesetError {
     /// An invalid width or height (0) dimension was found in the input.
