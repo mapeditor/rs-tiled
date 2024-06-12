@@ -16,10 +16,10 @@ pub(crate) fn parse_data_line(
 
         (Some("base64"), None) => parse_base64(parser).map(|v| convert_to_tiles(&v, tilesets)),
         (Some("base64"), Some("zlib")) => parse_base64(parser)
-            .and_then(|data| process_decoder(libflate::zlib::Decoder::new(&data[..])))
+            .and_then(|data| process_decoder(Ok(flate2::bufread::ZlibDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
         (Some("base64"), Some("gzip")) => parse_base64(parser)
-            .and_then(|data| process_decoder(libflate::gzip::Decoder::new(&data[..])))
+            .and_then(|data| process_decoder(Ok(flate2::bufread::GzDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
         #[cfg(feature = "zstd")]
         (Some("base64"), Some("zstd")) => parse_base64(parser)

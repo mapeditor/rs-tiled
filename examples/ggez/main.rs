@@ -9,9 +9,8 @@ mod res_reader;
 use ggez::{
     event::{self, MouseButton},
     graphics::{self, DrawParam},
-    input,
     mint::Point2,
-    Context, GameResult,
+    Context, GameResult, *,
 };
 use map::MapHandler;
 use res_reader::GgezResourceReader;
@@ -45,10 +44,8 @@ struct Game {
 
 impl Game {
     fn new(ctx: &mut ggez::Context) -> GameResult<Self> {
-        graphics::set_default_filter(ctx, graphics::FilterMode::Nearest);
-
         // Load the map, using a loader with `GgezResourceReader` for reading from the ggez filesystem
-        let mut loader = tiled::Loader::with_reader(GgezResourceReader(ctx));
+        let mut loader = tiled::Loader::with_reader(GgezResourceReader(&mut ctx.fs));
         let map = loader.load_tmx_map("/tiled_base64_external.tmx").unwrap();
 
         let map_handler = MapHandler::new(map, ctx).unwrap();
@@ -72,13 +69,14 @@ impl event::EventHandler<ggez::GameError> for Game {
             .map
             .background_color()
             .unwrap_or([0.1, 0.2, 0.3, 1.0].into());
-        graphics::clear(ctx, bg_color);
+        let mut canvas = graphics::Canvas::from_frame(ctx, bg_color);
+        canvas.set_sampler(graphics::Sampler::nearest_clamp());
 
-        self.draw_map(ctx)?;
+        self.draw_map(ctx, &mut canvas)?;
 
-        self.draw_fps(ctx)?;
+        self.draw_fps(ctx, &mut canvas)?;
 
-        graphics::present(ctx)?;
+        canvas.finish(ctx)?;
 
         Ok(())
     }
@@ -89,18 +87,27 @@ impl event::EventHandler<ggez::GameError> for Game {
         button: event::MouseButton,
         _x: f32,
         _y: f32,
-    ) {
+    ) -> Result<(), GameError> {
         // Right click toggles the demo animation effect
         if button == MouseButton::Right {
             self.map.example_animate = !self.map.example_animate;
             self.map.invalidate_batch_cache();
         }
+
+        Ok(())
     }
 
-    fn mouse_motion_event(&mut self, ctx: &mut Context, _x: f32, _y: f32, dx: f32, dy: f32) {
+    fn mouse_motion_event(
+        &mut self,
+        ctx: &mut Context,
+        _x: f32,
+        _y: f32,
+        dx: f32,
+        dy: f32,
+    ) -> Result<(), GameError> {
         // Left or middle click + drag pans the map around
-        if input::mouse::button_pressed(ctx, event::MouseButton::Left)
-            || input::mouse::button_pressed(ctx, event::MouseButton::Middle)
+        if ctx.mouse.button_pressed(event::MouseButton::Left)
+            || ctx.mouse.button_pressed(event::MouseButton::Middle)
         {
             self.pan.0 += dx;
             self.pan.1 += dy;
@@ -108,9 +115,11 @@ impl event::EventHandler<ggez::GameError> for Game {
             // Need to invalidate for parallax to work
             self.map.invalidate_batch_cache();
         }
+
+        Ok(())
     }
 
-    fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
+    fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) -> Result<(), GameError> {
         // Scroll wheel zooms
 
         let old_scale = self.scale;
@@ -120,24 +129,26 @@ impl event::EventHandler<ggez::GameError> for Game {
         let Point2 {
             x: mouse_x,
             y: mouse_y,
-        } = input::mouse::position(ctx);
+        } = ctx.mouse.position();
         self.pan.0 = (self.pan.0 - mouse_x) / old_scale * self.scale + mouse_x;
         self.pan.1 = (self.pan.1 - mouse_y) / old_scale * self.scale + mouse_y;
 
         // Need to invalidate for parallax to work
         self.map.invalidate_batch_cache();
+
+        Ok(())
     }
 }
 
 impl Game {
-    fn draw_map(&mut self, ctx: &mut Context) -> GameResult {
+    fn draw_map(&mut self, ctx: &mut Context, canvas: &mut graphics::Canvas) -> GameResult {
         // Draw tiles + objects
 
         let draw_param = DrawParam::default()
             .dest([self.pan.0, self.pan.1])
             .scale([self.scale, self.scale]);
 
-        self.map.draw(ctx, draw_param, self.pan)?;
+        self.map.draw(ctx, canvas, draw_param, self.pan)?;
 
         // Draw bounds
 
@@ -148,25 +159,24 @@ impl Game {
             rect,
             graphics::Color::from_rgb_u32(0x888888),
         )?;
-        graphics::draw(ctx, &r1, draw_param)?;
+        canvas.draw(&r1, draw_param);
 
         Ok(())
     }
 
-    fn draw_fps(&self, ctx: &mut Context) -> GameResult {
-        let fps = ggez::timer::fps(ctx);
+    fn draw_fps(&self, ctx: &mut Context, canvas: &mut graphics::Canvas) -> GameResult {
+        let fps = ctx.time.fps();
         let text = graphics::Text::new(format!("{:.0} fps", fps));
 
-        let (window_width, _window_height) = graphics::size(ctx);
+        let (window_width, _window_height) = ctx.gfx.drawable_size();
 
-        graphics::draw(
-            ctx,
+        canvas.draw(
             &text,
             DrawParam::default()
-                .dest([window_width - text.width(ctx) - 40.0, 10.0])
+                .dest([window_width - text.measure(ctx)?.x - 40.0, 10.0])
                 .scale([1.25, 1.25])
                 .color(graphics::Color::WHITE),
-        )?;
+        );
 
         Ok(())
     }

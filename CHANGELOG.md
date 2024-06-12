@@ -25,9 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Panic on unexpected XML in `ObjectData` content. (#291)
 - Divide by zero when parsing a tileset with height/width dimension of 0. (#292)
 
-## [Unreleased]
+## [0.11.3]
+## Changed
+- Replace `libflate` with `flate2`. (#281)
+
+## [0.11.2]
 ## Changed
 - Updated `Image` docs. (#270)
+- Update `libflate` dependency to `2.0.0`. (#279)
+- Fix some doc links. (#273)
+- Update ggez example to 0.9.3.
 
 ## [0.11.1]
 ### Added
