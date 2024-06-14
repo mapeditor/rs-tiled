@@ -1,6 +1,6 @@
 # rs-tiled
 ```toml
-tiled = "0.11.2"
+tiled = "0.12.0"
 ```
 
 [![Rust](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml/badge.svg)](https://github.com/mapeditor/rs-tiled/actions/workflows/rust.yml)
