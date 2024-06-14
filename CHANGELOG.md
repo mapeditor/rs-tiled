@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `libflate` to `2.1.0`. (#294)
 - Update `zstd` to `0.13.1`. (#294)
 
-## Fixed
+### Fixed
 - `ObjectShape::Text::kerning`'s default value, which should have been set to `true` instead of `false`. (#278)
 - Unhandled u32 parsing panic in `decode_csv`. (#288)
 - Panic in `<Color as FromStr>::from_str` when parsing non-ascii input. (#290)
@@ -26,11 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Divide by zero when parsing a tileset with height/width dimension of 0. (#292)
 
 ## [0.11.3]
-## Changed
+### Changed
 - Replace `libflate` with `flate2`. (#281)
 
 ## [0.11.2]
-## Changed
+### Changed
 - Updated `Image` docs. (#270)
 - Update `libflate` dependency to `2.0.0`. (#279)
 - Fix some doc links. (#273)
