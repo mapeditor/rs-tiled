@@ -3,7 +3,7 @@ use std::{convert::TryInto, io::Read};
 use base64::Engine;
 use xml::reader::XmlEvent;
 
-use crate::{util::XmlEventResult, Error, LayerTileData, MapTilesetGid, Result};
+use crate::{util::XmlEventResult, CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result};
 
 pub(crate) fn parse_data_line(
     encoding: Option<String>,
@@ -42,7 +42,7 @@ fn parse_base64(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec
                     base64::engine::general_purpose::PAD,
                 )
                 .decode(s.trim().as_bytes())
-                .map_err(Error::Base64DecodingError)
+                .map_err(Error::Base64DecodingError);
             }
             XmlEvent::EndElement { name, .. } if name.local_name == "data" => {
                 return Ok(Vec::new());
@@ -70,11 +70,17 @@ fn decode_csv(
     for next in parser {
         match next.map_err(Error::XmlDecodingError)? {
             XmlEvent::Characters(s) => {
-                let tiles = s
-                    .split(',')
-                    .map(|v| v.trim().parse().unwrap())
-                    .map(|bits| LayerTileData::from_bits(bits, tilesets))
-                    .collect();
+                let mut tiles = Vec::new();
+                for v in s.split(',') {
+                    match v.trim().parse() {
+                        Ok(bits) => tiles.push(LayerTileData::from_bits(bits, tilesets)),
+                        Err(e) => {
+                            return Err(Error::CsvDecodingError(
+                                CsvDecodingError::TileDataParseError(e),
+                            ))
+                        }
+                    }
+                }
                 return Ok(tiles);
             }
             XmlEvent::EndElement { name, .. } if name.local_name == "data" => {

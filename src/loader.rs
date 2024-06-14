@@ -1,61 +1,9 @@
-use std::{fs::File, io::Read, path::Path};
+use std::path::Path;
 
-use crate::{DefaultResourceCache, Map, ResourceCache, Result, Tileset};
-
-/// A trait defining types that can load data from a [`ResourcePath`](crate::ResourcePath).
-///
-/// This trait should be implemented if you wish to load data from a virtual filesystem.
-///
-/// ## Example
-/// ```
-/// use std::io::Cursor;
-///
-/// /// Basic example reader impl that just keeps a few resources in memory
-/// struct MemoryReader;
-///
-/// impl tiled::ResourceReader for MemoryReader {
-///     type Resource = Cursor<&'static [u8]>;
-///     type Error = std::io::Error;
-///
-///     fn read_from(&mut self, path: &std::path::Path) -> std::result::Result<Self::Resource, Self::Error> {
-///         if path == std::path::Path::new("my_map.tmx") {
-///             Ok(Cursor::new(include_bytes!("../assets/tiled_xml.tmx")))
-///         } else {
-///             Err(std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"))
-///         }
-///     }
-/// }
-/// ```
-pub trait ResourceReader {
-    /// The type of the resource that the reader provides. For example, for
-    /// [`FilesystemResourceReader`], this is defined as [`File`].
-    type Resource: Read;
-    /// The type that is returned if [`read_from()`](Self::read_from()) fails. For example, for
-    /// [`FilesystemResourceReader`], this is defined as [`std::io::Error`].
-    type Error: std::error::Error + Send + Sync + 'static;
-
-    /// Try to return a reader object from a path into the resources filesystem.
-    fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error>;
-}
-
-/// A [`ResourceReader`] that reads from [`File`] handles.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FilesystemResourceReader;
-
-impl FilesystemResourceReader {
-    fn new() -> Self {
-        Self
-    }
-}
-
-impl ResourceReader for FilesystemResourceReader {
-    type Resource = File;
-    type Error = std::io::Error;
-
-    fn read_from(&mut self, path: &Path) -> std::result::Result<Self::Resource, Self::Error> {
-        std::fs::File::open(path)
-    }
-}
+use crate::{
+    DefaultResourceCache, FilesystemResourceReader, Map, ResourceCache, ResourceReader, Result,
+    Tileset,
+};
 
 /// A type used for loading [`Map`]s and [`Tileset`]s.
 ///
@@ -89,15 +37,63 @@ impl Loader {
     }
 }
 
-impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
-    /// Creates a new loader using a specific resource cache and reader.
+impl<Reader: ResourceReader> Loader<DefaultResourceCache, Reader> {
+    /// Creates a new loader using a specific reader and the default resource cache ([`DefaultResourceCache`]).
+    /// Shorthand for `Loader::with_cache_and_reader(DefaultResourceCache::new(), reader)`.
     ///
     /// ## Example
     /// ```
     /// # fn main() -> tiled::Result<()> {
     /// use std::{sync::Arc, path::Path};
     ///
-    /// use tiled::{Loader, ResourceCache, FilesystemResourceReader};
+    /// use tiled::{Loader, ResourceCache};
+    ///
+    /// let mut loader = Loader::with_reader(
+    ///     // Specify the reader to use. We can use anything that implements `ResourceReader`, e.g. FilesystemResourceReader.
+    ///     // Any function that has the same signature as `ResourceReader::read_from` also implements it.
+    ///     // Here we define a reader that embeds the map at "assets/tiled_xml.csv" into the executable, and allow
+    ///     // accessing it only through "/my-map.tmx"
+    ///     // ALL maps, tilesets and templates will be read through this function, even if you don't explicitly load them
+    ///     // (They can be dependencies of one you did want to load in the first place).
+    ///     // Doing this embedding is useful for places where the OS filesystem is not available (e.g. WASM applications).
+    ///     |path: &std::path::Path| -> std::io::Result<_> {
+    ///         if path == std::path::Path::new("/my-map.tmx") {
+    ///             Ok(std::io::Cursor::new(include_bytes!("../assets/tiled_csv.tmx")))
+    ///         } else {
+    ///             Err(std::io::ErrorKind::NotFound.into())
+    ///         }
+    ///     }
+    /// );
+    ///
+    /// let map = loader.load_tmx_map("/my-map.tmx")?;
+    ///
+    /// assert_eq!(
+    ///     map.tilesets()[0].image.as_ref().unwrap().source,
+    ///     Path::new("/tilesheet.png")
+    /// );
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_reader(reader: Reader) -> Self {
+        Self {
+            cache: DefaultResourceCache::new(),
+            reader,
+        }
+    }
+}
+
+impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
+    /// Creates a new loader using a specific resource cache and reader. In most cases you won't
+    /// need a custom resource cache; If that is the case you can use [`Loader::with_reader()`] for
+    /// a less verbose version of this function.
+    ///
+    /// ## Example
+    /// ```
+    /// # fn main() -> tiled::Result<()> {
+    /// use std::{sync::Arc, path::Path};
+    ///
+    /// use tiled::{Loader, ResourceCache};
     ///
     /// /// An example resource cache that doesn't actually cache any resources at all.
     /// struct NoopResourceCache;
@@ -130,13 +126,30 @@ impl<Cache: ResourceCache, Reader: ResourceReader> Loader<Cache, Reader> {
     ///     ) {}
     /// }
     ///
-    /// let mut loader = Loader::with_cache_and_reader(NoopResourceCache, FilesystemResourceReader);
+    /// let mut loader = Loader::with_cache_and_reader(
+    ///     // Specify the resource cache to use. In this case, the one we defined earlier.
+    ///     NoopResourceCache,
+    ///     // Specify the reader to use. We can use anything that implements `ResourceReader`, e.g. FilesystemResourceReader.
+    ///     // Any function that has the same signature as `ResourceReader::read_from` also implements it.
+    ///     // Here we define a reader that embeds the map at "assets/tiled_xml.csv" into the executable, and allow
+    ///     // accessing it only through "/my-map.tmx"
+    ///     // ALL maps, tilesets and templates will be read through this function, even if you don't explicitly load them
+    ///     // (They can be dependencies of one you did want to load in the first place).
+    ///     // Doing this embedding is useful for places where the OS filesystem is not available (e.g. WASM applications).
+    ///     |path: &std::path::Path| -> std::io::Result<_> {
+    ///         if path == std::path::Path::new("/my-map.tmx") {
+    ///             Ok(std::io::Cursor::new(include_bytes!("../assets/tiled_csv.tmx")))
+    ///         } else {
+    ///             Err(std::io::ErrorKind::NotFound.into())
+    ///         }
+    ///     }
+    /// );
     ///
-    /// let map = loader.load_tmx_map("assets/tiled_base64_external.tmx")?;
+    /// let map = loader.load_tmx_map("/my-map.tmx")?;
     ///
     /// assert_eq!(
     ///     map.tilesets()[0].image.as_ref().unwrap().source,
-    ///     Path::new("assets/tilesheet.png")
+    ///     Path::new("/tilesheet.png")
     /// );
     ///
     /// # Ok(())

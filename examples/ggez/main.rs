@@ -45,10 +45,7 @@ struct Game {
 impl Game {
     fn new(ctx: &mut ggez::Context) -> GameResult<Self> {
         // Load the map, using a loader with `GgezResourceReader` for reading from the ggez filesystem
-        let mut loader = tiled::Loader::with_cache_and_reader(
-            tiled::DefaultResourceCache::new(),
-            GgezResourceReader(&mut ctx.fs),
-        );
+        let mut loader = tiled::Loader::with_reader(GgezResourceReader(&mut ctx.fs));
         let map = loader.load_tmx_map("/tiled_base64_external.tmx").unwrap();
 
         let map_handler = MapHandler::new(map, ctx).unwrap();

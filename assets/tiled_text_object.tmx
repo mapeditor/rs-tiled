@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="1" height="1" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="2">
+ <objectgroup id="2" name="Object Layer 1">
+  <object id="1" x="-24.1094" y="-2.39844" width="87.7188" height="21.7969">
+   <text color="#6455ff7f" bold="1" italic="1" underline="1" strikeout="1" halign="center" valign="bottom">Test</text>
+  </object>
+ </objectgroup>
+</map>
