@@ -101,7 +101,7 @@ fn test_external_sources() {
         .unwrap();
     assert_eq!(e.source, PathBuf::from("assets/tiled_object_template.tmx"));
     assert_eq!(
-        e.tilesets()[0].source,
+        loader.cache().templates.values().next().unwrap().source,
         PathBuf::from("assets/tiled_object_template.tx")
     );
 }

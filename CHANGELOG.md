@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased (0.13.0)]
 ### Added
-- A way to obtain where tilesets, templates and maps have been loaded from
+- Added a `source` member to `Tileset`, `Map` and `Template`, which stores the resource path they have been loaded from.
 
 ## [0.12.0]
 ### Added
