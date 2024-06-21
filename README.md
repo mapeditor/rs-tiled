@@ -24,7 +24,7 @@ use tiled::Loader;
 
 fn main() {
     let mut loader = Loader::new();
-    let map = loader.load_tmx_map("assets/tiled_base64_zlib.tmx").unwrap();
+    let map = loader.load_tmx_map("assets/tiled_base64_external.tmx").unwrap();
     println!("{:?}", map);
     println!("{:?}", map.tilesets()[0].get_tile(0).unwrap().probability);
     
