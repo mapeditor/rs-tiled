@@ -90,16 +90,19 @@ fn test_external_sources() {
     let e = loader
         .load_tmx_map("assets/tiled_base64_external.tmx")
         .unwrap();
-    assert_eq!(e.source, "assets/tiled_base64_external.tmx".to_owned());
-    assert_eq!(e.tilesets()[0].source, "assets/tilesheet.tsx".to_owned());
+    assert_eq!(e.source, PathBuf::from("assets/tiled_base64_external.tmx"));
+    assert_eq!(
+        e.tilesets()[0].source,
+        PathBuf::from("assets/tilesheet.tsx")
+    );
 
     let e = loader
         .load_tmx_map("assets/tiled_object_template.tmx")
         .unwrap();
-    assert_eq!(e.source, "assets/tiled_object_template.tmx".to_owned());
+    assert_eq!(e.source, PathBuf::from("assets/tiled_object_template.tmx"));
     assert_eq!(
         e.tilesets()[0].source,
-        "assets/tiled_object_template.tx".to_owned()
+        PathBuf::from("assets/tiled_object_template.tx")
     );
 }
 
@@ -108,10 +111,10 @@ fn test_embedded_sources() {
     let mut loader = Loader::new();
     let e = loader.load_tmx_map("assets/tiled_base64_gzip.tmx").unwrap();
 
-    assert_eq!(e.source, "assets/tiled_base64_gzip.tmx".to_owned());
+    assert_eq!(e.source, PathBuf::from("assets/tiled_base64_gzip.tmx"));
     assert_eq!(
         e.tilesets()[0].source,
-        "assets/tiled_base64_gzip.tmx".to_owned()
+        PathBuf::from("assets/tiled_base64_gzip.tmx")
     );
 }
 
