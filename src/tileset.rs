@@ -17,6 +17,10 @@ pub use wangset::*;
 /// Also see the [TMX docs](https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tileset).
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tileset {
+    /// The path first used in a [`ResourceReader`] to load this tileset.
+    ///
+    /// For embedded tilesets, this path will be the same as the template or map's source.
+    pub source: PathBuf,
     /// The name of the tileset, set by the user.
     pub name: String,
     /// The (maximum) width in pixels of the tiles in this tileset. Irrelevant for [image collection]
@@ -157,6 +161,7 @@ impl Tileset {
 
         Self::finish_parsing_xml(
             parser,
+            path.to_owned(),
             TilesetProperties {
                 spacing,
                 margin,
@@ -227,6 +232,7 @@ impl Tileset {
 
         Self::finish_parsing_xml(
             parser,
+            path.to_owned(),
             TilesetProperties {
                 spacing,
                 margin,
@@ -245,6 +251,7 @@ impl Tileset {
 
     fn finish_parsing_xml(
         parser: &mut impl Iterator<Item = XmlEventResult>,
+        container_path: PathBuf,
         prop: TilesetProperties,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -303,6 +310,7 @@ impl Tileset {
             .unwrap_or_else(|| Self::calculate_columns(&image, prop.tile_width, margin, spacing))?;
 
         Ok(Tileset {
+            source: container_path,
             name: prop.name,
             user_type: prop.user_type,
             tile_width: prop.tile_width,

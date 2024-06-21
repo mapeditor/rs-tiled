@@ -12,7 +12,7 @@ fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
     }
 }
 
-fn compare_everything_but_tileset_sources(r: &Map, e: &Map) {
+fn compare_everything_but_sources(r: &Map, e: &Map) {
     assert_eq!(r.version(), e.version());
     assert_eq!(r.orientation, e.orientation);
     assert_eq!(r.width, e.width);
@@ -39,10 +39,10 @@ fn test_gzip_and_zlib_encoded_and_raw_are_the_same() {
         .load_tmx_map("assets/tiled_base64_zstandard.tmx")
         .unwrap();
     let c = Loader::new().load_tmx_map("assets/tiled_csv.tmx").unwrap();
-    compare_everything_but_tileset_sources(&z, &g);
-    compare_everything_but_tileset_sources(&z, &r);
-    compare_everything_but_tileset_sources(&z, &c);
-    compare_everything_but_tileset_sources(&z, &zstd);
+    compare_everything_but_sources(&z, &g);
+    compare_everything_but_sources(&z, &r);
+    compare_everything_but_sources(&z, &c);
+    compare_everything_but_sources(&z, &zstd);
 
     let layer = as_finite(c.get_layer(0).unwrap().as_tile_layer().unwrap());
     {
@@ -65,11 +65,11 @@ fn test_external_tileset() {
     let e = loader
         .load_tmx_map("assets/tiled_base64_external.tmx")
         .unwrap();
-    compare_everything_but_tileset_sources(&r, &e);
+    compare_everything_but_sources(&r, &e);
 }
 
 #[test]
-fn test_sources() {
+fn test_cache() {
     let mut loader = Loader::new();
     let e = loader
         .load_tmx_map("assets/tiled_base64_external.tmx")
@@ -81,6 +81,36 @@ fn test_sources() {
     assert_eq!(
         e.tilesets()[0].image.as_ref().unwrap().source,
         PathBuf::from("assets/tilesheet.png")
+    );
+}
+
+#[test]
+fn test_external_sources() {
+    let mut loader = Loader::new();
+    let e = loader
+        .load_tmx_map("assets/tiled_base64_external.tmx")
+        .unwrap();
+    assert_eq!(e.source, "assets/tiled_base64_external.tmx".to_owned());
+    assert_eq!(e.tilesets()[0].source, "assets/tilesheet.tsx".to_owned());
+
+    let e = loader
+        .load_tmx_map("assets/tiled_object_template.tmx")
+        .unwrap();
+    assert_eq!(e.source, "assets/tiled_object_template.tmx".to_owned());
+    assert_eq!(
+        e.tilesets()[0].source,
+        "assets/tiled_object_template.tx".to_owned()
+    );
+}
+
+#[test]
+fn test_embedded_sources() {
+    let e = loader.load_tmx_map("assets/tiled_base64_gzip.tmx").unwrap();
+
+    assert_eq!(e.source, "assets/tiled_base64_gzip.tmx".to_owned());
+    assert_eq!(
+        e.tilesets()[0].source,
+        "assets/tiled_base64_gzip.tmx".to_owned()
     );
 }
 

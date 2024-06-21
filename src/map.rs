@@ -1,6 +1,12 @@
 //! Structures related to Tiled maps.
 
-use std::{collections::HashMap, fmt, path::Path, str::FromStr, sync::Arc};
+use std::{
+    collections::HashMap,
+    fmt,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
 
 use xml::attribute::OwnedAttribute;
 
@@ -22,6 +28,8 @@ pub(crate) struct MapTilesetGid {
 #[derive(PartialEq, Clone, Debug)]
 pub struct Map {
     version: String,
+    /// The path first used in a [`ResourceReader`] to load this map.
+    pub source: PathBuf,
     /// The way tiles are laid out in the map.
     pub orientation: Orientation,
     /// Width of the map, in tiles.
@@ -253,6 +261,7 @@ impl Map {
 
         Ok(Map {
             version: v,
+            source: map_path.to_owned(),
             orientation: o,
             width: w,
             height: h,
