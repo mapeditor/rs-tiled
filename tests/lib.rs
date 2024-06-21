@@ -105,6 +105,7 @@ fn test_external_sources() {
 
 #[test]
 fn test_embedded_sources() {
+    let mut loader = Loader::new();
     let e = loader.load_tmx_map("assets/tiled_base64_gzip.tmx").unwrap();
 
     assert_eq!(e.source, "assets/tiled_base64_gzip.tmx".to_owned());
