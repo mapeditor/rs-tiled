@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use xml::EventReader;
@@ -15,6 +15,8 @@ use crate::{
 /// maps.
 #[derive(Clone, Debug)]
 pub struct Template {
+    /// The path first used in a [`ResourceReader`] to load this template.
+    pub source: PathBuf,
     /// The tileset this template contains a reference to
     pub tileset: Option<Arc<Tileset>>,
     /// The object data for this template
@@ -102,6 +104,10 @@ impl Template {
 
         let object = object.ok_or(Error::TemplateHasNoObject)?;
 
-        Ok(Arc::new(Template { tileset, object }))
+        Ok(Arc::new(Template {
+            source: template_path.to_owned(),
+            tileset,
+            object,
+        }))
     }
 }
