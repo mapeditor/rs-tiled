@@ -19,7 +19,7 @@ pub(crate) struct MapTilesetGid {
 }
 
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct Map {
     version: String,
     /// The way tiles are laid out in the map.
@@ -63,6 +63,27 @@ pub struct Map {
     infinite: bool,
     /// The type of the map, which is arbitrary and set by the user.
     pub user_type: Option<String>,
+}
+
+impl fmt::Debug for Map {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Map")
+            .field("version", &self.version)
+            .field("orientation", &self.orientation)
+            .field("width", &self.width)
+            .field("height", &self.height)
+            .field("tile_width", &self.tile_width)
+            .field("tile_height", &self.tile_height)
+            .field("stagger_axis", &self.stagger_axis)
+            .field("stagger_index", &self.stagger_index)
+            .field("tilesets", &format!("{} tilesets", self.tilesets.len()))
+            .field("layers", &format!("{} layers", self.layers.len()))
+            .field("properties", &self.properties)
+            .field("background_color", &self.background_color)
+            .field("infinite", &self.infinite)
+            .field("user_type", &self.user_type)
+            .finish()
+    }
 }
 
 impl Map {
