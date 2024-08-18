@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - Improved documentation on `Map::layers` and `Map::get_layer`. (#306)
-- Extend lifetime of `Layer`s returned from `GroupLayer::get_layer` to the map's.
+- Extend lifetime of `Layer`s returned from `GroupLayer::get_layer` to the map's. (#307)
 
 ## [0.12.0]
 ### Added
