@@ -108,7 +108,10 @@ impl Map {
         self.tilesets.as_ref()
     }
 
-    /// Get an iterator over all the layers in the map in ascending order of their layer index.
+    /// Get an iterator over top-level layers in the map in ascending order of their layer index.
+    ///
+    /// Note: "top-level" means that if a map has layers of `LayerDataType::Group` type, you
+    /// need to recursively enumerate those group layers.
     ///
     /// ## Example
     /// ```
@@ -139,7 +142,7 @@ impl Map {
         self.layers.iter().map(move |layer| Layer::new(self, layer))
     }
 
-    /// Returns the layer that has the specified index, if it exists.
+    /// Returns the top-level layer that has the specified index, if it exists.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
         self.layers.get(index).map(|data| Layer::new(self, data))
     }
