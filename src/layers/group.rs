@@ -129,7 +129,7 @@ impl<'map> GroupLayer<'map> {
             .map(move |layer| Layer::new(map, layer))
     }
     /// Gets a specific layer from the group by index.
-    pub fn get_layer(&self, index: usize) -> Option<Layer> {
+    pub fn get_layer(&self, index: usize) -> Option<Layer<'map>> {
         self.data
             .layers
             .get(index)
