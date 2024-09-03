@@ -439,6 +439,7 @@ fn test_object_template_property() {
     let object_layer = r.get_layer(1).unwrap().as_object_layer().unwrap();
     let object = object_layer.get_object(0).unwrap(); // The templated object
     let object_nt = object_layer.get_object(1).unwrap(); // The non-templated object
+    let object_resized = object_layer.get_object(2).unwrap(); // The resized templated object
 
     // Test core properties
     assert_eq!(
@@ -450,6 +451,13 @@ fn test_object_template_property() {
     );
     assert_eq!(object.x, 32.0);
     assert_eq!(object.y, 32.0);
+    assert_eq!(
+        object_resized.shape,
+        ObjectShape::Rect {
+            width: 64.0,
+            height: 32.0,
+        }
+    );
 
     // Test properties are copied over
     assert_eq!(
