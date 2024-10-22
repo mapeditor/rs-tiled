@@ -56,6 +56,8 @@ pub struct Map {
     /// individual tiles may have different sizes. As such, there is no guarantee that this value
     /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
+    /// The length of the side of a hexagonal tile in pixels (used by tile layers on hexagonal maps).
+    pub hex_side_length: Option<u32>,
     /// The stagger axis of Hexagonal/Staggered map.
     pub stagger_axis: StaggerAxis,
     /// The stagger index of Hexagonal/Staggered map.
@@ -165,7 +167,7 @@ impl Map {
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
         let (
-            (c, infinite, user_type, user_class, stagger_axis, stagger_index),
+            (c, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length),
             (v, o, w, h, tw, th),
         ) = get_attrs!(
             for v in attrs {
@@ -175,6 +177,7 @@ impl Map {
                 Some("class") => user_class ?= v.parse(),
                 Some("staggeraxis") => stagger_axis ?= v.parse::<StaggerAxis>(),
                 Some("staggerindex") => stagger_index ?= v.parse::<StaggerIndex>(),
+                Some("hexsidelength") => hex_side_length ?= v.parse(),
                 "version" => version = v,
                 "orientation" => orientation ?= v.parse::<Orientation>(),
                 "width" => width ?= v.parse::<u32>(),
@@ -182,7 +185,7 @@ impl Map {
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((colour, infinite, user_type, user_class, stagger_axis, stagger_index), (version, orientation, width, height, tile_width, tile_height))
+            ((colour, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length), (version, orientation, width, height, tile_width, tile_height))
         );
 
         let infinite = infinite.unwrap_or(false);
@@ -291,6 +294,7 @@ impl Map {
             height: h,
             tile_width: tw,
             tile_height: th,
+            hex_side_length,
             stagger_axis,
             stagger_index,
             tilesets,
