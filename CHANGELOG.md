@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased (0.12.2)]
 ### Fixed
 - Fixed template instance size and position overrides in `ObjectData::shape`. (#309)
+- Add `hexside_length` members to `Map`. (#313)
 
 ## [0.12.1]
 ### Changed
