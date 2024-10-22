@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased (0.13.0)]
 ### Added
 - Added a `source` member to `Tileset`, `Map` and `Template`, which stores the resource path they have been loaded from.
-- Add `hexside_length` members to `Map`. (#313)
+- Add `hexside_length` member to `Map`. (#313)
 
 ## [Unreleased (0.12.2)]
 ### Fixed
