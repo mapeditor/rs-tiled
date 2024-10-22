@@ -56,6 +56,8 @@ pub struct Map {
     /// individual tiles may have different sizes. As such, there is no guarantee that this value
     /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
+    /// The Length of the side of a hexagonal tile (used by tile layers on hexagonal maps).
+    pub hexside_length: Option<u32>,
     /// The stagger axis of Hexagonal/Staggered map.
     pub stagger_axis: StaggerAxis,
     /// The stagger index of Hexagonal/Staggered map.
@@ -165,7 +167,7 @@ impl Map {
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
         let (
-            (c, infinite, user_type, user_class, stagger_axis, stagger_index),
+            (c, infinite, user_type, user_class, stagger_axis, stagger_index, hexside_length),
             (v, o, w, h, tw, th),
         ) = get_attrs!(
             for v in attrs {
@@ -175,6 +177,7 @@ impl Map {
                 Some("class") => user_class ?= v.parse(),
                 Some("staggeraxis") => stagger_axis ?= v.parse::<StaggerAxis>(),
                 Some("staggerindex") => stagger_index ?= v.parse::<StaggerIndex>(),
+                Some("hexsidelength") => hexside_length ?= v.parse(),
                 "version" => version = v,
                 "orientation" => orientation ?= v.parse::<Orientation>(),
                 "width" => width ?= v.parse::<u32>(),
@@ -182,13 +185,14 @@ impl Map {
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((colour, infinite, user_type, user_class, stagger_axis, stagger_index), (version, orientation, width, height, tile_width, tile_height))
+            ((colour, infinite, user_type, user_class, stagger_axis, stagger_index, hexside_length), (version, orientation, width, height, tile_width, tile_height))
         );
 
         let infinite = infinite.unwrap_or(false);
         let user_type = user_type.or(user_class);
         let stagger_axis = stagger_axis.unwrap_or_default();
         let stagger_index = stagger_index.unwrap_or_default();
+        
 
         // We can only parse sequentally, but tilesets are guaranteed to appear before layers.
         // So we can pass in tileset data to layer construction without worrying about unfinished
@@ -291,6 +295,7 @@ impl Map {
             height: h,
             tile_width: tw,
             tile_height: th,
+            hexside_length,
             stagger_axis,
             stagger_index,
             tilesets,
