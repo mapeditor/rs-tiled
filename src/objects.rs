@@ -229,7 +229,7 @@ impl ObjectData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
-        let (id, tile, mut n, mut t, c, w, h, mut v, mut r, template, x, y) = get_attrs!(
+        let (id, tile, mut n, mut t, c, mut w, mut h, mut v, mut r, template, x, y) = get_attrs!(
             for v in attrs {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse::<u32>(),
@@ -275,6 +275,15 @@ impl ObjectData {
                 if let Some(templ_tile) = &obj.tile {
                     tile.get_or_insert_with(|| templ_tile.clone());
                 }
+                match &obj.shape {
+                    ObjectShape::Rect { width, height }
+                    | ObjectShape::Ellipse { width, height }
+                    | ObjectShape::Text { width, height, .. } => {
+                        w.get_or_insert(*width);
+                        h.get_or_insert(*height);
+                    }
+                    _ => {}
+                }
                 Ok(template)
             })
             .transpose()?;
@@ -319,11 +328,51 @@ impl ObjectData {
             },
         });
 
-        // Possibly copy properties from the template into the object
-        // Any that already exist in the object's map don't get copied over
         if let Some(templ) = template {
-            shape.get_or_insert(templ.object.shape.clone());
+            shape.get_or_insert_with(|| {
+                // Inherit the shape from the template but use the size and
+                // position from the object where relevant
+                match &templ.object.shape {
+                    ObjectShape::Rect { .. } => ObjectShape::Rect { width, height },
+                    ObjectShape::Ellipse { .. } => ObjectShape::Ellipse { width, height },
+                    ObjectShape::Point(_, _) => ObjectShape::Point(x, y),
+                    ObjectShape::Text {
+                        font_family,
+                        pixel_size,
+                        wrap,
+                        color,
+                        bold,
+                        italic,
+                        underline,
+                        strikeout,
+                        kerning,
+                        halign,
+                        valign,
+                        text,
+                        width: _,
+                        height: _,
+                    } => ObjectShape::Text {
+                        font_family: font_family.clone(),
+                        pixel_size: pixel_size.clone(),
+                        wrap: wrap.clone(),
+                        color: color.clone(),
+                        bold: bold.clone(),
+                        italic: italic.clone(),
+                        underline: underline.clone(),
+                        strikeout: strikeout.clone(),
+                        kerning: kerning.clone(),
+                        halign: halign.clone(),
+                        valign: valign.clone(),
+                        text: text.clone(),
+                        width,
+                        height,
+                    },
+                    shape => shape.clone(),
+                }
+            });
 
+            // Possibly copy properties from the template into the object
+            // Any that already exist in the object's map don't get copied over
             for (k, v) in &templ.object.properties {
                 if !properties.contains_key(k) {
                     properties.insert(k.clone(), v.clone());

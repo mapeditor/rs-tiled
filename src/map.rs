@@ -25,7 +25,7 @@ pub(crate) struct MapTilesetGid {
 }
 
 /// All Tiled map files will be parsed into this. Holds all the layers and tilesets.
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct Map {
     version: String,
     /// The path first used in a [`ResourceReader`] to load this map.
@@ -73,6 +73,27 @@ pub struct Map {
     pub user_type: Option<String>,
 }
 
+impl fmt::Debug for Map {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Map")
+            .field("version", &self.version)
+            .field("orientation", &self.orientation)
+            .field("width", &self.width)
+            .field("height", &self.height)
+            .field("tile_width", &self.tile_width)
+            .field("tile_height", &self.tile_height)
+            .field("stagger_axis", &self.stagger_axis)
+            .field("stagger_index", &self.stagger_index)
+            .field("tilesets", &format!("{} tilesets", self.tilesets.len()))
+            .field("layers", &format!("{} layers", self.layers.len()))
+            .field("properties", &self.properties)
+            .field("background_color", &self.background_color)
+            .field("infinite", &self.infinite)
+            .field("user_type", &self.user_type)
+            .finish()
+    }
+}
+
 impl Map {
     /// The TMX format version this map was saved to. Equivalent to the map file's `version`
     /// attribute.
@@ -95,7 +116,10 @@ impl Map {
         self.tilesets.as_ref()
     }
 
-    /// Get an iterator over all the layers in the map in ascending order of their layer index.
+    /// Get an iterator over top-level layers in the map in ascending order of their layer index.
+    ///
+    /// Note: "top-level" means that if a map has layers of `LayerDataType::Group` type, you
+    /// need to recursively enumerate those group layers.
     ///
     /// ## Example
     /// ```
@@ -126,7 +150,7 @@ impl Map {
         self.layers.iter().map(move |layer| Layer::new(self, layer))
     }
 
-    /// Returns the layer that has the specified index, if it exists.
+    /// Returns the top-level layer that has the specified index, if it exists.
     pub fn get_layer(&self, index: usize) -> Option<Layer> {
         self.layers.get(index).map(|data| Layer::new(self, data))
     }
