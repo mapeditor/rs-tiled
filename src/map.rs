@@ -192,7 +192,6 @@ impl Map {
         let user_type = user_type.or(user_class);
         let stagger_axis = stagger_axis.unwrap_or_default();
         let stagger_index = stagger_index.unwrap_or_default();
-        
 
         // We can only parse sequentally, but tilesets are guaranteed to appear before layers.
         // So we can pass in tileset data to layer construction without worrying about unfinished
