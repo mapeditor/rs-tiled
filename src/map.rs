@@ -57,7 +57,7 @@ pub struct Map {
     /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
     /// The length of the side of a hexagonal tile in pixels (used by tile layers on hexagonal maps).
-    pub hex_side_length: Option<u32>,
+    pub hex_side_length: Option<i32>,
     /// The stagger axis of Hexagonal/Staggered map.
     pub stagger_axis: StaggerAxis,
     /// The stagger index of Hexagonal/Staggered map.
