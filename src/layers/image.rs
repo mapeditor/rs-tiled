@@ -1,8 +1,10 @@
 use std::{collections::HashMap, path::Path};
 
+use xml::attribute::OwnedAttribute;
+
 use crate::{
     parse_properties,
-    util::{map_wrapper, parse_tag, XmlEventResult},
+    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
     Error, Image, Properties, Result,
 };
 
@@ -11,17 +13,31 @@ use crate::{
 pub struct ImageLayerData {
     /// The single image this layer contains, if it exists.
     pub image: Option<Image>,
+    /// The layer's x repeat factor (true = repeat, false = no repeat).
+    pub repeat_x: bool,
+    /// The layer's y repeat factor (true = repeat, false = no repeat).
+    pub repeat_y: bool,
 }
 
 impl ImageLayerData {
     pub(crate) fn new(
         parser: &mut impl Iterator<Item = XmlEventResult>,
+        attrs: Vec<OwnedAttribute>,
         map_path: &Path,
     ) -> Result<(Self, Properties)> {
         let mut image: Option<Image> = None;
         let mut properties = HashMap::new();
 
         let path_relative_to = map_path.parent().ok_or(Error::PathIsNotFile)?;
+
+        // Parse repeat attributes from the imagelayer tag
+        let (repeat_x, repeat_y) = get_attrs!(
+            for v in attrs {
+                Some("repeatx") => repeat_x ?= v.parse::<i32>().map(|val| val == 1),
+                Some("repeaty") => repeat_y ?= v.parse::<i32>().map(|val| val == 1),
+            }
+            (repeat_x, repeat_y)
+        );
 
         parse_tag!(parser, "imagelayer", {
             "image" => |attrs| {
@@ -33,7 +49,14 @@ impl ImageLayerData {
                 Ok(())
             },
         });
-        Ok((ImageLayerData { image }, properties))
+        Ok((
+            ImageLayerData {
+                image,
+                repeat_x: repeat_x.unwrap_or(false),
+                repeat_y: repeat_y.unwrap_or(false),
+            },
+            properties,
+        ))
     }
 }
 

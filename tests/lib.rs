@@ -397,6 +397,36 @@ fn test_parallax_layers() {
 }
 
 #[test]
+fn test_repeat() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_repeat.tmx")
+        .unwrap();
+    for (i, layer) in r.layers().enumerate() {
+        match i {
+            0 => {
+                assert_eq!(layer.name, "Background");
+                // Tile layers don't have repeat properties
+            }
+            1 => {
+                assert_eq!(layer.name, "Middle");
+                // Tile layers don't have repeat properties
+            }
+            2 => {
+                assert_eq!(layer.name, "Foreground");
+                // Tile layers don't have repeat properties
+            }
+            3 => {
+                assert_eq!(layer.name, "ImageLayer");
+                let image_layer = layer.as_image_layer().unwrap();
+                assert_eq!(image_layer.repeat_x, true);
+                assert_eq!(image_layer.repeat_y, true);
+            }
+            _ => panic!("unexpected layer"),
+        }
+    }
+}
+
+#[test]
 fn test_object_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_object_property.tmx")

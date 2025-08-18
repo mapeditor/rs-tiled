@@ -125,7 +125,7 @@ impl LayerData {
                 (LayerDataType::Objects(ty), properties)
             }
             LayerTag::Image => {
-                let (ty, properties) = ImageLayerData::new(parser, map_path)?;
+                let (ty, properties) = ImageLayerData::new(parser, attrs, map_path)?;
                 (LayerDataType::Image(ty), properties)
             }
             LayerTag::Group => {
