@@ -39,7 +39,7 @@ fn main() {
 The crate does all of its reading through the `read_from` function of the [`ResourceReader`](https://docs.rs/tiled/latest/tiled/trait.ResourceReader.html) that you create the loader with. By default, this reader is set to [`FilesystemResourceReader`](https://docs.rs/tiled/latest/tiled/struct.FilesystemResourceReader.html) and all files are read through the OS's filesystem. You can however change this.
 
 Here's an example mostly taken from `Loader::with_reader`'s documentation:
-```rust
+```rust,ignore
 use tiled::{DefaultResourceCache, Loader};
 
 let mut loader = Loader::with_reader(
@@ -74,7 +74,7 @@ tiled = { version = ".....", features = ["wasm"] }
 - Second, since you cannot use the filesystem as normally on the web, you cannot use `FilesystemResourceReader`. As such,
 you'll need to implement your own `ResourceReader`. This is a pretty simple task, as you just need to return anything
 that is `Read`able when given a path, e.g.:
-```rust
+```rust,ignore
 use std::io::Cursor;
 
 struct MyReader;
