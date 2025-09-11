@@ -182,11 +182,11 @@ impl MapHandler {
                                         .offset([offset_x, offset_y])
                                         .dest([dx + offset_x, dy + offset_y])
                                         .color(ggez::graphics::Color::from_rgba(
-                                                0xFF,
-                                                0xFF,
-                                                0xFF,
-                                                (layer.opacity * 255.0) as u8,
-                                            ));
+                                            0xFF,
+                                            0xFF,
+                                            0xFF,
+                                            (layer.opacity * 255.0) as u8,
+                                        ));
 
                                     let (d, h, v) = (tile.flip_d, tile.flip_h, tile.flip_v);
 
