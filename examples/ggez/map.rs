@@ -188,18 +188,22 @@ impl MapHandler {
                                             (layer.opacity * 255.0) as u8,
                                         ));
 
-                                    let (d, h, v) = (tile.flip_d, tile.flip_h, tile.flip_v);
+                                    let (fd, fh, fv) = (tile.flip_d, tile.flip_h, tile.flip_v);
 
-                                    draw_param = if d {
-                                        match (h, v) {
-                                            (true, true) => draw_param.scale([-1.0, 1.0]).rotation(FRAC_PI_2),
+                                    draw_param = if fd {
+                                        match (fh, fv) {
+                                            (true, true) => {
+                                                draw_param.scale([-1.0, 1.0]).rotation(FRAC_PI_2)
+                                            }
                                             (true, false) => draw_param.rotation(FRAC_PI_2),
                                             (false, true) => draw_param.rotation(-FRAC_PI_2),
-                                            (false, false) => draw_param.scale([-1.0, 1.0]).rotation(-FRAC_PI_2),
+                                            (false, false) => {
+                                                draw_param.scale([-1.0, 1.0]).rotation(-FRAC_PI_2)
+                                            }
                                         }
                                     } else {
-                                        let sx = if h { -1.0 } else { 1.0 };
-                                        let sy = if v { -1.0 } else { 1.0 };
+                                        let sx = if fh { -1.0 } else { 1.0 };
+                                        let sy = if fv { -1.0 } else { 1.0 };
                                         draw_param.scale([sx, sy])
                                     };
 
