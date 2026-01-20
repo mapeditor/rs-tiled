@@ -308,7 +308,9 @@ pub fn floor_div(a: i32, b: i32) -> i32 {
 }
 use std::io::BufRead;
 
-use quick_xml::{events::BytesStart, Reader};
+use quick_xml::{events::BytesStart, events::Event, Reader};
+
+use crate::{Error, Result};
 
 pub(crate) struct XmlElement<'a, R: BufRead> {
     pub reader: &'a mut Reader<R>,
@@ -340,4 +342,42 @@ impl<'a, R: BufRead> XmlElement<'a, R> {
             is_empty,
         }
     }
+}
+
+pub(crate) fn read_text_or_cdata<R: BufRead>(
+    elem: &mut XmlElement<'_, R>,
+    eof_message: &str,
+) -> Result<Option<String>> {
+    if elem.is_empty {
+        return Ok(None);
+    }
+
+    let mut text = None;
+    loop {
+        match elem
+            .reader
+            .read_event_into(elem.buf)
+            .map_err(Error::XmlDecodingError)?
+        {
+            Event::Text(e) => {
+                text = Some(e.unescape().map_err(Error::XmlDecodingError)?.into_owned());
+                elem.buf.clear();
+            }
+            Event::CData(e) => {
+                text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
+                elem.buf.clear();
+            }
+            Event::End(_) => {
+                elem.buf.clear();
+                break;
+            }
+            Event::Eof => {
+                return Err(Error::PrematureEnd(eof_message.to_owned()));
+            }
+            _ => {
+                elem.buf.clear();
+            }
+        }
+    }
+    Ok(text)
 }

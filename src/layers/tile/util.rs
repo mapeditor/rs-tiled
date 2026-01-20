@@ -1,9 +1,8 @@
 use std::{convert::TryInto, io::Read};
 
 use base64::Engine;
-use quick_xml::events::Event;
 
-use crate::{CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result};
+use crate::{util::read_text_or_cdata, CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result};
 
 pub(crate) fn parse_data_line<R: std::io::BufRead>(
     encoding: Option<String>,
@@ -52,35 +51,7 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
 fn parse_base64<R: std::io::BufRead>(
     elem: &mut crate::util::XmlElement<'_, R>,
 ) -> Result<Vec<u8>> {
-    let mut text = None;
-    loop {
-        match elem
-            .reader
-            .read_event_into(elem.buf)
-            .map_err(Error::XmlDecodingError)?
-        {
-            Event::Text(e) => {
-                text = Some(e.unescape().map_err(Error::XmlDecodingError)?.into_owned());
-                elem.buf.clear();
-            }
-            Event::CData(e) => {
-                text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
-                elem.buf.clear();
-            }
-            Event::End(_) => {
-                elem.buf.clear();
-                break;
-            }
-            Event::Eof => {
-                return Err(Error::PrematureEnd("Ran out of XML data".to_owned()));
-            }
-            _ => {
-                elem.buf.clear();
-            }
-        }
-    }
-
-    let text = match text {
+    let text = match read_text_or_cdata(elem, "Ran out of XML data")? {
         Some(text) => text,
         None => return Ok(Vec::new()),
     };
@@ -107,35 +78,7 @@ fn decode_csv<R: std::io::BufRead>(
     elem: &mut crate::util::XmlElement<'_, R>,
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>> {
-    let mut text = None;
-    loop {
-        match elem
-            .reader
-            .read_event_into(elem.buf)
-            .map_err(Error::XmlDecodingError)?
-        {
-            Event::Text(e) => {
-                text = Some(e.unescape().map_err(Error::XmlDecodingError)?.into_owned());
-                elem.buf.clear();
-            }
-            Event::CData(e) => {
-                text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
-                elem.buf.clear();
-            }
-            Event::End(_) => {
-                elem.buf.clear();
-                break;
-            }
-            Event::Eof => {
-                return Err(Error::PrematureEnd("Ran out of XML data".to_owned()));
-            }
-            _ => {
-                elem.buf.clear();
-            }
-        }
-    }
-
-    let text = match text {
+    let text = match read_text_or_cdata(elem, "Ran out of XML data")? {
         Some(text) => text,
         None => return Ok(Vec::new()),
     };

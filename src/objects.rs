@@ -4,7 +4,7 @@ use crate::{
     error::{Error, Result},
     properties::{parse_properties, Properties},
     template::Template,
-    util::{get_attrs, map_wrapper, parse_tag},
+    util::{get_attrs, map_wrapper, parse_tag, read_text_or_cdata},
     Color, Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
 };
 
@@ -425,15 +425,10 @@ impl ObjectData {
     }
 
     fn new_text<R: std::io::BufRead>(
-        elem: crate::util::XmlElement<'_, R>,
+        mut elem: crate::util::XmlElement<'_, R>,
         width: f32,
         height: f32,
     ) -> Result<ObjectShape> {
-        if elem.is_empty {
-            return Err(Error::InvalidObjectData {
-                description: "Text attribute contained no content".into(),
-            });
-        }
         let (
             font_family,
             pixel_size,
@@ -505,42 +500,11 @@ impl ObjectData {
         let kerning = kerning.map_or(true, |k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
-        let mut contents = None;
-        loop {
-            match elem
-                .reader
-                .read_event_into(elem.buf)
-                .map_err(Error::XmlDecodingError)?
-            {
-                quick_xml::events::Event::Text(e) => {
-                    contents = Some(
-                        e.unescape()
-                            .map_err(Error::XmlDecodingError)?
-                            .into_owned(),
-                    );
-                    elem.buf.clear();
-                }
-                quick_xml::events::Event::CData(e) => {
-                    contents = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
-                    elem.buf.clear();
-                }
-                quick_xml::events::Event::End(_) => {
-                    elem.buf.clear();
-                    break;
-                }
-                quick_xml::events::Event::Eof => {
-                    return Err(Error::PrematureEnd(
-                        "XML stream ended when trying to parse text contents".to_owned(),
-                    ));
-                }
-                _ => {
-                    elem.buf.clear();
-                }
-            }
-        }
-        let contents = contents.ok_or(Error::InvalidObjectData {
-            description: "Text attribute contained no content".into(),
-        })?;
+        let contents = read_text_or_cdata(
+            &mut elem,
+            "XML stream ended when trying to parse text contents",
+        )?
+        .unwrap_or_default();
 
         Ok(ObjectShape::Text {
             font_family,

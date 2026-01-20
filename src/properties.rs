@@ -1,10 +1,8 @@
 use std::{collections::HashMap, str::FromStr};
 
-use quick_xml::events::Event;
-
 use crate::{
     error::{Error, Result},
-    util::{get_attrs, parse_tag},
+    util::{get_attrs, parse_tag, read_text_or_cdata},
 };
 
 /// Represents a RGBA color with 8-bit depth on each channel.
@@ -170,63 +168,21 @@ pub(crate) fn parse_properties<R: std::io::BufRead>(
                 return Ok(());
             }
 
-            let mut consumed_end = false;
             let v: String = match v_attr {
-                Some(val) => val,
+                Some(val) => {
+                    parse_tag!(&mut elem, {});
+                    val
+                }
                 None => {
-                    if elem.is_empty {
-                        return Err(Error::MalformedAttributes(format!(
-                            "property '{}' is missing a value",
-                            k
-                        )));
-                    }
                     // if the "value" attribute was missing, might be a multiline string
-                    let mut text = None;
-                    loop {
-                        match elem
-                            .reader
-                            .read_event_into(elem.buf)
-                            .map_err(Error::XmlDecodingError)?
-                        {
-                            Event::Text(e) => {
-                                text = Some(
-                                    e.unescape()
-                                        .map_err(Error::XmlDecodingError)?
-                                        .into_owned(),
-                                );
-                                elem.buf.clear();
-                            }
-                            Event::CData(e) => {
-                                text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
-                                elem.buf.clear();
-                            }
-                            Event::End(_) => {
-                                elem.buf.clear();
-                                consumed_end = true;
-                                let text = text.ok_or_else(|| {
-                                    Error::MalformedAttributes(format!(
-                                        "property '{}' is missing a value",
-                                        k
-                                    ))
-                                })?;
-                                break text;
-                            }
-                            Event::Eof => {
-                                return Err(Error::PrematureEnd(
-                                    "XML stream ended when parsing property contents".to_owned(),
-                                ));
-                            }
-                            _ => {
-                                elem.buf.clear();
-                            }
-                        }
-                    }
+                    let text = read_text_or_cdata(
+                        &mut elem,
+                        "XML stream ended when parsing property contents",
+                    )?
+                    .unwrap_or_default();
+                    text
                 }
             };
-
-            if !consumed_end {
-                parse_tag!(&mut elem, {});
-            }
             p.insert(k, PropertyValue::new(t, v)?);
             Ok(())
         },
