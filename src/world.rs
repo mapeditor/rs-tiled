@@ -3,14 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use regex::Regex;
-use serde::Deserialize;
-
 use crate::{Error, ResourceReader};
 
 /// A World is a list of maps files or regex patterns that define a layout of TMX maps.
 /// You can use the loader to further load the maps defined by the world.
-#[derive(Deserialize, PartialEq, Clone, Debug)]
+#[derive(serde::Deserialize, PartialEq, Clone, Debug)]
 pub struct World {
     /// The path first used in a [`ResourceReader`] to load this world.
     #[serde(skip_deserializing)]
@@ -54,7 +51,7 @@ impl World {
 }
 
 /// A WorldMap provides the information for a map in the world and its layout.
-#[derive(Deserialize, PartialEq, Clone, Debug)]
+#[derive(serde::Deserialize, PartialEq, Clone, Debug)]
 pub struct WorldMap {
     /// The filename of the tmx map.
     #[serde(rename = "fileName")]
@@ -70,13 +67,13 @@ pub struct WorldMap {
 }
 
 /// A WorldPattern defines a regex pattern to automatically determine which maps to load and how to lay them out.
-#[derive(Deserialize, Clone, Debug)]
+#[derive(serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct WorldPattern {
     /// The regex pattern to match against filenames.
     /// The first two capture groups should be the x integer and y integer positions.
     #[serde(with = "serde_regex")]
-    pub regexp: Regex,
+    pub regexp: regex::Regex,
     /// The multiplier for the x position.
     pub multiplier_x: i32,
     /// The multiplier for the y position.
@@ -112,7 +109,7 @@ impl WorldPattern {
             None => {
                 return Err(Error::NoMatchFound {
                     path: path.to_owned(),
-                })
+                });
             }
         };
 
@@ -121,7 +118,7 @@ impl WorldPattern {
             None => {
                 return Err(Error::NoMatchFound {
                     path: path.to_owned(),
-                })
+                });
             }
         };
 
@@ -130,7 +127,7 @@ impl WorldPattern {
             None => {
                 return Err(Error::NoMatchFound {
                     path: path.to_owned(),
-                })
+                });
             }
         };
 
