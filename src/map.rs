@@ -148,12 +148,12 @@ impl Map {
     /// # }
     /// ```
     #[inline]
-    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer> {
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer<'_>> {
         self.layers.iter().map(move |layer| Layer::new(self, layer))
     }
 
     /// Returns the top-level layer that has the specified index, if it exists.
-    pub fn get_layer(&self, index: usize) -> Option<Layer> {
+    pub fn get_layer(&self, index: usize) -> Option<Layer<'_>> {
         self.layers.get(index).map(|data| Layer::new(self, data))
     }
 }
@@ -216,7 +216,7 @@ impl Map {
                         tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset});
                     }
                     EmbeddedParseResultType::Embedded { tileset } => {
-                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: Arc::new(tileset)});
+                        tilesets.push(MapTilesetGid{first_gid: res.first_gid, tileset: Arc::from(tileset)});
                     },
                 };
                 Ok(())

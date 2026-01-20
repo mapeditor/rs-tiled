@@ -22,16 +22,13 @@ The minimum supported TMX version is 0.13.
 ```rust
 use tiled::Loader;
 
-fn main() {
-    let mut loader = Loader::new();
-    let map = loader.load_tmx_map("assets/tiled_base64_external.tmx").unwrap();
-    println!("{:?}", map);
-    println!("{:?}", map.tilesets()[0].get_tile(0).unwrap().probability);
-    
-    let tileset = loader.load_tsx_tileset("assets/tilesheet.tsx").unwrap();
-    assert_eq!(*map.tilesets()[0], tileset);
-}
+let mut loader = Loader::new();
+let map = loader.load_tmx_map("assets/tiled_base64_external.tmx").unwrap();
+println!("{:?}", map);
+println!("{:?}", map.tilesets()[0].get_tile(0).unwrap().probability);
 
+let tileset = loader.load_tsx_tileset("assets/tilesheet.tsx").unwrap();
+assert_eq!(*map.tilesets()[0], tileset);
 ```
 
 ## FAQ
@@ -71,9 +68,8 @@ The crate supports WASM, but since it does not currently support asynchronous lo
 tiled = { version = ".....", features = ["wasm"] }
 ```
 
-- Second, since you cannot use the filesystem as normally on the web, you cannot use `FilesystemResourceReader`. As such,
-you'll need to implement your own `ResourceReader`. This is a pretty simple task, as you just need to return anything
-that is `Read`able when given a path, e.g.:
+- Second, since you cannot use the filesystem as normally on the web, you cannot use `FilesystemResourceReader`. As such, you'll need to implement your own `ResourceReader`. This is a pretty simple task, as you just need to return anything that is `Read`able when given a path, e.g.:
+
 ```rust,ignore
 use std::io::Cursor;
 

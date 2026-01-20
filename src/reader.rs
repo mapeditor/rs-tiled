@@ -38,7 +38,7 @@ pub trait ResourceReader {
 }
 
 /// A [`ResourceReader`] that reads from [`File`] handles.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct FilesystemResourceReader;
 
 impl FilesystemResourceReader {

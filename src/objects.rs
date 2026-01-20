@@ -353,16 +353,16 @@ impl ObjectData {
                         height: _,
                     } => ObjectShape::Text {
                         font_family: font_family.clone(),
-                        pixel_size: pixel_size.clone(),
-                        wrap: wrap.clone(),
-                        color: color.clone(),
-                        bold: bold.clone(),
-                        italic: italic.clone(),
-                        underline: underline.clone(),
-                        strikeout: strikeout.clone(),
-                        kerning: kerning.clone(),
-                        halign: halign.clone(),
-                        valign: valign.clone(),
+                        pixel_size: *pixel_size,
+                        wrap: *wrap,
+                        color: *color,
+                        bold: *bold,
+                        italic: *italic,
+                        underline: *underline,
+                        strikeout: *strikeout,
+                        kerning: *kerning,
+                        halign: *halign,
+                        valign: *valign,
                         text: text.clone(),
                         width,
                         height,
@@ -491,7 +491,7 @@ impl ObjectData {
         let italic = italic == Some(1);
         let underline = underline == Some(1);
         let strikeout = strikeout == Some(1);
-        let kerning = kerning.map_or(true, |k| k == 1);
+        let kerning = kerning.is_none_or(|k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
         let contents = match parser.next().map_or_else(

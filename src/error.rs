@@ -11,7 +11,7 @@ pub enum CsvDecodingError {
 }
 
 impl fmt::Display for CsvDecodingError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             CsvDecodingError::TileDataParseError(e) => write!(f, "{}", e),
         }
@@ -29,7 +29,7 @@ pub enum InvalidTilesetError {
 }
 
 impl fmt::Display for InvalidTilesetError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InvalidTileDimensions => write!(
                 f,

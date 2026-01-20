@@ -3,8 +3,8 @@ use std::{path::Path, sync::Arc};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid, ResourceCache,
-    ResourceReader, Tileset,
+    Color, Map, MapTilesetGid, ResourceCache, ResourceReader, Tileset, error::Result,
+    properties::Properties, util::*,
 };
 
 mod image;

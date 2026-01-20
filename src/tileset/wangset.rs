@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::Error,
-    properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
     Result, TileId,
+    error::Error,
+    properties::{Properties, parse_properties},
+    util::{XmlEventResult, get_attrs, parse_tag},
 };
 
 mod wang_color;
@@ -15,18 +15,13 @@ mod wang_tile;
 pub use wang_tile::*;
 
 /// Wang set's terrain brush connection type.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Default)]
 #[allow(missing_docs)]
 pub enum WangSetType {
     Corner,
     Edge,
+    #[default]
     Mixed,
-}
-
-impl Default for WangSetType {
-    fn default() -> Self {
-        WangSetType::Mixed
-    }
 }
 
 /// Raw data belonging to a WangSet.

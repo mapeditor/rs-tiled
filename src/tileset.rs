@@ -5,9 +5,9 @@ use xml::attribute::OwnedAttribute;
 
 use crate::error::{Error, Result};
 use crate::image::Image;
-use crate::properties::{parse_properties, Properties};
+use crate::properties::{Properties, parse_properties};
 use crate::tile::TileData;
-use crate::{util::*, Gid, InvalidTilesetError, ResourceCache, ResourceReader, Tile, TileId};
+use crate::{Gid, InvalidTilesetError, ResourceCache, ResourceReader, Tile, TileId, util::*};
 
 mod wangset;
 pub use wangset::*;
@@ -75,7 +75,7 @@ pub struct Tileset {
 
 pub(crate) enum EmbeddedParseResultType {
     ExternalReference { tileset_path: PathBuf },
-    Embedded { tileset: Tileset },
+    Embedded { tileset: Box<Tileset> },
 }
 
 pub(crate) struct EmbeddedParseResult {
@@ -100,13 +100,13 @@ struct TilesetProperties {
 impl Tileset {
     /// Gets the tile with the specified ID from the tileset.
     #[inline]
-    pub fn get_tile(&self, id: TileId) -> Option<Tile> {
+    pub fn get_tile(&self, id: TileId) -> Option<Tile<'_>> {
         self.tiles.get(&id).map(|data| Tile::new(self, data))
     }
 
     /// Iterates through the tiles from this tileset.
     #[inline]
-    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (TileId, Tile)> {
+    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (TileId, Tile<'_>)> {
         self.tiles
             .iter()
             .map(move |(id, data)| (*id, Tile::new(self, data)))
@@ -178,7 +178,9 @@ impl Tileset {
         )
         .map(|tileset| EmbeddedParseResult {
             first_gid,
-            result_type: EmbeddedParseResultType::Embedded { tileset },
+            result_type: EmbeddedParseResultType::Embedded {
+                tileset: Box::new(tileset),
+            },
         })
     }
 

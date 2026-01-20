@@ -91,7 +91,7 @@ impl Template {
                         });
                     }
                     EmbeddedParseResultType::Embedded { tileset: embedded_tileset } => {
-                        tileset = Some(Arc::new(embedded_tileset));
+                        tileset = Some(Arc::from(embedded_tileset));
                     },
                 };
                 tileset_gid.push(MapTilesetGid {
