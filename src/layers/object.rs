@@ -1,11 +1,9 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Color, Error, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader,
+    util::{get_attrs, map_wrapper, parse_tag},
+    Color, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader,
     Result, Tileset,
 };
 
@@ -21,8 +19,9 @@ impl ObjectLayerData {
     /// If it is known that there are no objects with tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
     pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // path_relative_to is a directory to which all other files are relative to
@@ -36,15 +35,16 @@ impl ObjectLayerData {
             }
             color
         );
+        buf.clear();
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
-        parse_tag!(parser, "objectgroup", {
+        parse_tag!(xml_reader, buf, "objectgroup", {
             "object" => |attrs| {
-                objects.push(ObjectData::new(parser, attrs, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
+                objects.push(ObjectData::new(xml_reader, buf, attrs, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
                 Ok(())
             },
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
         });

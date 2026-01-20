@@ -1,11 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::{Error, Result},
+    error::Result,
     properties::Color,
-    util::*,
+    util::{get_attrs, parse_tag},
 };
 
 /// A reference to an image stored somewhere within the filesystem.
@@ -69,21 +67,23 @@ pub struct Image {
 
 impl Image {
     pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
         path_relative_to: impl AsRef<Path>,
     ) -> Result<Image> {
         let (c, (s, w, h)) = get_attrs!(
             for v in attrs {
                 Some("trans") => trans ?= v.parse(),
-                "source" => source = v,
+                "source" => source = v.to_string(),
                 "width" => width ?= v.parse::<i32>(),
                 "height" => height ?= v.parse::<i32>(),
             }
             (trans, (source, width, height))
         );
 
-        parse_tag!(parser, "image", {});
+        buf.clear();
+        parse_tag!(xml_reader, buf, "image", {});
         Ok(Image {
             source: path_relative_to.as_ref().join(s),
             width: w,

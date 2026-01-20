@@ -1,12 +1,10 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     error::{Error, Result},
     properties::{parse_properties, Properties},
     template::Template,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
+    util::{get_attrs, map_wrapper, parse_tag},
     Color, Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
 };
 
@@ -220,8 +218,9 @@ impl ObjectData {
     /// If it is known that the object has no tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
     pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // Base path is a directory to which all other files are relative to
@@ -246,6 +245,7 @@ impl ObjectData {
             }
             (id, tile, name, user_type, user_class, width, height, visible, rotation, template, x, y)
         );
+        buf.clear();
         let x = x.unwrap_or(0.);
         let y = y.unwrap_or(0.);
         let mut tile = tile.and_then(|bits| {
@@ -298,7 +298,7 @@ impl ObjectData {
         let mut shape = None;
         let mut properties = HashMap::new();
 
-        parse_tag!(parser, "object", {
+        parse_tag!(xml_reader, buf, "object", {
             "ellipse" => |_| {
                 shape = Some(ObjectShape::Ellipse {
                     width,
@@ -319,11 +319,11 @@ impl ObjectData {
                 Ok(())
             },
             "text" => |attrs| {
-                shape = Some(ObjectData::new_text(attrs, parser, width, height)?);
+                shape = Some(ObjectData::new_text(xml_reader, buf, attrs, width, height)?);
                 Ok(())
             },
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
         });
@@ -398,7 +398,7 @@ impl ObjectData {
 }
 
 impl ObjectData {
-    fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
+    fn new_polyline(attrs: quick_xml::events::BytesStart<'_>) -> Result<ObjectShape> {
         let points = get_attrs!(
             for v in attrs {
                 "points" => points ?= ObjectData::parse_points(v),
@@ -408,7 +408,7 @@ impl ObjectData {
         Ok(ObjectShape::Polyline { points })
     }
 
-    fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
+    fn new_polygon(attrs: quick_xml::events::BytesStart<'_>) -> Result<ObjectShape> {
         let points = get_attrs!(
             for v in attrs {
                 "points" => points ?= ObjectData::parse_points(v),
@@ -419,8 +419,9 @@ impl ObjectData {
     }
 
     fn new_text(
-        attrs: Vec<OwnedAttribute>,
-        parser: &mut impl Iterator<Item = XmlEventResult>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
         width: f32,
         height: f32,
     ) -> Result<ObjectShape> {
@@ -438,7 +439,7 @@ impl ObjectData {
             valign,
         ) = get_attrs!(
             for v in attrs {
-                Some("fontfamily") => font_family = v,
+                Some("fontfamily") => font_family = v.to_string(),
                 Some("pixelsize") => pixel_size ?= v.parse(),
                 Some("wrap") => wrap ?= v.parse(),
                 Some("color") => color ?= v.parse(),
@@ -447,14 +448,14 @@ impl ObjectData {
                 Some("underline") => underline ?= v.parse(),
                 Some("strikeout") => strikeout ?= v.parse(),
                 Some("kerning") => kerning ?= v.parse::<i32>(),
-                Some("halign") => halign = match v.as_str() {
+                Some("halign") => halign = match v {
                     "left" => HorizontalAlignment::Left,
                     "center" => HorizontalAlignment::Center,
                     "right" => HorizontalAlignment::Right,
                     "justify" => HorizontalAlignment::Justify,
                     _ => return Err(Error::MalformedAttributes("`halign` property did not contain a valid value of 'left', 'center', 'right' or 'justify'".to_string()))
                 },
-                Some("valign") => valign = match v.as_str() {
+                Some("valign") => valign = match v {
                     "top" => VerticalAlignment::Top,
                     "center" => VerticalAlignment::Center,
                     "bottom" => VerticalAlignment::Bottom,
@@ -478,6 +479,7 @@ impl ObjectData {
                 valign,
             )
         );
+        buf.clear();
         let font_family = font_family.unwrap_or_else(|| "sans-serif".to_string());
         let pixel_size = pixel_size.unwrap_or(16);
         let color = color.unwrap_or(Color {
@@ -494,20 +496,35 @@ impl ObjectData {
         let kerning = kerning.map_or(true, |k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
-        let contents = match parser.next().map_or_else(
-            || {
-                Err(Error::PrematureEnd(
-                    "XML stream ended when trying to parse text contents".to_owned(),
-                ))
-            },
-            |r| r.map_err(Error::XmlDecodingError),
-        )? {
-            xml::reader::XmlEvent::Characters(contents) => contents,
-            _ => {
-                return Err(Error::InvalidObjectData {
-                    description: "Text attribute contained anything but characters as content"
-                        .into(),
-                })
+        let contents = loop {
+            match xml_reader
+                .read_event_into(buf)
+                .map_err(Error::XmlDecodingError)?
+            {
+                quick_xml::events::Event::Text(e) => {
+                    let text = e.unescape().map_err(Error::XmlDecodingError)?.into_owned();
+                    buf.clear();
+                    break text;
+                }
+                quick_xml::events::Event::CData(e) => {
+                    let text = String::from_utf8_lossy(e.as_ref()).into_owned();
+                    buf.clear();
+                    break text;
+                }
+                quick_xml::events::Event::End(ref e) if e.local_name().as_ref() == b"text" => {
+                    buf.clear();
+                    return Err(Error::InvalidObjectData {
+                        description: "Text attribute contained no content".into(),
+                    });
+                }
+                quick_xml::events::Event::Eof => {
+                    return Err(Error::PrematureEnd(
+                        "XML stream ended when trying to parse text contents".to_owned(),
+                    ));
+                }
+                _ => {
+                    buf.clear();
+                }
             }
         };
 
@@ -529,7 +546,7 @@ impl ObjectData {
         })
     }
 
-    fn parse_points(s: String) -> Result<Vec<(f32, f32)>> {
+    fn parse_points(s: &str) -> Result<Vec<(f32, f32)>> {
         let pairs = s.split(' ');
         pairs
             .map(|point| point.split(','))

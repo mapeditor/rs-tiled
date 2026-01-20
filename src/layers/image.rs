@@ -1,10 +1,8 @@
 use std::{collections::HashMap, path::Path};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
+    util::{get_attrs, map_wrapper, parse_tag},
     Error, Image, Properties, Result,
 };
 
@@ -21,8 +19,9 @@ pub struct ImageLayerData {
 
 impl ImageLayerData {
     pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
         map_path: &Path,
     ) -> Result<(Self, Properties)> {
         let mut image: Option<Image> = None;
@@ -38,14 +37,15 @@ impl ImageLayerData {
             }
             (repeat_x, repeat_y)
         );
+        buf.clear();
 
-        parse_tag!(parser, "imagelayer", {
+        parse_tag!(xml_reader, buf, "imagelayer", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to)?);
+                image = Some(Image::new(xml_reader, buf, attrs, path_relative_to)?);
                 Ok(())
             },
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
         });

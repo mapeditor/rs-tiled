@@ -1,14 +1,11 @@
 use std::{collections::HashMap, path::Path};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     animation::{parse_animation, Frame},
-    error::Error,
     image::Image,
     layers::ObjectLayerData,
     properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
+    util::{get_attrs, parse_tag},
     ResourceCache, ResourceReader, Result, Tileset,
 };
 
@@ -78,8 +75,9 @@ impl<'tileset> std::ops::Deref for Tile<'tileset> {
 
 impl TileData {
     pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
         path_relative_to: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -97,29 +95,30 @@ impl TileData {
             }
             ((user_type, user_class, probability, x, y, width, height), id)
         );
+        buf.clear();
 
         let user_type = user_type.or(user_class);
         let mut image = Option::None;
         let mut properties = HashMap::new();
         let mut objectgroup = None;
         let mut animation = None;
-        parse_tag!(parser, "tile", {
+        parse_tag!(xml_reader, buf, "tile", {
             "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to)?);
+                image = Some(Image::new(xml_reader, buf, attrs, path_relative_to)?);
                 Ok(())
             },
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
             "objectgroup" => |attrs| {
                 // Tile objects are not allowed within tile object groups, so we can pass None as the
                 // tilesets vector
-                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, None, path_relative_to, reader, cache)?.0);
+                objectgroup = Some(ObjectLayerData::new(xml_reader, buf, attrs, None, None, path_relative_to, reader, cache)?.0);
                 Ok(())
             },
             "animation" => |_| {
-                animation = Some(parse_animation(parser)?);
+                animation = Some(parse_animation(xml_reader, buf)?);
                 Ok(())
             },
         });

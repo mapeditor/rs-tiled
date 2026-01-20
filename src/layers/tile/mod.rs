@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Error, Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset,
+    util::{get_attrs, map_wrapper, parse_tag},
+    Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset,
 };
 
 mod finite;
@@ -95,8 +93,9 @@ pub(crate) enum TileLayerData {
 
 impl TileLayerData {
     pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
         infinite: bool,
         tilesets: &[MapTilesetGid],
     ) -> Result<(Self, Properties)> {
@@ -107,19 +106,20 @@ impl TileLayerData {
             }
             (width, height)
         );
+        buf.clear();
         let mut result = Self::Finite(Default::default());
         let mut properties = HashMap::new();
-        parse_tag!(parser, "layer", {
+        parse_tag!(xml_reader, buf, "layer", {
             "data" => |attrs| {
                 if infinite {
-                    result = Self::Infinite(InfiniteTileLayerData::new(parser, attrs, tilesets)?);
+                    result = Self::Infinite(InfiniteTileLayerData::new(xml_reader, buf, attrs, tilesets)?);
                 } else {
-                    result = Self::Finite(FiniteTileLayerData::new(parser, attrs, width, height, tilesets)?);
+                    result = Self::Finite(FiniteTileLayerData::new(xml_reader, buf, attrs, width, height, tilesets)?);
                 }
                 Ok(())
             },
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
         });

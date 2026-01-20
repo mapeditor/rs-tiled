@@ -1,10 +1,8 @@
 //! Structures related to tile animations.
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::{Error, Result},
-    util::{get_attrs, parse_tag, XmlEventResult},
+    error::Result,
+    util::{get_attrs, parse_tag},
 };
 
 /// A structure describing a [frame] of a [TMX tile animation].
@@ -20,7 +18,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    pub(crate) fn new(attrs: Vec<OwnedAttribute>) -> Result<Frame> {
+    pub(crate) fn new(attrs: quick_xml::events::BytesStart<'_>) -> Result<Frame> {
         let (tile_id, duration) = get_attrs!(
             for v in attrs {
                 "tileid" => tile_id ?= v.parse::<u32>(),
@@ -33,10 +31,12 @@ impl Frame {
 }
 
 pub(crate) fn parse_animation(
-    parser: &mut impl Iterator<Item = XmlEventResult>,
+    xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+    buf: &mut Vec<u8>,
 ) -> Result<Vec<Frame>> {
     let mut animation = Vec::new();
-    parse_tag!(parser, "animation", {
+    buf.clear();
+    parse_tag!(xml_reader, buf, "animation", {
         "frame" => |attrs| {
             animation.push(Frame::new(attrs)?);
             Ok(())

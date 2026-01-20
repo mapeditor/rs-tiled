@@ -8,14 +8,12 @@ use std::{
     sync::Arc,
 };
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::{Error, Result},
+    error::Result,
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
-    util::{get_attrs, parse_tag, XmlEventResult},
+    util::{get_attrs, parse_tag},
     EmbeddedParseResultType, Layer, ResourceCache, ResourceReader,
 };
 
@@ -160,8 +158,9 @@ impl Map {
 
 impl Map {
     pub(crate) fn parse_xml(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
         map_path: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -178,7 +177,7 @@ impl Map {
                 Some("staggeraxis") => stagger_axis ?= v.parse::<StaggerAxis>(),
                 Some("staggerindex") => stagger_index ?= v.parse::<StaggerIndex>(),
                 Some("hexsidelength") => hex_side_length ?= v.parse(),
-                "version" => version = v,
+                "version" => version = v.to_string(),
                 "orientation" => orientation ?= v.parse::<Orientation>(),
                 "width" => width ?= v.parse::<u32>(),
                 "height" => height ?= v.parse::<u32>(),
@@ -187,6 +186,7 @@ impl Map {
             }
             ((colour, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length), (version, orientation, width, height, tile_width, tile_height))
         );
+        buf.clear();
 
         let infinite = infinite.unwrap_or(false);
         let user_type = user_type.or(user_class);
@@ -200,9 +200,9 @@ impl Map {
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
 
-        parse_tag!(parser, "map", {
-            "tileset" => |attrs: Vec<OwnedAttribute>| {
-                let res = Tileset::parse_xml_in_map(parser, &attrs, map_path,  reader, cache)?;
+        parse_tag!(xml_reader, buf, "map", {
+            "tileset" => |attrs| {
+                let res = Tileset::parse_xml_in_map(xml_reader, buf, attrs, map_path, reader, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let tileset = if let Some(ts) = cache.get_tileset(&tileset_path) {
@@ -223,7 +223,8 @@ impl Map {
             },
             "layer" => |attrs| {
                 layers.push(LayerData::new(
-                    parser,
+                    xml_reader,
+                    buf,
                     attrs,
                     LayerTag::Tiles,
                     infinite,
@@ -237,7 +238,8 @@ impl Map {
             },
             "imagelayer" => |attrs| {
                 layers.push(LayerData::new(
-                    parser,
+                    xml_reader,
+                    buf,
                     attrs,
                     LayerTag::Image,
                     infinite,
@@ -251,7 +253,8 @@ impl Map {
             },
             "objectgroup" => |attrs| {
                 layers.push(LayerData::new(
-                    parser,
+                    xml_reader,
+                    buf,
                     attrs,
                     LayerTag::Objects,
                     infinite,
@@ -265,7 +268,8 @@ impl Map {
             },
             "group" => |attrs| {
                 layers.push(LayerData::new(
-                    parser,
+                    xml_reader,
+                    buf,
                     attrs,
                     LayerTag::Group,
                     infinite,
@@ -278,7 +282,7 @@ impl Map {
                 Ok(())
             },
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
         });

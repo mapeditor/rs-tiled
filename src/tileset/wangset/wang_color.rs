@@ -1,11 +1,8 @@
 use std::collections::HashMap;
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::Error,
     properties::{parse_properties, Color, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
+    util::{get_attrs, parse_tag},
     Result, TileId,
 };
 
@@ -26,9 +23,10 @@ pub struct WangColor {
 
 impl WangColor {
     /// Reads data from XML parser to create a WangColor.
-    pub fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new(
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
     ) -> Result<WangColor> {
         // Get common data
         let (name, color, tile, probability) = get_attrs!(
@@ -40,14 +38,15 @@ impl WangColor {
             }
             (name, color, tile, probability)
         );
+        buf.clear();
 
         let tile = if tile >= 0 { Some(tile as u32) } else { None };
 
         // Gather variable data
         let mut properties = HashMap::new();
-        parse_tag!(parser, "wangcolor", {
+        parse_tag!(xml_reader, buf, "wangcolor", {
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
         });

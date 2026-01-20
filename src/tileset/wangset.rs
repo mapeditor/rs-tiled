@@ -1,11 +1,8 @@
 use std::collections::HashMap;
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::Error,
     properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
+    util::{get_attrs, parse_tag},
     Result, TileId,
 };
 
@@ -48,9 +45,10 @@ pub struct WangSet {
 
 impl WangSet {
     /// Reads data from XML parser to create a WangSet.
-    pub fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new(
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
+        attrs: quick_xml::events::BytesStart<'_>,
     ) -> Result<WangSet> {
         // Get common data
         let (name, wang_set_type, tile) = get_attrs!(
@@ -61,6 +59,7 @@ impl WangSet {
             }
             (name, wang_set_type, tile)
         );
+        buf.clear();
 
         let wang_set_type = match wang_set_type.as_str() {
             "corner" => WangSetType::Corner,
@@ -73,19 +72,19 @@ impl WangSet {
         let mut wang_colors = Vec::new();
         let mut wang_tiles = HashMap::new();
         let mut properties = HashMap::new();
-        parse_tag!(parser, "wangset", {
+        parse_tag!(xml_reader, buf, "wangset", {
             "wangcolor" => |attrs| {
-                let color = WangColor::new(parser, attrs)?;
+                let color = WangColor::new(xml_reader, buf, attrs)?;
                 wang_colors.push(color);
                 Ok(())
             },
             "wangtile" => |attrs| {
-                let (id, t) = WangTile::new(parser, attrs)?;
+                let (id, t) = WangTile::new(xml_reader, buf, attrs)?;
                 wang_tiles.insert(id, t);
                 Ok(())
             },
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
         });

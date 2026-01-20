@@ -5,7 +5,7 @@ use crate::{
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Properties},
     util::*,
-    Error, Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
+    Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
 };
 
 /// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -16,7 +16,8 @@ pub struct GroupLayerData {
 
 impl GroupLayerData {
     pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
+        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
+        buf: &mut Vec<u8>,
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
@@ -26,61 +27,70 @@ impl GroupLayerData {
     ) -> Result<(Self, Properties)> {
         let mut properties = HashMap::new();
         let mut layers = Vec::new();
-        parse_tag!(parser, "group", {
+        buf.clear();
+        parse_tag!(xml_reader, buf, "group", {
             "layer" => |attrs| {
                 layers.push(LayerData::new(
-                    parser,
+                    xml_reader,
+                    buf,
                     attrs,
                     LayerTag::Tiles,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),reader,
+                    for_tileset.as_ref().cloned(),
+                    reader,
                     cache
                 )?);
                 Ok(())
             },
             "imagelayer" => |attrs| {
                 layers.push(LayerData::new(
-                    parser,
+                    xml_reader,
+                    buf,
                     attrs,
                     LayerTag::Image,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),reader,
+                    for_tileset.as_ref().cloned(),
+                    reader,
                     cache
                 )?);
                 Ok(())
             },
             "objectgroup" => |attrs| {
                 layers.push(LayerData::new(
-                    parser,
+                    xml_reader,
+                    buf,
                     attrs,
                     LayerTag::Objects,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),reader,
+                    for_tileset.as_ref().cloned(),
+                    reader,
                     cache
                 )?);
                 Ok(())
             },
             "group" => |attrs| {
                 layers.push(LayerData::new(
-                    parser,
+                    xml_reader,
+                    buf,
                     attrs,
                     LayerTag::Group,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),reader,
+                    for_tileset.as_ref().cloned(),
+                    reader,
                     cache
                 )?);
                 Ok(())
             },
             "properties" => |_| {
-                properties = parse_properties(parser)?;
+                properties = parse_properties(xml_reader, buf)?;
                 Ok(())
             },
         });
