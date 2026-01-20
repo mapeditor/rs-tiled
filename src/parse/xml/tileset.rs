@@ -4,7 +4,7 @@ use std::path::Path;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
-use crate::{Error, ResourceCache, ResourceReader, Result, Tileset};
+use crate::{util::XmlElement, Error, ResourceCache, ResourceReader, Result, Tileset};
 
 pub fn parse_tileset(
     path: &Path,
@@ -18,7 +18,6 @@ pub fn parse_tileset(
             err: Box::new(err),
         })?;
     let mut tileset_parser = Reader::from_reader(BufReader::new(file));
-    tileset_parser.expand_empty_elements(true);
     let mut buf = Vec::new();
     let mut event_buf = Vec::new();
     loop {
@@ -27,14 +26,12 @@ pub fn parse_tileset(
             .map_err(Error::XmlDecodingError)?
         {
             Event::Start(e) if e.local_name().as_ref() == b"tileset" => {
-                return Tileset::parse_external_tileset(
-                    &mut tileset_parser,
-                    &mut buf,
-                    e.into_owned(),
-                    path,
-                    reader,
-                    cache,
-                );
+                let elem = XmlElement::new(&mut tileset_parser, &mut buf, e.into_owned(), false);
+                return Tileset::parse_external_tileset(elem, path, reader, cache);
+            }
+            Event::Empty(e) if e.local_name().as_ref() == b"tileset" => {
+                let elem = XmlElement::new(&mut tileset_parser, &mut buf, e.into_owned(), true);
+                return Tileset::parse_external_tileset(elem, path, reader, cache);
             }
             Event::Eof => {
                 return Err(Error::PrematureEnd(

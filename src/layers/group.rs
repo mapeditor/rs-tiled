@@ -15,9 +15,8 @@ pub struct GroupLayerData {
 }
 
 impl GroupLayerData {
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
@@ -27,13 +26,11 @@ impl GroupLayerData {
     ) -> Result<(Self, Properties)> {
         let mut properties = HashMap::new();
         let mut layers = Vec::new();
-        buf.clear();
-        parse_tag!(xml_reader, buf, "group", {
-            "layer" => |attrs| {
+        elem.buf.clear();
+        parse_tag!(&mut elem, {
+            "layer" => |elem| {
                 layers.push(LayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     LayerTag::Tiles,
                     infinite,
                     map_path,
@@ -44,11 +41,9 @@ impl GroupLayerData {
                 )?);
                 Ok(())
             },
-            "imagelayer" => |attrs| {
+            "imagelayer" => |elem| {
                 layers.push(LayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     LayerTag::Image,
                     infinite,
                     map_path,
@@ -59,11 +54,9 @@ impl GroupLayerData {
                 )?);
                 Ok(())
             },
-            "objectgroup" => |attrs| {
+            "objectgroup" => |elem| {
                 layers.push(LayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     LayerTag::Objects,
                     infinite,
                     map_path,
@@ -74,11 +67,9 @@ impl GroupLayerData {
                 )?);
                 Ok(())
             },
-            "group" => |attrs| {
+            "group" => |elem| {
                 layers.push(LayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     LayerTag::Group,
                     infinite,
                     map_path,
@@ -89,8 +80,8 @@ impl GroupLayerData {
                 )?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

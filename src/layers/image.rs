@@ -18,10 +18,8 @@ pub struct ImageLayerData {
 }
 
 impl ImageLayerData {
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
         map_path: &Path,
     ) -> Result<(Self, Properties)> {
         let mut image: Option<Image> = None;
@@ -31,21 +29,21 @@ impl ImageLayerData {
 
         // Parse repeat attributes from the imagelayer tag
         let (repeat_x, repeat_y) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("repeatx") => repeat_x ?= v.parse::<i32>().map(|val| val == 1),
                 Some("repeaty") => repeat_y ?= v.parse::<i32>().map(|val| val == 1),
             }
             (repeat_x, repeat_y)
         );
-        buf.clear();
+        elem.buf.clear();
 
-        parse_tag!(xml_reader, buf, "imagelayer", {
-            "image" => |attrs| {
-                image = Some(Image::new(xml_reader, buf, attrs, path_relative_to)?);
+        parse_tag!(&mut elem, {
+            "image" => |elem| {
+                image = Some(Image::new(elem, path_relative_to)?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

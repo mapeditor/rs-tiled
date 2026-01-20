@@ -45,21 +45,19 @@ pub struct WangSet {
 
 impl WangSet {
     /// Reads data from XML parser to create a WangSet.
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
     ) -> Result<WangSet> {
         // Get common data
         let (name, wang_set_type, tile) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "name" => name ?= v.parse::<String>(),
                 "type" => wang_set_type ?= v.parse::<String>(),
                 "tile" => tile ?= v.parse::<i64>(),
             }
             (name, wang_set_type, tile)
         );
-        buf.clear();
+        elem.buf.clear();
 
         let wang_set_type = match wang_set_type.as_str() {
             "corner" => WangSetType::Corner,
@@ -72,19 +70,19 @@ impl WangSet {
         let mut wang_colors = Vec::new();
         let mut wang_tiles = HashMap::new();
         let mut properties = HashMap::new();
-        parse_tag!(xml_reader, buf, "wangset", {
-            "wangcolor" => |attrs| {
-                let color = WangColor::new(xml_reader, buf, attrs)?;
+        parse_tag!(&mut elem, {
+            "wangcolor" => |elem| {
+                let color = WangColor::new(elem)?;
                 wang_colors.push(color);
                 Ok(())
             },
-            "wangtile" => |attrs| {
-                let (id, t) = WangTile::new(xml_reader, buf, attrs)?;
+            "wangtile" => |elem| {
+                let (id, t) = WangTile::new(elem)?;
                 wang_tiles.insert(id, t);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

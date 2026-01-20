@@ -137,16 +137,15 @@ impl PropertyValue {
 /// A custom property container.
 pub type Properties = HashMap<String, PropertyValue>;
 
-pub(crate) fn parse_properties(
-    xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-    buf: &mut Vec<u8>,
+pub(crate) fn parse_properties<R: std::io::BufRead>(
+    mut elem: crate::util::XmlElement<'_, R>,
 ) -> Result<Properties> {
     let mut p = HashMap::new();
-    buf.clear();
-    parse_tag!(xml_reader, buf, "properties", {
-        "property" => |attrs: quick_xml::events::BytesStart<'_>| {
+    elem.buf.clear();
+    parse_tag!(&mut elem, {
+        "property" => |mut elem: crate::util::XmlElement<'_, R>| {
             let (t, v_attr, k, p_t) = get_attrs!(
-                for attr in attrs {
+                for attr in (elem.attrs) {
                     Some("type") => obj_type = attr.to_string(),
                     Some("value") => value = attr.to_string(),
                     Some("propertytype") => propertytype = attr.to_string(),
@@ -154,13 +153,13 @@ pub(crate) fn parse_properties(
                 }
                 (obj_type, value, name, propertytype)
             );
-            buf.clear();
+            elem.buf.clear();
             let t = t.unwrap_or_else(|| "string".to_owned());
             if t == "class" {
                 let mut properties = HashMap::new();
-                parse_tag!(xml_reader, buf, "property", {
-                    "properties" => |_| {
-                        properties = parse_properties(xml_reader, buf)?;
+                parse_tag!(&mut elem, {
+                    "properties" => |elem| {
+                        properties = parse_properties(elem)?;
                         Ok(())
                     },
                 });
@@ -171,31 +170,46 @@ pub(crate) fn parse_properties(
                 return Ok(());
             }
 
+            let mut consumed_end = false;
             let v: String = match v_attr {
                 Some(val) => val,
                 None => {
+                    if elem.is_empty {
+                        return Err(Error::MalformedAttributes(format!(
+                            "property '{}' is missing a value",
+                            k
+                        )));
+                    }
                     // if the "value" attribute was missing, might be a multiline string
+                    let mut text = None;
                     loop {
-                        match xml_reader
-                            .read_event_into(buf)
+                        match elem
+                            .reader
+                            .read_event_into(elem.buf)
                             .map_err(Error::XmlDecodingError)?
                         {
                             Event::Text(e) => {
-                                let text = e.unescape().map_err(Error::XmlDecodingError)?.into_owned();
-                                buf.clear();
-                                break text;
+                                text = Some(
+                                    e.unescape()
+                                        .map_err(Error::XmlDecodingError)?
+                                        .into_owned(),
+                                );
+                                elem.buf.clear();
                             }
                             Event::CData(e) => {
-                                let text = String::from_utf8_lossy(e.as_ref()).into_owned();
-                                buf.clear();
-                                break text;
+                                text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
+                                elem.buf.clear();
                             }
-                            Event::End(ref e) if e.local_name().as_ref() == b"property" => {
-                                buf.clear();
-                                return Err(Error::MalformedAttributes(format!(
-                                    "property '{}' is missing a value",
-                                    k
-                                )));
+                            Event::End(_) => {
+                                elem.buf.clear();
+                                consumed_end = true;
+                                let text = text.ok_or_else(|| {
+                                    Error::MalformedAttributes(format!(
+                                        "property '{}' is missing a value",
+                                        k
+                                    ))
+                                })?;
+                                break text;
                             }
                             Event::Eof => {
                                 return Err(Error::PrematureEnd(
@@ -203,13 +217,16 @@ pub(crate) fn parse_properties(
                                 ));
                             }
                             _ => {
-                                buf.clear();
+                                elem.buf.clear();
                             }
                         }
                     }
                 }
             };
 
+            if !consumed_end {
+                parse_tag!(&mut elem, {});
+            }
             p.insert(k, PropertyValue::new(t, v)?);
             Ok(())
         },

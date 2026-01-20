@@ -157,10 +157,8 @@ impl Map {
 }
 
 impl Map {
-    pub(crate) fn parse_xml(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn parse_xml<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
         map_path: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -169,7 +167,7 @@ impl Map {
             (c, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length),
             (v, o, w, h, tw, th),
         ) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("backgroundcolor") => colour ?= v.parse(),
                 Some("infinite") => infinite = v == "1",
                 Some("type") => user_type ?= v.parse(),
@@ -186,7 +184,7 @@ impl Map {
             }
             ((colour, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length), (version, orientation, width, height, tile_width, tile_height))
         );
-        buf.clear();
+        elem.buf.clear();
 
         let infinite = infinite.unwrap_or(false);
         let user_type = user_type.or(user_class);
@@ -200,9 +198,9 @@ impl Map {
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
 
-        parse_tag!(xml_reader, buf, "map", {
-            "tileset" => |attrs| {
-                let res = Tileset::parse_xml_in_map(xml_reader, buf, attrs, map_path, reader, cache)?;
+        parse_tag!(&mut elem, {
+            "tileset" => |elem| {
+                let res = Tileset::parse_xml_in_map(elem, map_path, reader, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let tileset = if let Some(ts) = cache.get_tileset(&tileset_path) {
@@ -221,11 +219,9 @@ impl Map {
                 };
                 Ok(())
             },
-            "layer" => |attrs| {
+            "layer" => |elem| {
                 layers.push(LayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     LayerTag::Tiles,
                     infinite,
                     map_path,
@@ -236,11 +232,9 @@ impl Map {
                 )?);
                 Ok(())
             },
-            "imagelayer" => |attrs| {
+            "imagelayer" => |elem| {
                 layers.push(LayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     LayerTag::Image,
                     infinite,
                     map_path,
@@ -251,11 +245,9 @@ impl Map {
                 )?);
                 Ok(())
             },
-            "objectgroup" => |attrs| {
+            "objectgroup" => |elem| {
                 layers.push(LayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     LayerTag::Objects,
                     infinite,
                     map_path,
@@ -266,11 +258,9 @@ impl Map {
                 )?);
                 Ok(())
             },
-            "group" => |attrs| {
+            "group" => |elem| {
                 layers.push(LayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     LayerTag::Group,
                     infinite,
                     map_path,
@@ -281,8 +271,8 @@ impl Map {
                 )?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

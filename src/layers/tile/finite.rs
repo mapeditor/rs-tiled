@@ -36,24 +36,22 @@ impl FiniteTileLayerData {
         self.height
     }
 
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         width: u32,
         height: u32,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("encoding") => encoding = v.to_string(),
                 Some("compression") => compression = v.to_string(),
             }
             (encoding, compression)
         );
-        buf.clear();
+        elem.buf.clear();
 
-        let tiles = parse_data_line(e, c, xml_reader, buf, tilesets)?;
+        let tiles = parse_data_line(e, c, elem, tilesets)?;
 
         Ok(Self {
             width,

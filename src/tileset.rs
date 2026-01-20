@@ -115,16 +115,14 @@ impl Tileset {
 }
 
 impl Tileset {
-    pub(crate) fn parse_xml_in_map(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn parse_xml_in_map<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         path: &Path, // Template or Map file
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
-        let attrs_clone = attrs.clone();
-        Tileset::parse_xml_embedded(xml_reader, buf, attrs_clone, path, reader, cache).or_else(|err| {
+        let attrs = elem.attrs.clone();
+        Tileset::parse_xml_embedded(elem, attrs.clone(), path, reader, cache).or_else(|err| {
             if matches!(err, Error::MalformedAttributes(_)) {
                 Tileset::parse_xml_reference(attrs, path)
             } else {
@@ -133,10 +131,9 @@ impl Tileset {
         })
     }
 
-    fn parse_xml_embedded(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    fn parse_xml_embedded<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
+        attrs: quick_xml::events::BytesStart<'static>,
         path: &Path, // Template or Map file
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -145,7 +142,7 @@ impl Tileset {
             (spacing, margin, columns, name, user_type, user_class),
             (tilecount, first_gid, tile_width, tile_height),
         ) = get_attrs!(
-           for v in attrs {
+           for v in (attrs) {
             Some("spacing") => spacing ?= v.parse(),
             Some("margin") => margin ?= v.parse(),
             Some("columns") => columns ?= v.parse(),
@@ -160,13 +157,12 @@ impl Tileset {
            }
            ((spacing, margin, columns, name, user_type, user_class), (tilecount, first_gid, tile_width, tile_height))
         );
-        buf.clear();
+        elem.buf.clear();
 
         let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
 
         Self::finish_parsing_xml(
-            xml_reader,
-            buf,
+            elem,
             path.to_owned(),
             TilesetProperties {
                 spacing,
@@ -189,11 +185,11 @@ impl Tileset {
     }
 
     fn parse_xml_reference(
-        attrs: quick_xml::events::BytesStart<'_>,
+        attrs: quick_xml::events::BytesStart<'static>,
         map_path: &Path,
     ) -> Result<EmbeddedParseResult> {
         let (first_gid, source) = get_attrs!(
-            for v in attrs {
+            for v in (attrs) {
                 "firstgid" => first_gid ?= v.parse::<u32>().map(Gid),
                 "source" => source = v.to_string(),
             }
@@ -208,10 +204,8 @@ impl Tileset {
         })
     }
 
-    pub(crate) fn parse_external_tileset(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn parse_external_tileset<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         path: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -220,7 +214,7 @@ impl Tileset {
             (spacing, margin, columns, name, user_type, user_class),
             (tilecount, tile_width, tile_height),
         ) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("spacing") => spacing ?= v.parse(),
                 Some("margin") => margin ?= v.parse(),
                 Some("columns") => columns ?= v.parse(),
@@ -234,13 +228,12 @@ impl Tileset {
             }
             ((spacing, margin, columns, name, user_type, user_class), (tilecount, tile_width, tile_height))
         );
-        buf.clear();
+        elem.buf.clear();
 
         let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
 
         Self::finish_parsing_xml(
-            xml_reader,
-            buf,
+            elem,
             path.to_owned(),
             TilesetProperties {
                 spacing,
@@ -258,9 +251,8 @@ impl Tileset {
         )
     }
 
-    fn finish_parsing_xml(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
+    fn finish_parsing_xml<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
         container_path: PathBuf,
         prop: TilesetProperties,
         reader: &mut impl ResourceReader,
@@ -272,26 +264,26 @@ impl Tileset {
         let mut wang_sets = Vec::new();
         let mut offset = (0i32, 0i32);
 
-        parse_tag!(xml_reader, buf, "tileset", {
-            "image" => |attrs| {
-                image = Some(Image::new(xml_reader, buf, attrs, &prop.root_path)?);
+        parse_tag!(&mut elem, {
+            "image" => |elem| {
+                image = Some(Image::new(elem, &prop.root_path)?);
                 Ok(())
             },
-            "tileoffset" => |attrs| {
-                offset = parse_tileoffset(attrs)?;
+            "tileoffset" => |elem| {
+                offset = parse_tileoffset(elem)?;
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
-            "tile" => |attrs| {
-                let (id, tile) = TileData::new(xml_reader, buf, attrs, &prop.root_path, reader, cache)?;
+            "tile" => |elem| {
+                let (id, tile) = TileData::new(elem, &prop.root_path, reader, cache)?;
                 tiles.insert(id, tile);
                 Ok(())
             },
-            "wangset" => |attrs| {
-                let set = WangSet::new(xml_reader, buf, attrs)?;
+            "wangset" => |elem| {
+                let set = WangSet::new(elem)?;
                 wang_sets.push(set);
                 Ok(())
             },
@@ -356,12 +348,16 @@ impl Tileset {
 }
 
 /// Parse the optional <tileoffset x=... y=.../> tag.
-fn parse_tileoffset(attrs: quick_xml::events::BytesStart<'_>) -> Result<(i32, i32)> {
-    Ok(get_attrs!(
-        for v in attrs {
+fn parse_tileoffset<R: std::io::BufRead>(
+    mut elem: crate::util::XmlElement<'_, R>,
+) -> Result<(i32, i32)> {
+    let offset = get_attrs!(
+        for v in (elem.attrs) {
             "x" => offset_x ?= v.parse::<i32>(),
             "y" => offset_y ?= v.parse::<i32>(),
         }
         (offset_x, offset_y)
-    ))
+    );
+    parse_tag!(&mut elem, {});
+    Ok(offset)
 }

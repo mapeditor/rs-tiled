@@ -5,25 +5,40 @@ use quick_xml::events::Event;
 
 use crate::{CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result};
 
-pub(crate) fn parse_data_line(
+pub(crate) fn parse_data_line<R: std::io::BufRead>(
     encoding: Option<String>,
     compression: Option<String>,
-    reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-    buf: &mut Vec<u8>,
+    mut elem: crate::util::XmlElement<'_, R>,
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>> {
+    if elem.is_empty {
+        return match (encoding.as_deref(), compression.as_deref()) {
+            (Some("csv"), None)
+            | (Some("base64"), None)
+            | (Some("base64"), Some("zlib"))
+            | (Some("base64"), Some("gzip")) => Ok(Vec::new()),
+            #[cfg(feature = "zstd")]
+            (Some("base64"), Some("zstd")) => Ok(Vec::new()),
+            _ => Err(Error::InvalidEncodingFormat {
+                encoding,
+                compression,
+            }),
+        };
+    }
     match (encoding.as_deref(), compression.as_deref()) {
-        (Some("csv"), None) => decode_csv(reader, buf, tilesets),
+        (Some("csv"), None) => decode_csv(&mut elem, tilesets),
 
-        (Some("base64"), None) => parse_base64(reader, buf).map(|v| convert_to_tiles(&v, tilesets)),
-        (Some("base64"), Some("zlib")) => parse_base64(reader, buf)
+        (Some("base64"), None) => {
+            parse_base64(&mut elem).map(|v| convert_to_tiles(&v, tilesets))
+        }
+        (Some("base64"), Some("zlib")) => parse_base64(&mut elem)
             .and_then(|data| process_decoder(Ok(flate2::bufread::ZlibDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
-        (Some("base64"), Some("gzip")) => parse_base64(reader, buf)
+        (Some("base64"), Some("gzip")) => parse_base64(&mut elem)
             .and_then(|data| process_decoder(Ok(flate2::bufread::GzDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
         #[cfg(feature = "zstd")]
-        (Some("base64"), Some("zstd")) => parse_base64(reader, buf)
+        (Some("base64"), Some("zstd")) => parse_base64(&mut elem)
             .and_then(|data| process_decoder(zstd::stream::read::Decoder::with_buffer(&data[..])))
             .map(|v| convert_to_tiles(&v, tilesets)),
 
@@ -34,43 +49,48 @@ pub(crate) fn parse_data_line(
     }
 }
 
-fn parse_base64(
-    reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-    buf: &mut Vec<u8>,
+fn parse_base64<R: std::io::BufRead>(
+    elem: &mut crate::util::XmlElement<'_, R>,
 ) -> Result<Vec<u8>> {
+    let mut text = None;
     loop {
-        match reader.read_event_into(buf).map_err(Error::XmlDecodingError)? {
+        match elem
+            .reader
+            .read_event_into(elem.buf)
+            .map_err(Error::XmlDecodingError)?
+        {
             Event::Text(e) => {
-                let text = e.unescape().map_err(Error::XmlDecodingError)?.into_owned();
-                buf.clear();
-                return base64::engine::GeneralPurpose::new(
-                    &base64::alphabet::STANDARD,
-                    base64::engine::general_purpose::PAD,
-                )
-                .decode(text.trim().as_bytes())
-                .map_err(Error::Base64DecodingError);
+                text = Some(e.unescape().map_err(Error::XmlDecodingError)?.into_owned());
+                elem.buf.clear();
             }
             Event::CData(e) => {
-                let text = String::from_utf8_lossy(e.as_ref()).into_owned();
-                buf.clear();
-                return base64::engine::GeneralPurpose::new(
-                    &base64::alphabet::STANDARD,
-                    base64::engine::general_purpose::PAD,
-                )
-                .decode(text.trim().as_bytes())
-                .map_err(Error::Base64DecodingError);
+                text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
+                elem.buf.clear();
             }
-            Event::End(ref e) if e.local_name().as_ref() == b"data" => {
-                buf.clear();
-                return Ok(Vec::new());
+            Event::End(_) => {
+                elem.buf.clear();
+                break;
             }
             Event::Eof => {
                 return Err(Error::PrematureEnd("Ran out of XML data".to_owned()));
             }
-            _ => {}
+            _ => {
+                elem.buf.clear();
+            }
         }
-        buf.clear();
     }
+
+    let text = match text {
+        Some(text) => text,
+        None => return Ok(Vec::new()),
+    };
+
+    base64::engine::GeneralPurpose::new(
+        &base64::alphabet::STANDARD,
+        base64::engine::general_purpose::PAD,
+    )
+    .decode(text.trim().as_bytes())
+    .map_err(Error::Base64DecodingError)
 }
 
 fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
@@ -83,56 +103,55 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
         .map_err(Error::DecompressingError)
 }
 
-fn decode_csv(
-    reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-    buf: &mut Vec<u8>,
+fn decode_csv<R: std::io::BufRead>(
+    elem: &mut crate::util::XmlElement<'_, R>,
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>> {
+    let mut text = None;
     loop {
-        match reader.read_event_into(buf).map_err(Error::XmlDecodingError)? {
+        match elem
+            .reader
+            .read_event_into(elem.buf)
+            .map_err(Error::XmlDecodingError)?
+        {
             Event::Text(e) => {
-                let text = e.unescape().map_err(Error::XmlDecodingError)?.into_owned();
-                buf.clear();
-                let mut tiles = Vec::new();
-                for v in text.split(',') {
-                    match v.trim().parse() {
-                        Ok(bits) => tiles.push(LayerTileData::from_bits(bits, tilesets)),
-                        Err(e) => {
-                            return Err(Error::CsvDecodingError(
-                                CsvDecodingError::TileDataParseError(e),
-                            ))
-                        }
-                    }
-                }
-                return Ok(tiles);
+                text = Some(e.unescape().map_err(Error::XmlDecodingError)?.into_owned());
+                elem.buf.clear();
             }
             Event::CData(e) => {
-                let text = String::from_utf8_lossy(e.as_ref()).into_owned();
-                buf.clear();
-                let mut tiles = Vec::new();
-                for v in text.split(',') {
-                    match v.trim().parse() {
-                        Ok(bits) => tiles.push(LayerTileData::from_bits(bits, tilesets)),
-                        Err(e) => {
-                            return Err(Error::CsvDecodingError(
-                                CsvDecodingError::TileDataParseError(e),
-                            ))
-                        }
-                    }
-                }
-                return Ok(tiles);
+                text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
+                elem.buf.clear();
             }
-            Event::End(ref e) if e.local_name().as_ref() == b"data" => {
-                buf.clear();
-                return Ok(Vec::new());
+            Event::End(_) => {
+                elem.buf.clear();
+                break;
             }
             Event::Eof => {
                 return Err(Error::PrematureEnd("Ran out of XML data".to_owned()));
             }
-            _ => {}
+            _ => {
+                elem.buf.clear();
+            }
         }
-        buf.clear();
     }
+
+    let text = match text {
+        Some(text) => text,
+        None => return Ok(Vec::new()),
+    };
+
+    let mut tiles = Vec::new();
+    for v in text.split(',') {
+        match v.trim().parse() {
+            Ok(bits) => tiles.push(LayerTileData::from_bits(bits, tilesets)),
+            Err(e) => {
+                return Err(Error::CsvDecodingError(
+                    CsvDecodingError::TileDataParseError(e),
+                ))
+            }
+        }
+    }
+    Ok(tiles)
 }
 
 fn convert_to_tiles(data: &[u8], tilesets: &[MapTilesetGid]) -> Vec<Option<LayerTileData>> {

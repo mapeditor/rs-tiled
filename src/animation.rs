@@ -2,7 +2,7 @@
 
 use crate::{
     error::Result,
-    util::{get_attrs, parse_tag},
+    util::{get_attrs, parse_tag, XmlElement},
 };
 
 /// A structure describing a [frame] of a [TMX tile animation].
@@ -18,27 +18,27 @@ pub struct Frame {
 }
 
 impl Frame {
-    pub(crate) fn new(attrs: quick_xml::events::BytesStart<'_>) -> Result<Frame> {
+    pub(crate) fn new<R: std::io::BufRead>(mut elem: XmlElement<'_, R>) -> Result<Frame> {
         let (tile_id, duration) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "tileid" => tile_id ?= v.parse::<u32>(),
                 "duration" => duration ?= v.parse::<u32>(),
             }
             (tile_id, duration)
         );
+        parse_tag!(&mut elem, {});
         Ok(Frame { tile_id, duration })
     }
 }
 
-pub(crate) fn parse_animation(
-    xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-    buf: &mut Vec<u8>,
+pub(crate) fn parse_animation<R: std::io::BufRead>(
+    mut elem: XmlElement<'_, R>,
 ) -> Result<Vec<Frame>> {
     let mut animation = Vec::new();
-    buf.clear();
-    parse_tag!(xml_reader, buf, "animation", {
-        "frame" => |attrs| {
-            animation.push(Frame::new(attrs)?);
+    elem.buf.clear();
+    parse_tag!(&mut elem, {
+        "frame" => |elem| {
+            animation.push(Frame::new(elem)?);
             Ok(())
         },
     });

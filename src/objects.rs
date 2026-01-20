@@ -217,10 +217,8 @@ impl ObjectData {
 impl ObjectData {
     /// If it is known that the object has no tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // Base path is a directory to which all other files are relative to
@@ -229,7 +227,7 @@ impl ObjectData {
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
         let (id, tile, mut n, mut t, c, mut w, mut h, mut v, mut r, template, x, y) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse::<u32>(),
                 Some("name") => name ?= v.parse(),
@@ -245,7 +243,7 @@ impl ObjectData {
             }
             (id, tile, name, user_type, user_class, width, height, visible, rotation, template, x, y)
         );
-        buf.clear();
+        elem.buf.clear();
         let x = x.unwrap_or(0.);
         let y = y.unwrap_or(0.);
         let mut tile = tile.and_then(|bits| {
@@ -298,32 +296,34 @@ impl ObjectData {
         let mut shape = None;
         let mut properties = HashMap::new();
 
-        parse_tag!(xml_reader, buf, "object", {
-            "ellipse" => |_| {
+        parse_tag!(&mut elem, {
+            "ellipse" => |mut elem: crate::util::XmlElement<'_, R>| {
                 shape = Some(ObjectShape::Ellipse {
                     width,
                     height,
                 });
+                parse_tag!(&mut elem, {});
                 Ok(())
             },
-            "polyline" => |attrs| {
-                shape = Some(ObjectData::new_polyline(attrs)?);
+            "polyline" => |elem| {
+                shape = Some(ObjectData::new_polyline(elem)?);
                 Ok(())
             },
-            "polygon" => |attrs| {
-                shape = Some(ObjectData::new_polygon(attrs)?);
+            "polygon" => |elem| {
+                shape = Some(ObjectData::new_polygon(elem)?);
                 Ok(())
             },
-            "point" => |_| {
+            "point" => |mut elem: crate::util::XmlElement<'_, R>| {
                 shape = Some(ObjectShape::Point(x, y));
+                parse_tag!(&mut elem, {});
                 Ok(())
             },
-            "text" => |attrs| {
-                shape = Some(ObjectData::new_text(xml_reader, buf, attrs, width, height)?);
+            "text" => |elem| {
+                shape = Some(ObjectData::new_text(elem, width, height)?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });
@@ -398,33 +398,42 @@ impl ObjectData {
 }
 
 impl ObjectData {
-    fn new_polyline(attrs: quick_xml::events::BytesStart<'_>) -> Result<ObjectShape> {
+    fn new_polyline<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
+    ) -> Result<ObjectShape> {
         let points = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "points" => points ?= ObjectData::parse_points(v),
             }
             points
         );
+        parse_tag!(&mut elem, {});
         Ok(ObjectShape::Polyline { points })
     }
 
-    fn new_polygon(attrs: quick_xml::events::BytesStart<'_>) -> Result<ObjectShape> {
+    fn new_polygon<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
+    ) -> Result<ObjectShape> {
         let points = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "points" => points ?= ObjectData::parse_points(v),
             }
             points
         );
+        parse_tag!(&mut elem, {});
         Ok(ObjectShape::Polygon { points })
     }
 
-    fn new_text(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    fn new_text<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         width: f32,
         height: f32,
     ) -> Result<ObjectShape> {
+        if elem.is_empty {
+            return Err(Error::InvalidObjectData {
+                description: "Text attribute contained no content".into(),
+            });
+        }
         let (
             font_family,
             pixel_size,
@@ -438,7 +447,7 @@ impl ObjectData {
             halign,
             valign,
         ) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("fontfamily") => font_family = v.to_string(),
                 Some("pixelsize") => pixel_size ?= v.parse(),
                 Some("wrap") => wrap ?= v.parse(),
@@ -479,7 +488,7 @@ impl ObjectData {
                 valign,
             )
         );
-        buf.clear();
+        elem.buf.clear();
         let font_family = font_family.unwrap_or_else(|| "sans-serif".to_string());
         let pixel_size = pixel_size.unwrap_or(16);
         let color = color.unwrap_or(Color {
@@ -496,26 +505,28 @@ impl ObjectData {
         let kerning = kerning.map_or(true, |k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
-        let contents = loop {
-            match xml_reader
-                .read_event_into(buf)
+        let mut contents = None;
+        loop {
+            match elem
+                .reader
+                .read_event_into(elem.buf)
                 .map_err(Error::XmlDecodingError)?
             {
                 quick_xml::events::Event::Text(e) => {
-                    let text = e.unescape().map_err(Error::XmlDecodingError)?.into_owned();
-                    buf.clear();
-                    break text;
+                    contents = Some(
+                        e.unescape()
+                            .map_err(Error::XmlDecodingError)?
+                            .into_owned(),
+                    );
+                    elem.buf.clear();
                 }
                 quick_xml::events::Event::CData(e) => {
-                    let text = String::from_utf8_lossy(e.as_ref()).into_owned();
-                    buf.clear();
-                    break text;
+                    contents = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
+                    elem.buf.clear();
                 }
-                quick_xml::events::Event::End(ref e) if e.local_name().as_ref() == b"text" => {
-                    buf.clear();
-                    return Err(Error::InvalidObjectData {
-                        description: "Text attribute contained no content".into(),
-                    });
+                quick_xml::events::Event::End(_) => {
+                    elem.buf.clear();
+                    break;
                 }
                 quick_xml::events::Event::Eof => {
                     return Err(Error::PrematureEnd(
@@ -523,10 +534,13 @@ impl ObjectData {
                     ));
                 }
                 _ => {
-                    buf.clear();
+                    elem.buf.clear();
                 }
             }
-        };
+        }
+        let contents = contents.ok_or(Error::InvalidObjectData {
+            description: "Text attribute contained no content".into(),
+        })?;
 
         Ok(ObjectShape::Text {
             font_family,

@@ -18,10 +18,8 @@ pub struct ObjectLayerData {
 impl ObjectLayerData {
     /// If it is known that there are no objects with tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // path_relative_to is a directory to which all other files are relative to
@@ -30,21 +28,21 @@ impl ObjectLayerData {
         cache: &mut impl ResourceCache,
     ) -> Result<(ObjectLayerData, Properties)> {
         let c = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("color") => color ?= v.parse(),
             }
             color
         );
-        buf.clear();
+        elem.buf.clear();
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
-        parse_tag!(xml_reader, buf, "objectgroup", {
-            "object" => |attrs| {
-                objects.push(ObjectData::new(xml_reader, buf, attrs, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
+        parse_tag!(&mut elem, {
+            "object" => |elem| {
+                objects.push(ObjectData::new(elem, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

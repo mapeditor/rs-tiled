@@ -20,25 +20,23 @@ impl std::fmt::Debug for InfiniteTileLayerData {
 }
 
 impl InfiniteTileLayerData {
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("encoding") => encoding = v.to_string(),
                 Some("compression") => compression = v.to_string(),
             }
             (encoding, compression)
         );
-        buf.clear();
+        elem.buf.clear();
 
         let mut chunks = HashMap::<(i32, i32), ChunkData>::new();
-        parse_tag!(xml_reader, buf, "data", {
-            "chunk" => |attrs| {
-                let chunk = InternalChunk::new(xml_reader, buf, attrs, e.clone(), c.clone(), tilesets)?;
+        parse_tag!(&mut elem, {
+            "chunk" => |elem| {
+                let chunk = InternalChunk::new(elem, e.clone(), c.clone(), tilesets)?;
                 for x in chunk.x..chunk.x + chunk.width as i32 {
                     for y in chunk.y..chunk.y + chunk.height as i32 {
                         let chunk_pos = ChunkData::tile_to_chunk_pos(x, y);
@@ -184,16 +182,14 @@ struct InternalChunk {
 }
 
 impl InternalChunk {
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         encoding: Option<String>,
         compression: Option<String>,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (x, y, width, height) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "x" => x ?= v.parse::<i32>(),
                 "y" => y ?= v.parse::<i32>(),
                 "width" => width ?= v.parse::<u32>(),
@@ -201,9 +197,9 @@ impl InternalChunk {
             }
             (x, y, width, height)
         );
-        buf.clear();
+        elem.buf.clear();
 
-        let tiles = parse_data_line(encoding, compression, xml_reader, buf, tilesets)?;
+        let tiles = parse_data_line(encoding, compression, elem, tilesets)?;
 
         Ok(InternalChunk {
             x,

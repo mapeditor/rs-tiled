@@ -23,14 +23,12 @@ pub struct WangColor {
 
 impl WangColor {
     /// Reads data from XML parser to create a WangColor.
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
     ) -> Result<WangColor> {
         // Get common data
         let (name, color, tile, probability) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "name" => name ?= v.parse::<String>(),
                 "color" => color ?= v.parse(),
                 "tile" => tile ?= v.parse::<i64>(),
@@ -38,15 +36,15 @@ impl WangColor {
             }
             (name, color, tile, probability)
         );
-        buf.clear();
+        elem.buf.clear();
 
         let tile = if tile >= 0 { Some(tile as u32) } else { None };
 
         // Gather variable data
         let mut properties = HashMap::new();
-        parse_tag!(xml_reader, buf, "wangcolor", {
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+        parse_tag!(&mut elem, {
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

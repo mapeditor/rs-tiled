@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     error::Error,
-    util::get_attrs,
+    util::{get_attrs, parse_tag},
     Result, TileId,
 };
 
@@ -42,20 +42,19 @@ pub struct WangTile {
 
 impl WangTile {
     /// Reads data from XML parser to create a WangTile.
-    pub(crate) fn new(
-        _reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        _buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
     ) -> Result<(TileId, WangTile)> {
         // Get common data
         let (tile_id, wang_id) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "tileid" => tile_id ?= v.parse::<u32>(),
                 "wangid" => wang_id ?= v.parse(),
             }
             (tile_id, wang_id)
         );
 
+        parse_tag!(&mut elem, {});
         Ok((tile_id, WangTile { wang_id }))
     }
 }

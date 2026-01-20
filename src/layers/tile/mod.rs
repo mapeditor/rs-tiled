@@ -92,34 +92,32 @@ pub(crate) enum TileLayerData {
 }
 
 impl TileLayerData {
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        mut elem: crate::util::XmlElement<'_, R>,
         infinite: bool,
         tilesets: &[MapTilesetGid],
     ) -> Result<(Self, Properties)> {
         let (width, height) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "width" => width ?= v.parse::<u32>(),
                 "height" => height ?= v.parse::<u32>(),
             }
             (width, height)
         );
-        buf.clear();
+        elem.buf.clear();
         let mut result = Self::Finite(Default::default());
         let mut properties = HashMap::new();
-        parse_tag!(xml_reader, buf, "layer", {
-            "data" => |attrs| {
+        parse_tag!(&mut elem, {
+            "data" => |elem| {
                 if infinite {
-                    result = Self::Infinite(InfiniteTileLayerData::new(xml_reader, buf, attrs, tilesets)?);
+                    result = Self::Infinite(InfiniteTileLayerData::new(elem, tilesets)?);
                 } else {
-                    result = Self::Finite(FiniteTileLayerData::new(xml_reader, buf, attrs, width, height, tilesets)?);
+                    result = Self::Finite(FiniteTileLayerData::new(elem, width, height, tilesets)?);
                 }
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(xml_reader, buf)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

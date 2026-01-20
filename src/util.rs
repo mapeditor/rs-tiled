@@ -4,14 +4,15 @@
 /// The syntax is:
 /// ```ignore
 /// get_attrs!(
-///     for $attr in $attributes {
+///     for $attr in ($attributes) {
 ///         $($branch),*
 ///     }
 ///     $expression_to_return
 /// )
 /// ```
 /// Where `$attributes` is anything that exposes `attributes()` for XML element attributes,
-/// and `$attr` is the value of the attribute (a &str) going to be used in each branch.
+/// and `$attr` is the value of the attribute (a &str) going to be used in each branch. The
+/// `$attributes` expression must be parenthesized to satisfy macro parsing.
 ///
 /// Each branch indicates a variable to be set once a certain attribute is found.
 /// Its syntax is as follows:
@@ -21,16 +22,16 @@
 ///
 /// For instance:
 /// ```ignore
-/// "source" => source = v,
+/// "source" => source = v.to_string(),
 /// ```
-/// The variable set has an inferred type `T`. In this case, `source` is inferred to be a `String`,
-/// and `$attr` has been named `v`.
+/// The variable set has an inferred type `T`. In this case, `source` is inferred to be a `String`
+/// because we call `to_string()`, and `$attr` has been named `v`.
 ///
 /// If `Some` encapsulates the attribute name (like so: `Some("attribute name")`) then the attribute
 /// is meant to be optional, which will make the variable an `Option<T>` rather than `T`. Even if it
 /// is technically an Option, the assignment is still done *as if it was `T`*, for instance:
 /// ```ignore
-/// Some("name") => name = v,
+/// Some("name") => name = v.to_string(),
 /// ```
 ///
 /// Finally, branches can also use `?=` instead of `=`, which will make them accept a `Result<T, E>`
@@ -42,7 +43,7 @@
 /// Some("spacing") => spacing ?= v.parse(),
 /// Some("margin") => margin ?= v.parse(),
 /// Some("columns") => columns ?= v.parse(),
-/// Some("name") => name = v,
+/// Some("name") => name = v.to_string(),
 ///
 /// "tilecount" => tilecount ?= v.parse::<u32>(),
 /// "tilewidth" => tile_width ?= v.parse::<u32>(),
@@ -55,10 +56,10 @@
 /// ## Example
 /// ```ignore
 /// let ((c, infinite), (v, o, w, h, tw, th)) = get_attrs!(
-///     for v in attrs {
+///     for v in (attrs) {
 ///         Some("backgroundcolor") => colour ?= v.parse(),
 ///         Some("infinite") => infinite = v == "1",
-///         "version" => version = v,
+///         "version" => version = v.to_string(),
 ///         "orientation" => orientation ?= v.parse::<Orientation>(),
 ///         "width" => width ?= v.parse::<u32>(),
 ///         "height" => height ?= v.parse::<u32>(),
@@ -70,7 +71,7 @@
 /// ```
 macro_rules! get_attrs {
     (
-        for $attr:ident in $attrs:ident {
+        for $attr:ident in ($attrs:expr) {
             $($branches:tt)*
         }
         $ret_expr:expr
@@ -78,7 +79,7 @@ macro_rules! get_attrs {
         {
             $crate::util::let_attr_branches!($($branches)*);
 
-            for attr in $attrs.attributes() {
+            for attr in ($attrs).attributes() {
                 let attr =
                     attr.map_err(|err| $crate::Error::XmlDecodingError(err.into()))?;
                 let raw_key = attr.key.as_ref();
@@ -191,38 +192,55 @@ pub(crate) use handle_attr_branches;
 /// Goes through the children of the tag and will call the correct function for
 /// that child. Closes the tag.
 macro_rules! parse_tag {
-    ($reader:expr, $buf:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
-        let mut __event_buf = Vec::new();
-        loop {
-            match $reader
-                .read_event_into(&mut __event_buf)
-                .map_err($crate::Error::XmlDecodingError)?
-            {
-                #[allow(unused_variables)]
-                quick_xml::events::Event::Start(e) => {
-                    let name = e.local_name();
-                    $(
-                        if name.as_ref() == $open_tag.as_bytes() {
-                            $open_method(e.into_owned())?;
-                            __event_buf.clear();
-                            continue;
-                        }
-                    )*
+    ($elem:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {{
+        let __elem = $elem;
+        if !__elem.is_empty {
+            let mut __event_buf = Vec::new();
+            loop {
+                match __elem
+                    .reader
+                    .read_event_into(&mut __event_buf)
+                    .map_err($crate::Error::XmlDecodingError)?
+                {
+                    #[allow(unused_variables)]
+                    quick_xml::events::Event::Start(e) => {
+                        let name = e.local_name();
+                        $(
+                            if name.as_ref() == $open_tag.as_bytes() {
+                                let mut __child = __elem.child(e.into_owned(), false);
+                                $open_method(__child)?;
+                                __event_buf.clear();
+                                continue;
+                            }
+                        )*
+                    }
+                    #[allow(unused_variables)]
+                    quick_xml::events::Event::Empty(e) => {
+                        let name = e.local_name();
+                        $(
+                            if name.as_ref() == $open_tag.as_bytes() {
+                                let mut __child = __elem.child(e.into_owned(), true);
+                                $open_method(__child)?;
+                                __event_buf.clear();
+                                continue;
+                            }
+                        )*
+                    }
+                    quick_xml::events::Event::End(_) => {
+                        __event_buf.clear();
+                        break;
+                    }
+                    quick_xml::events::Event::Eof => {
+                        return Err($crate::Error::PrematureEnd(
+                            "Document ended before we expected.".to_string(),
+                        ));
+                    }
+                    _ => {}
                 }
-                quick_xml::events::Event::End(e) if e.local_name().as_ref() == $close_tag.as_bytes() => {
-                    __event_buf.clear();
-                    break;
-                }
-                quick_xml::events::Event::Eof => {
-                    return Err($crate::Error::PrematureEnd(
-                        "Document ended before we expected.".to_string(),
-                    ));
-                }
-                _ => {}
+                __event_buf.clear();
             }
-            __event_buf.clear();
         }
-    };
+    }};
 }
 
 /// Creates a new type that wraps an internal data type over along with a map.
@@ -286,5 +304,40 @@ pub fn floor_div(a: i32, b: i32) -> i32 {
         d
     } else {
         d - ((a < 0) ^ (b < 0)) as i32
+    }
+}
+use std::io::BufRead;
+
+use quick_xml::{events::BytesStart, Reader};
+
+pub(crate) struct XmlElement<'a, R: BufRead> {
+    pub reader: &'a mut Reader<R>,
+    pub buf: &'a mut Vec<u8>,
+    pub attrs: BytesStart<'static>,
+    pub is_empty: bool,
+}
+
+impl<'a, R: BufRead> XmlElement<'a, R> {
+    pub(crate) fn new(
+        reader: &'a mut Reader<R>,
+        buf: &'a mut Vec<u8>,
+        attrs: BytesStart<'static>,
+        is_empty: bool,
+    ) -> Self {
+        Self {
+            reader,
+            buf,
+            attrs,
+            is_empty,
+        }
+    }
+
+    pub(crate) fn child(&mut self, attrs: BytesStart<'static>, is_empty: bool) -> XmlElement<'_, R> {
+        XmlElement {
+            reader: &mut *self.reader,
+            buf: &mut *self.buf,
+            attrs,
+            is_empty,
+        }
     }
 }

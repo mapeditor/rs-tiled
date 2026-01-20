@@ -65,10 +65,8 @@ impl LayerData {
         self.id
     }
 
-    pub(crate) fn new(
-        xml_reader: &mut quick_xml::Reader<impl std::io::BufRead>,
-        buf: &mut Vec<u8>,
-        attrs: quick_xml::events::BytesStart<'_>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         tag: LayerTag,
         infinite: bool,
         map_path: &Path,
@@ -90,7 +88,7 @@ impl LayerData {
             user_type,
             user_class,
         ) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("opacity") => opacity ?= v.parse(),
                 Some("tintcolor") => tint_color ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
@@ -105,18 +103,16 @@ impl LayerData {
             }
             (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
         );
-        buf.clear();
+        elem.buf.clear();
 
         let (ty, properties) = match tag {
             LayerTag::Tiles => {
-                let (ty, properties) = TileLayerData::new(xml_reader, buf, attrs, infinite, tilesets)?;
+                let (ty, properties) = TileLayerData::new(elem, infinite, tilesets)?;
                 (LayerDataType::Tiles(ty), properties)
             }
             LayerTag::Objects => {
                 let (ty, properties) = ObjectLayerData::new(
-                    xml_reader,
-                    buf,
-                    attrs,
+                    elem,
                     Some(tilesets),
                     for_tileset,
                     map_path.parent().ok_or(crate::Error::PathIsNotFile)?,
@@ -126,13 +122,12 @@ impl LayerData {
                 (LayerDataType::Objects(ty), properties)
             }
             LayerTag::Image => {
-                let (ty, properties) = ImageLayerData::new(xml_reader, buf, attrs, map_path)?;
+                let (ty, properties) = ImageLayerData::new(elem, map_path)?;
                 (LayerDataType::Image(ty), properties)
             }
             LayerTag::Group => {
                 let (ty, properties) = GroupLayerData::new(
-                    xml_reader,
-                    buf,
+                    elem,
                     infinite,
                     map_path,
                     tilesets,
