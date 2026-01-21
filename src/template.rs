@@ -2,11 +2,10 @@ use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use quick_xml::events::Event;
 use quick_xml::Reader;
 
 use crate::{
-    util::{parse_tag, XmlElement},
+    util::{parse_root_element, parse_tag, XmlElement},
     EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache, ResourceReader,
     Result, Tileset,
 };
@@ -41,31 +40,13 @@ impl Template {
 
         let mut template_parser = Reader::from_reader(BufReader::new(file));
         let mut buf = Vec::new();
-        let mut event_buf = Vec::new();
-        loop {
-            match template_parser
-                .read_event_into(&mut event_buf)
-                .map_err(Error::XmlDecodingError)?
-            {
-                Event::Start(e) if e.local_name().as_ref() == b"template" => {
-                    let elem = XmlElement::new(&mut template_parser, &mut buf, e, false);
-                    let template = Self::parse_external_template(elem, path, reader, cache)?;
-                    return Ok(template);
-                }
-                Event::Empty(e) if e.local_name().as_ref() == b"template" => {
-                    let elem = XmlElement::new(&mut template_parser, &mut buf, e, true);
-                    let template = Self::parse_external_template(elem, path, reader, cache)?;
-                    return Ok(template);
-                }
-                Event::Eof => {
-                    return Err(Error::PrematureEnd(
-                        "Template Document ended before template element was parsed".to_string(),
-                    ))
-                }
-                _ => {}
-            }
-            event_buf.clear();
-        }
+        parse_root_element(
+            &mut template_parser,
+            &mut buf,
+            b"template",
+            "Template Document ended before template element was parsed",
+            |elem| Self::parse_external_template(elem, path, reader, cache),
+        )
     }
 
     fn parse_external_template<R: std::io::BufRead>(

@@ -1,10 +1,9 @@
 use std::io::BufReader;
 use std::path::Path;
 
-use quick_xml::events::Event;
 use quick_xml::Reader;
 
-use crate::{util::XmlElement, Error, ResourceCache, ResourceReader, Result, Tileset};
+use crate::{util::parse_root_element, Error, ResourceCache, ResourceReader, Result, Tileset};
 
 pub fn parse_tileset(
     path: &Path,
@@ -19,27 +18,11 @@ pub fn parse_tileset(
         })?;
     let mut tileset_parser = Reader::from_reader(BufReader::new(file));
     let mut buf = Vec::new();
-    let mut event_buf = Vec::new();
-    loop {
-        match tileset_parser
-            .read_event_into(&mut event_buf)
-            .map_err(Error::XmlDecodingError)?
-        {
-            Event::Start(e) if e.local_name().as_ref() == b"tileset" => {
-                let elem = XmlElement::new(&mut tileset_parser, &mut buf, e, false);
-                return Tileset::parse_external_tileset(elem, path, reader, cache);
-            }
-            Event::Empty(e) if e.local_name().as_ref() == b"tileset" => {
-                let elem = XmlElement::new(&mut tileset_parser, &mut buf, e, true);
-                return Tileset::parse_external_tileset(elem, path, reader, cache);
-            }
-            Event::Eof => {
-                return Err(Error::PrematureEnd(
-                    "Tileset Document ended before map was parsed".to_string(),
-                ))
-            }
-            _ => {}
-        }
-        event_buf.clear();
-    }
+    parse_root_element(
+        &mut tileset_parser,
+        &mut buf,
+        b"tileset",
+        "Tileset Document ended before map was parsed",
+        |elem| Tileset::parse_external_tileset(elem, path, reader, cache),
+    )
 }

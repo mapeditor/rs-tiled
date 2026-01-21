@@ -375,3 +375,37 @@ pub(crate) fn read_text_or_cdata<R: BufRead>(
     }
     Ok(text)
 }
+
+pub(crate) fn parse_root_element<R, F, T>(
+    reader: &mut Reader<R>,
+    buf: &mut Vec<u8>,
+    tag: &[u8],
+    eof_message: &str,
+    mut handler: F,
+) -> Result<T>
+where
+    R: BufRead,
+    F: FnMut(XmlElement<'_, R>) -> Result<T>,
+{
+    let mut event_buf = Vec::new();
+    loop {
+        match reader
+            .read_event_into(&mut event_buf)
+            .map_err(Error::XmlDecodingError)?
+        {
+            Event::Start(e) if e.local_name().as_ref() == tag => {
+                let elem = XmlElement::new(reader, buf, e, false);
+                return handler(elem);
+            }
+            Event::Empty(e) if e.local_name().as_ref() == tag => {
+                let elem = XmlElement::new(reader, buf, e, true);
+                return handler(elem);
+            }
+            Event::Eof => {
+                return Err(Error::PrematureEnd(eof_message.to_string()));
+            }
+            _ => {}
+        }
+        event_buf.clear();
+    }
+}
