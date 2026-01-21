@@ -20,7 +20,6 @@ pub fn parse_map(
     parse_root_element(
         &mut parser,
         b"map",
-        "Document ended before map was parsed",
         |elem| Map::parse_xml(elem, path, reader, cache),
     )
 }

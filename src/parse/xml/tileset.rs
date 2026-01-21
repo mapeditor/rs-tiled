@@ -20,7 +20,6 @@ pub fn parse_tileset(
     parse_root_element(
         &mut tileset_parser,
         b"tileset",
-        "Tileset Document ended before map was parsed",
         |elem| Tileset::parse_external_tileset(elem, path, reader, cache),
     )
 }

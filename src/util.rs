@@ -196,11 +196,10 @@ macro_rules! parse_tag {
         let __elem = $elem;
         if !__elem.is_empty {
             let reader = __elem.into_reader();
-            let mut __event_buf = Vec::new();
+            let mut event_buf = Vec::new();
             loop {
-                __event_buf.clear();
                 match reader
-                    .read_event_into(&mut __event_buf)
+                    .read_event_into(&mut event_buf)
                     .map_err($crate::Error::XmlDecodingError)?
                 {
                     #[allow(unused_variables)]
@@ -216,7 +215,7 @@ macro_rules! parse_tag {
                         let end = e.to_end().into_owned();
                         drop(e);
                         reader
-                            .read_to_end_into(end.name(), &mut __event_buf)
+                            .read_to_end_into(end.name(), &mut event_buf)
                             .map_err($crate::Error::XmlDecodingError)?;
                     }
                     #[allow(unused_variables)]
@@ -349,7 +348,6 @@ pub(crate) fn read_text_or_cdata<R: BufRead>(
     let mut event_buf = Vec::new();
     let mut text = None;
     loop {
-        event_buf.clear();
         match reader
             .read_event_into(&mut event_buf)
             .map_err(Error::XmlDecodingError)?
@@ -366,8 +364,7 @@ pub(crate) fn read_text_or_cdata<R: BufRead>(
             Event::Eof => {
                 return Err(Error::PrematureEnd(eof_message.to_owned()));
             }
-            _ => {
-            }
+            _ => {}
         }
     }
     Ok(text)
@@ -376,7 +373,6 @@ pub(crate) fn read_text_or_cdata<R: BufRead>(
 pub(crate) fn parse_root_element<R, F, T>(
     reader: &mut Reader<R>,
     tag: &[u8],
-    eof_message: &str,
     mut handler: F,
 ) -> Result<T>
 where
@@ -385,21 +381,38 @@ where
 {
     let mut event_buf = Vec::new();
     loop {
-        match reader
+        let e = match reader
             .read_event_into(&mut event_buf)
             .map_err(Error::XmlDecodingError)?
         {
-            Event::Start(e) if e.local_name().as_ref() == tag => {
-                return handler(XmlElement::new(reader, e, false));
-            }
-            Event::Empty(e) if e.local_name().as_ref() == tag => {
-                return handler(XmlElement::new(reader, e, true));
+            Event::Start(e) => Some((e, false)),
+            Event::Empty(e) => Some((e, true)),
+            Event::End(e) => {
+                return Err(Error::MalformedAttributes(format!(
+                    "Unexpected closing tag </{}> before root element <{}>",
+                    String::from_utf8_lossy(e.local_name().as_ref()),
+                    String::from_utf8_lossy(tag),
+                )));
             }
             Event::Eof => {
-                return Err(Error::PrematureEnd(eof_message.to_string()));
+                return Err(Error::PrematureEnd(format!(
+                    "Document ended before root element <{}> was found",
+                    String::from_utf8_lossy(tag),
+                )));
             }
-            _ => {}
+            _ => None,
+        };
+
+        if let Some((e, empty)) = e {
+            if e.local_name().as_ref() == tag {
+                return handler(XmlElement::new(reader, e, empty));
+            } else {
+                return Err(Error::MalformedAttributes(format!(
+                    "Expected root element <{}>, got <{}>",
+                    String::from_utf8_lossy(tag),
+                    String::from_utf8_lossy(e.local_name().as_ref()),
+                )))
+            }
         }
-        event_buf.clear();
     }
 }

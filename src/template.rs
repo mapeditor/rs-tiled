@@ -42,7 +42,6 @@ impl Template {
         parse_root_element(
             &mut template_parser,
             b"template",
-            "Template Document ended before template element was parsed",
             |elem| Self::parse_external_template(elem, path, reader, cache),
         )
     }
