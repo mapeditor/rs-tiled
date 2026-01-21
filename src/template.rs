@@ -39,11 +39,9 @@ impl Template {
             })?;
 
         let mut template_parser = Reader::from_reader(BufReader::new(file));
-        parse_root_element(
-            &mut template_parser,
-            b"template",
-            |elem| Self::parse_external_template(elem, path, reader, cache),
-        )
+        parse_root_element(&mut template_parser, b"template", |elem| {
+            Self::parse_external_template(elem, path, reader, cache)
+        })
     }
 
     fn parse_external_template<R: std::io::BufRead>(

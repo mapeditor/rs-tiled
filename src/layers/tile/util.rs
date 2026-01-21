@@ -12,32 +12,20 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
     elem: crate::util::XmlElement<'_, R>,
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>> {
-    if elem.is_empty {
-        return match (encoding.as_deref(), compression.as_deref()) {
-            (Some("csv"), None)
-            | (Some("base64"), None)
-            | (Some("base64"), Some("zlib"))
-            | (Some("base64"), Some("gzip")) => Ok(Vec::new()),
-            #[cfg(feature = "zstd")]
-            (Some("base64"), Some("zstd")) => Ok(Vec::new()),
-            _ => Err(Error::InvalidEncodingFormat {
-                encoding,
-                compression,
-            }),
-        };
-    }
+    let text = read_text_or_cdata(elem, "Ran out of XML data")?;
+    let text = text.as_deref().unwrap_or("");
     match (encoding.as_deref(), compression.as_deref()) {
-        (Some("csv"), None) => decode_csv(elem, tilesets),
+        (Some("csv"), None) => decode_csv(text, tilesets),
 
-        (Some("base64"), None) => parse_base64(elem).map(|v| convert_to_tiles(&v, tilesets)),
-        (Some("base64"), Some("zlib")) => parse_base64(elem)
+        (Some("base64"), None) => parse_base64(text).map(|v| convert_to_tiles(&v, tilesets)),
+        (Some("base64"), Some("zlib")) => parse_base64(text)
             .and_then(|data| process_decoder(Ok(flate2::bufread::ZlibDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
-        (Some("base64"), Some("gzip")) => parse_base64(elem)
+        (Some("base64"), Some("gzip")) => parse_base64(text)
             .and_then(|data| process_decoder(Ok(flate2::bufread::GzDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
         #[cfg(feature = "zstd")]
-        (Some("base64"), Some("zstd")) => parse_base64(elem)
+        (Some("base64"), Some("zstd")) => parse_base64(text)
             .and_then(|data| process_decoder(zstd::stream::read::Decoder::with_buffer(&data[..])))
             .map(|v| convert_to_tiles(&v, tilesets)),
 
@@ -48,12 +36,7 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
     }
 }
 
-fn parse_base64<R: std::io::BufRead>(elem: crate::util::XmlElement<'_, R>) -> Result<Vec<u8>> {
-    let text = match read_text_or_cdata(elem, "Ran out of XML data")? {
-        Some(text) => text,
-        None => return Ok(Vec::new()),
-    };
-
+fn parse_base64(text: &str) -> Result<Vec<u8>> {
     base64::engine::GeneralPurpose::new(
         &base64::alphabet::STANDARD,
         base64::engine::general_purpose::PAD,
@@ -72,15 +55,7 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
         .map_err(Error::DecompressingError)
 }
 
-fn decode_csv<R: std::io::BufRead>(
-    elem: crate::util::XmlElement<'_, R>,
-    tilesets: &[MapTilesetGid],
-) -> Result<Vec<Option<LayerTileData>>> {
-    let text = match read_text_or_cdata(elem, "Ran out of XML data")? {
-        Some(text) => text,
-        None => return Ok(Vec::new()),
-    };
-
+fn decode_csv(text: &str, tilesets: &[MapTilesetGid]) -> Result<Vec<Option<LayerTileData>>> {
     let mut tiles = Vec::new();
     for v in text.split(',') {
         match v.trim().parse() {

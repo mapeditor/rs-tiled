@@ -17,9 +17,7 @@ pub fn parse_map(
             err: Box::new(err),
         })?;
     let mut parser = Reader::from_reader(BufReader::new(file));
-    parse_root_element(
-        &mut parser,
-        b"map",
-        |elem| Map::parse_xml(elem, path, reader, cache),
-    )
+    parse_root_element(&mut parser, b"map", |elem| {
+        Map::parse_xml(elem, path, reader, cache)
+    })
 }

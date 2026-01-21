@@ -311,11 +311,7 @@ pub(crate) struct XmlElement<'a, R: BufRead> {
 }
 
 impl<'a, R: BufRead> XmlElement<'a, R> {
-    pub(crate) fn new(
-        reader: &'a mut Reader<R>,
-        attrs: BytesStart<'a>,
-        is_empty: bool,
-    ) -> Self {
+    pub(crate) fn new(reader: &'a mut Reader<R>, attrs: BytesStart<'a>, is_empty: bool) -> Self {
         Self {
             reader,
             attrs,
@@ -403,7 +399,7 @@ where
                     "Expected root element <{}>, got <{}>",
                     String::from_utf8_lossy(tag),
                     String::from_utf8_lossy(e.local_name().as_ref()),
-                )))
+                )));
             }
         }
     }
