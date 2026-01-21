@@ -266,7 +266,7 @@ fn test_tile_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
         .unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
+    let prop_value: String = if let Some(PropertyValue::StringValue(v)) = r.tilesets()[0]
         .get_tile(1)
         .unwrap()
         .properties
@@ -284,7 +284,7 @@ fn test_layer_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
         .unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
+    let prop_value: String = if let Some(PropertyValue::StringValue(v)) =
         r.get_layer(0).unwrap().properties.get("prop3")
     {
         v.clone()
@@ -302,7 +302,7 @@ fn test_object_group_property() {
     let group_layer = r.get_layer(1).unwrap();
     let group_layer = group_layer.as_group_layer().unwrap();
     let sub_layer = group_layer.get_layer(0).unwrap();
-    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) =
+    let prop_value: bool = if let Some(PropertyValue::BoolValue(v)) =
         sub_layer.properties.get("an object group property")
     {
         *v
@@ -317,7 +317,7 @@ fn test_tileset_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
         .unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
+    let prop_value: String = if let Some(PropertyValue::StringValue(v)) =
         r.tilesets()[0].properties.get("tileset property")
     {
         v.clone()
@@ -612,7 +612,7 @@ fn test_reading_wang_sets() {
         .unwrap();
 
     // We will pick some random data from the wangsets for tessting
-    let tileset = map.tilesets().get(0).unwrap();
+    let tileset = map.tilesets().first().unwrap();
     assert_eq!(tileset.wang_sets.len(), 3);
     let wangset_2 = tileset.wang_sets.get(1).unwrap();
     let tile_10 = wangset_2.wang_tiles.get(&10).unwrap();
@@ -649,7 +649,7 @@ fn test_text_object() {
         } => {
             assert_eq!(font_family.as_str(), "sans-serif");
             assert_eq!(*pixel_size, 16);
-            assert_eq!(*wrap, false);
+            assert!(!*wrap);
             assert_eq!(
                 *color,
                 Color {
@@ -659,11 +659,11 @@ fn test_text_object() {
                     alpha: 100
                 }
             );
-            assert_eq!(*bold, true);
-            assert_eq!(*italic, true);
-            assert_eq!(*underline, true);
-            assert_eq!(*strikeout, true);
-            assert_eq!(*kerning, true);
+            assert!(*bold);
+            assert!(*italic);
+            assert!(*underline);
+            assert!(*strikeout);
+            assert!(*kerning);
             assert_eq!(*halign, HorizontalAlignment::Center);
             assert_eq!(*valign, VerticalAlignment::Bottom);
             assert_eq!(text.as_str(), "Test");

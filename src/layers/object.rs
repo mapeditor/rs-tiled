@@ -99,7 +99,7 @@ impl<'map> ObjectLayer<'map> {
     /// # }
     /// ```
     #[inline]
-    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object<'map>> + 'map {
+    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object<'map>> + use<'map> {
         let map: &'map crate::Map = self.map;
         self.data
             .objects
