@@ -7,10 +7,11 @@ mod map;
 mod res_reader;
 
 use ggez::{
+    Context, GameResult,
     event::{self, MouseButton},
     graphics::{self, DrawParam},
     mint::Point2,
-    Context, GameResult, *,
+    *,
 };
 use map::MapHandler;
 use res_reader::GgezResourceReader;

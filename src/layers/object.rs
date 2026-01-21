@@ -3,10 +3,9 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
     Color, Error, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader,
-    Result, Tileset,
+    Result, Tileset, parse_properties,
+    util::{XmlEventResult, get_attrs, map_wrapper, parse_tag},
 };
 
 /// Raw data referring to a map object layer or tile collision data.

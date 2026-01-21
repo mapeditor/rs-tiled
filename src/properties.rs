@@ -4,7 +4,7 @@ use xml::{attribute::OwnedAttribute, reader::XmlEvent};
 
 use crate::{
     error::{Error, Result},
-    util::{get_attrs, parse_tag, XmlEventResult},
+    util::{XmlEventResult, get_attrs, parse_tag},
 };
 
 /// Represents a RGBA color with 8-bit depth on each channel.

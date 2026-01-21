@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::Error,
-    properties::{parse_properties, Color, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
     Result, TileId,
+    error::Error,
+    properties::{Color, Properties, parse_properties},
+    util::{XmlEventResult, get_attrs, parse_tag},
 };
 
 /// Stores the data of the Wang color.

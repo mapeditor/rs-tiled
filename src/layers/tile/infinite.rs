@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    util::{floor_div, get_attrs, map_wrapper, parse_tag, XmlEventResult},
     Error, LayerTile, LayerTileData, MapTilesetGid, Result,
+    util::{XmlEventResult, floor_div, get_attrs, map_wrapper, parse_tag},
 };
 
 use super::util::parse_data_line;

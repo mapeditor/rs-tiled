@@ -5,8 +5,8 @@ use xml::EventReader;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent};
 
 use crate::{
-    util::*, EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache,
-    ResourceReader, Result, Tileset,
+    EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache, ResourceReader,
+    Result, Tileset, util::*,
 };
 
 /// A template, consisting of an object and a tileset
@@ -56,7 +56,7 @@ impl Template {
                 XmlEvent::EndDocument => {
                     return Err(Error::PrematureEnd(
                         "Template Document ended before template element was parsed".to_string(),
-                    ))
+                    ));
                 }
                 _ => {}
             }

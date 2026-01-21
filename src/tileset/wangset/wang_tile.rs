@@ -3,9 +3,9 @@ use std::str::FromStr;
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::Error,
-    util::{get_attrs, XmlEventResult},
     Result, TileId,
+    error::Error,
+    util::{XmlEventResult, get_attrs},
 };
 
 /// The Wang ID, stored as an array of 8 u8 values.

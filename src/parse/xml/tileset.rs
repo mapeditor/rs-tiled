@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use xml::{reader::XmlEvent, EventReader};
+use xml::{EventReader, reader::XmlEvent};
 
 use crate::{Error, ResourceCache, ResourceReader, Result, Tileset};
 
@@ -34,7 +34,7 @@ pub fn parse_tileset(
             XmlEvent::EndDocument => {
                 return Err(Error::PrematureEnd(
                     "Tileset Document ended before map was parsed".to_string(),
-                ))
+                ));
             }
             _ => {}
         }

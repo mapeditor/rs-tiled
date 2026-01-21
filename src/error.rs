@@ -154,27 +154,34 @@ impl fmt::Display for Error {
                 )
             }
             Error::InvalidTileFound => write!(fmt, "Invalid tile found in map being parsed"),
-            Error::InvalidEncodingFormat { encoding: None, compression: None } =>
-                write!(
-                    fmt,
-                    "Deprecated combination of encoding and compression"
-                ),
-            Error::InvalidEncodingFormat { encoding, compression } =>
-                write!(
-                    fmt,
-                    "Unknown encoding or compression format or invalid combination of both (for tile layers): {} encoding with {} compression",
-                    encoding.as_deref().unwrap_or("no"),
-                    compression.as_deref().unwrap_or("no")
-                ),
-            Error::InvalidPropertyValue{description} =>
-                write!(fmt, "Invalid property value: {}", description),
-            Error::UnknownPropertyType { type_name } =>
-                write!(fmt, "Unknown property value type '{}'", type_name),
-            Error::TemplateHasNoObject => write!(fmt, "A template was found with no object element"),
-            Error::InvalidWangIdEncoding{read_string} =>
-                write!(fmt, "\"{}\" is not a valid WangId format", read_string),
-            Error::InvalidObjectData{description} =>
-                write!(fmt, "Invalid object data: {}", description),
+            Error::InvalidEncodingFormat {
+                encoding: None,
+                compression: None,
+            } => write!(fmt, "Deprecated combination of encoding and compression"),
+            Error::InvalidEncodingFormat {
+                encoding,
+                compression,
+            } => write!(
+                fmt,
+                "Unknown encoding or compression format or invalid combination of both (for tile layers): {} encoding with {} compression",
+                encoding.as_deref().unwrap_or("no"),
+                compression.as_deref().unwrap_or("no")
+            ),
+            Error::InvalidPropertyValue { description } => {
+                write!(fmt, "Invalid property value: {}", description)
+            }
+            Error::UnknownPropertyType { type_name } => {
+                write!(fmt, "Unknown property value type '{}'", type_name)
+            }
+            Error::TemplateHasNoObject => {
+                write!(fmt, "A template was found with no object element")
+            }
+            Error::InvalidWangIdEncoding { read_string } => {
+                write!(fmt, "\"{}\" is not a valid WangId format", read_string)
+            }
+            Error::InvalidObjectData { description } => {
+                write!(fmt, "Invalid object data: {}", description)
+            }
             Error::InvalidTileset(e) => write!(fmt, "{}", e),
         }
     }

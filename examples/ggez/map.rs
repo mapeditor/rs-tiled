@@ -1,8 +1,8 @@
 use std::{collections::HashMap, f32::consts::FRAC_PI_2};
 
 use ggez::{
-    graphics::{self, Canvas, DrawParam, InstanceArray},
     Context, GameResult,
+    graphics::{self, Canvas, DrawParam, InstanceArray},
 };
 use tiled::TileLayer;
 

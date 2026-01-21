@@ -3,13 +3,13 @@ use std::{collections::HashMap, path::Path};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    animation::{parse_animation, Frame},
+    ResourceCache, ResourceReader, Result, Tileset,
+    animation::{Frame, parse_animation},
     error::Error,
     image::Image,
     layers::ObjectLayerData,
-    properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
-    ResourceCache, ResourceReader, Result, Tileset,
+    properties::{Properties, parse_properties},
+    util::{XmlEventResult, get_attrs, parse_tag},
 };
 
 /// A tile ID, local to a tileset.

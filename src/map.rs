@@ -11,12 +11,12 @@ use std::{
 use xml::attribute::OwnedAttribute;
 
 use crate::{
+    EmbeddedParseResultType, Layer, ResourceCache, ResourceReader,
     error::{Error, Result},
     layers::{LayerData, LayerTag},
-    properties::{parse_properties, Color, Properties},
+    properties::{Color, Properties, parse_properties},
     tileset::Tileset,
-    util::{get_attrs, parse_tag, XmlEventResult},
-    EmbeddedParseResultType, Layer, ResourceCache, ResourceReader,
+    util::{XmlEventResult, get_attrs, parse_tag},
 };
 
 pub(crate) struct MapTilesetGid {
@@ -406,8 +406,11 @@ pub struct OrientationParseError {
 
 impl std::fmt::Display for OrientationParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("failed to parse orientation, valid options are `orthogonal`, `isometric`, `staggered` \
-        and `hexagonal` but got `{}` instead", self.str_found))
+        f.write_fmt(format_args!(
+            "failed to parse orientation, valid options are `orthogonal`, `isometric`, `staggered` \
+        and `hexagonal` but got `{}` instead",
+            self.str_found
+        ))
     }
 }
 

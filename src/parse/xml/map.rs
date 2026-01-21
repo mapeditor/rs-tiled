@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use xml::{reader::XmlEvent, EventReader};
+use xml::{EventReader, reader::XmlEvent};
 
 use crate::{Error, Map, ResourceCache, ResourceReader, Result};
 
@@ -36,7 +36,7 @@ pub fn parse_map(
             XmlEvent::EndDocument => {
                 return Err(Error::PrematureEnd(
                     "Document ended before map was parsed".to_string(),
-                ))
+                ));
             }
             _ => {}
         }

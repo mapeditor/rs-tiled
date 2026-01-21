@@ -3,11 +3,11 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use xml::attribute::OwnedAttribute;
 
 use crate::{
-    error::{Error, Result},
-    properties::{parse_properties, Properties},
-    template::Template,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
     Color, Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
+    error::{Error, Result},
+    properties::{Properties, parse_properties},
+    template::Template,
+    util::{XmlEventResult, get_attrs, map_wrapper, parse_tag},
 };
 
 /// The location of the tileset this tile is in
@@ -507,7 +507,7 @@ impl ObjectData {
                 return Err(Error::InvalidObjectData {
                     description: "Text attribute contained anything but characters as content"
                         .into(),
-                })
+                });
             }
         };
 

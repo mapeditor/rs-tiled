@@ -4,7 +4,7 @@ use xml::attribute::OwnedAttribute;
 
 use crate::{
     error::{Error, Result},
-    util::{get_attrs, parse_tag, XmlEventResult},
+    util::{XmlEventResult, get_attrs, parse_tag},
 };
 
 /// A structure describing a [frame] of a [TMX tile animation].
