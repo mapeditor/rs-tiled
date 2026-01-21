@@ -2,7 +2,9 @@ use std::{convert::TryInto, io::Read};
 
 use base64::Engine;
 
-use crate::{util::read_text_or_cdata, CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result};
+use crate::{
+    util::read_text_or_cdata, CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result,
+};
 
 pub(crate) fn parse_data_line<R: std::io::BufRead>(
     encoding: Option<String>,
@@ -27,9 +29,7 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
     match (encoding.as_deref(), compression.as_deref()) {
         (Some("csv"), None) => decode_csv(&mut elem, tilesets),
 
-        (Some("base64"), None) => {
-            parse_base64(&mut elem).map(|v| convert_to_tiles(&v, tilesets))
-        }
+        (Some("base64"), None) => parse_base64(&mut elem).map(|v| convert_to_tiles(&v, tilesets)),
         (Some("base64"), Some("zlib")) => parse_base64(&mut elem)
             .and_then(|data| process_decoder(Ok(flate2::bufread::ZlibDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
@@ -48,9 +48,7 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
     }
 }
 
-fn parse_base64<R: std::io::BufRead>(
-    elem: &mut crate::util::XmlElement<'_, R>,
-) -> Result<Vec<u8>> {
+fn parse_base64<R: std::io::BufRead>(elem: &mut crate::util::XmlElement<'_, R>) -> Result<Vec<u8>> {
     let text = match read_text_or_cdata(elem, "Ran out of XML data")? {
         Some(text) => text,
         None => return Ok(Vec::new()),

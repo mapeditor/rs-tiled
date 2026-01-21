@@ -3,8 +3,8 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use crate::{
     parse_properties,
     util::{get_attrs, map_wrapper, parse_tag},
-    Color, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader,
-    Result, Tileset,
+    Color, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader, Result,
+    Tileset,
 };
 
 /// Raw data referring to a map object layer or tile collision data.

@@ -286,7 +286,6 @@ pub(crate) use parse_tag;
 
 use crate::{Gid, MapTilesetGid};
 
-
 /// Returns both the tileset and its index
 pub(crate) fn get_tileset_for_gid(
     tilesets: &[MapTilesetGid],
@@ -337,7 +336,11 @@ impl<'a, R: BufRead> XmlElement<'a, R> {
         }
     }
 
-    pub(crate) fn child(&mut self, attrs: BytesStart<'static>, is_empty: bool) -> XmlElement<'_, R> {
+    pub(crate) fn child(
+        &mut self,
+        attrs: BytesStart<'static>,
+        is_empty: bool,
+    ) -> XmlElement<'_, R> {
         XmlElement {
             reader: &mut *self.reader,
             buf: &mut *self.buf,

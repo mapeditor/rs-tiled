@@ -7,8 +7,8 @@ use quick_xml::Reader;
 
 use crate::{
     util::{parse_tag, XmlElement},
-    EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache,
-    ResourceReader, Result, Tileset,
+    EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache, ResourceReader,
+    Result, Tileset,
 };
 
 /// A template, consisting of an object and a tileset
@@ -50,19 +50,15 @@ impl Template {
                 Event::Start(ref e) if e.local_name().as_ref() == b"template" => {
                     let owned = e.to_owned();
                     event_buf.clear();
-                    let elem =
-                        XmlElement::new(&mut template_parser, &mut buf, owned, false);
-                    let template =
-                        Self::parse_external_template(elem, path, reader, cache)?;
+                    let elem = XmlElement::new(&mut template_parser, &mut buf, owned, false);
+                    let template = Self::parse_external_template(elem, path, reader, cache)?;
                     return Ok(template);
                 }
                 Event::Empty(ref e) if e.local_name().as_ref() == b"template" => {
                     let owned = e.to_owned();
                     event_buf.clear();
-                    let elem =
-                        XmlElement::new(&mut template_parser, &mut buf, owned, true);
-                    let template =
-                        Self::parse_external_template(elem, path, reader, cache)?;
+                    let elem = XmlElement::new(&mut template_parser, &mut buf, owned, true);
+                    let template = Self::parse_external_template(elem, path, reader, cache)?;
                     return Ok(template);
                 }
                 Event::Eof => {
