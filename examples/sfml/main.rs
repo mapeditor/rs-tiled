@@ -63,7 +63,7 @@ impl Level {
 }
 
 /// Generates a vertex mesh from a tile layer for rendering.
-fn generate_mesh(layer: &FiniteTileLayer, tilesheet: &Tilesheet) -> QuadMesh {
+fn generate_mesh(layer: &FiniteTileLayer<'_>, tilesheet: &Tilesheet) -> QuadMesh {
     let (width, height) = (layer.width() as usize, layer.height() as usize);
     let mut mesh = QuadMesh::with_capacity(width * height);
     for x in 0..width as i32 {
