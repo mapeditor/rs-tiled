@@ -103,7 +103,6 @@ impl LayerData {
             }
             (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
         );
-        elem.buf.clear();
 
         let (ty, properties) = match tag {
             LayerTag::Tiles => {

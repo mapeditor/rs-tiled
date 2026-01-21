@@ -195,37 +195,37 @@ macro_rules! parse_tag {
     ($elem:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {{
         let __elem = $elem;
         if !__elem.is_empty {
+            let (reader, buf) = __elem.into_reader_and_buf();
+            let _ = &buf;
             let mut __event_buf = Vec::new();
             loop {
                 __event_buf.clear();
-                match __elem
-                    .reader
+                match reader
                     .read_event_into(&mut __event_buf)
                     .map_err($crate::Error::XmlDecodingError)?
                 {
                     #[allow(unused_variables)]
                     quick_xml::events::Event::Start(e) => {
-                        let owned = e.into_owned();
-                        let name = owned.local_name();
                         $(
-                            if name.as_ref() == $open_tag.as_bytes() {
-                                let mut __child = __elem.child(owned, false);
+                            if e.local_name().as_ref() == $open_tag.as_bytes() {
+                                let mut __child =
+                                    $crate::util::XmlElement::new(&mut *reader, &mut *buf, e, false);
                                 $open_method(__child)?;
                                 continue;
                             }
                         )*
-                        __elem
-                            .reader
-                            .read_to_end_into(owned.name(), &mut __event_buf)
+                        let end = e.to_end().into_owned();
+                        drop(e);
+                        reader
+                            .read_to_end_into(end.name(), &mut __event_buf)
                             .map_err($crate::Error::XmlDecodingError)?;
                     }
                     #[allow(unused_variables)]
                     quick_xml::events::Event::Empty(e) => {
-                        let owned = e.into_owned();
-                        let name = owned.local_name();
                         $(
-                            if name.as_ref() == $open_tag.as_bytes() {
-                                let mut __child = __elem.child(owned, true);
+                            if e.local_name().as_ref() == $open_tag.as_bytes() {
+                                let mut __child =
+                                    $crate::util::XmlElement::new(&mut *reader, &mut *buf, e, true);
                                 $open_method(__child)?;
                                 continue;
                             }
@@ -315,9 +315,9 @@ use quick_xml::{events::BytesStart, events::Event, Reader};
 use crate::{Error, Result};
 
 pub(crate) struct XmlElement<'a, R: BufRead> {
-    pub reader: &'a mut Reader<R>,
-    pub buf: &'a mut Vec<u8>,
-    pub attrs: BytesStart<'static>,
+    reader: &'a mut Reader<R>,
+    buf: &'a mut Vec<u8>,
+    pub attrs: BytesStart<'a>,
     pub is_empty: bool,
 }
 
@@ -325,7 +325,7 @@ impl<'a, R: BufRead> XmlElement<'a, R> {
     pub(crate) fn new(
         reader: &'a mut Reader<R>,
         buf: &'a mut Vec<u8>,
-        attrs: BytesStart<'static>,
+        attrs: BytesStart<'a>,
         is_empty: bool,
     ) -> Self {
         Self {
@@ -336,52 +336,40 @@ impl<'a, R: BufRead> XmlElement<'a, R> {
         }
     }
 
-    pub(crate) fn child(
-        &mut self,
-        attrs: BytesStart<'static>,
-        is_empty: bool,
-    ) -> XmlElement<'_, R> {
-        XmlElement {
-            reader: &mut *self.reader,
-            buf: &mut *self.buf,
-            attrs,
-            is_empty,
-        }
+    pub(crate) fn into_reader_and_buf(self) -> (&'a mut Reader<R>, &'a mut Vec<u8>) {
+        (self.reader, self.buf)
     }
 }
 
 pub(crate) fn read_text_or_cdata<R: BufRead>(
-    elem: &mut XmlElement<'_, R>,
+    elem: XmlElement<'_, R>,
     eof_message: &str,
 ) -> Result<Option<String>> {
     if elem.is_empty {
         return Ok(None);
     }
 
+    let (reader, buf) = elem.into_reader_and_buf();
     let mut text = None;
     loop {
-        match elem
-            .reader
-            .read_event_into(elem.buf)
+        buf.clear();
+        match reader
+            .read_event_into(buf)
             .map_err(Error::XmlDecodingError)?
         {
             Event::Text(e) => {
                 text = Some(e.unescape().map_err(Error::XmlDecodingError)?.into_owned());
-                elem.buf.clear();
             }
             Event::CData(e) => {
                 text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
-                elem.buf.clear();
             }
             Event::End(_) => {
-                elem.buf.clear();
                 break;
             }
             Event::Eof => {
                 return Err(Error::PrematureEnd(eof_message.to_owned()));
             }
             _ => {
-                elem.buf.clear();
             }
         }
     }

@@ -158,7 +158,7 @@ impl Map {
 
 impl Map {
     pub(crate) fn parse_xml<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         map_path: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -184,7 +184,6 @@ impl Map {
             }
             ((colour, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length), (version, orientation, width, height, tile_width, tile_height))
         );
-        elem.buf.clear();
 
         let infinite = infinite.unwrap_or(false);
         let user_type = user_type.or(user_class);
@@ -198,7 +197,7 @@ impl Map {
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
 
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "tileset" => |elem| {
                 let res = Tileset::parse_xml_in_map(elem, map_path, reader, cache)?;
                 match res.result_type {

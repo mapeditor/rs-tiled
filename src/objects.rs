@@ -218,7 +218,7 @@ impl ObjectData {
     /// If it is known that the object has no tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // Base path is a directory to which all other files are relative to
@@ -243,7 +243,6 @@ impl ObjectData {
             }
             (id, tile, name, user_type, user_class, width, height, visible, rotation, template, x, y)
         );
-        elem.buf.clear();
         let x = x.unwrap_or(0.);
         let y = y.unwrap_or(0.);
         let mut tile = tile.and_then(|bits| {
@@ -296,13 +295,13 @@ impl ObjectData {
         let mut shape = None;
         let mut properties = HashMap::new();
 
-        parse_tag!(&mut elem, {
-            "ellipse" => |mut elem: crate::util::XmlElement<'_, R>| {
+        parse_tag!(elem, {
+            "ellipse" => |elem: crate::util::XmlElement<'_, R>| {
                 shape = Some(ObjectShape::Ellipse {
                     width,
                     height,
                 });
-                parse_tag!(&mut elem, {});
+                parse_tag!(elem, {});
                 Ok(())
             },
             "polyline" => |elem| {
@@ -313,9 +312,9 @@ impl ObjectData {
                 shape = Some(ObjectData::new_polygon(elem)?);
                 Ok(())
             },
-            "point" => |mut elem: crate::util::XmlElement<'_, R>| {
+            "point" => |elem: crate::util::XmlElement<'_, R>| {
                 shape = Some(ObjectShape::Point(x, y));
-                parse_tag!(&mut elem, {});
+                parse_tag!(elem, {});
                 Ok(())
             },
             "text" => |elem| {
@@ -399,7 +398,7 @@ impl ObjectData {
 
 impl ObjectData {
     fn new_polyline<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
     ) -> Result<ObjectShape> {
         let points = get_attrs!(
             for v in (elem.attrs) {
@@ -407,12 +406,12 @@ impl ObjectData {
             }
             points
         );
-        parse_tag!(&mut elem, {});
+        parse_tag!(elem, {});
         Ok(ObjectShape::Polyline { points })
     }
 
     fn new_polygon<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
     ) -> Result<ObjectShape> {
         let points = get_attrs!(
             for v in (elem.attrs) {
@@ -420,12 +419,12 @@ impl ObjectData {
             }
             points
         );
-        parse_tag!(&mut elem, {});
+        parse_tag!(elem, {});
         Ok(ObjectShape::Polygon { points })
     }
 
     fn new_text<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         width: f32,
         height: f32,
     ) -> Result<ObjectShape> {
@@ -483,7 +482,6 @@ impl ObjectData {
                 valign,
             )
         );
-        elem.buf.clear();
         let font_family = font_family.unwrap_or_else(|| "sans-serif".to_string());
         let pixel_size = pixel_size.unwrap_or(16);
         let color = color.unwrap_or(Color {
@@ -501,7 +499,7 @@ impl ObjectData {
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
         let contents = read_text_or_cdata(
-            &mut elem,
+            elem,
             "XML stream ended when trying to parse text contents",
         )?
         .unwrap_or_default();

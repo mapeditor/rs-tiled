@@ -9,7 +9,7 @@ use crate::{
 pub(crate) fn parse_data_line<R: std::io::BufRead>(
     encoding: Option<String>,
     compression: Option<String>,
-    mut elem: crate::util::XmlElement<'_, R>,
+    elem: crate::util::XmlElement<'_, R>,
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>> {
     if elem.is_empty {
@@ -27,17 +27,17 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
         };
     }
     match (encoding.as_deref(), compression.as_deref()) {
-        (Some("csv"), None) => decode_csv(&mut elem, tilesets),
+        (Some("csv"), None) => decode_csv(elem, tilesets),
 
-        (Some("base64"), None) => parse_base64(&mut elem).map(|v| convert_to_tiles(&v, tilesets)),
-        (Some("base64"), Some("zlib")) => parse_base64(&mut elem)
+        (Some("base64"), None) => parse_base64(elem).map(|v| convert_to_tiles(&v, tilesets)),
+        (Some("base64"), Some("zlib")) => parse_base64(elem)
             .and_then(|data| process_decoder(Ok(flate2::bufread::ZlibDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
-        (Some("base64"), Some("gzip")) => parse_base64(&mut elem)
+        (Some("base64"), Some("gzip")) => parse_base64(elem)
             .and_then(|data| process_decoder(Ok(flate2::bufread::GzDecoder::new(&data[..]))))
             .map(|v| convert_to_tiles(&v, tilesets)),
         #[cfg(feature = "zstd")]
-        (Some("base64"), Some("zstd")) => parse_base64(&mut elem)
+        (Some("base64"), Some("zstd")) => parse_base64(elem)
             .and_then(|data| process_decoder(zstd::stream::read::Decoder::with_buffer(&data[..])))
             .map(|v| convert_to_tiles(&v, tilesets)),
 
@@ -48,7 +48,9 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
     }
 }
 
-fn parse_base64<R: std::io::BufRead>(elem: &mut crate::util::XmlElement<'_, R>) -> Result<Vec<u8>> {
+fn parse_base64<R: std::io::BufRead>(
+    elem: crate::util::XmlElement<'_, R>,
+) -> Result<Vec<u8>> {
     let text = match read_text_or_cdata(elem, "Ran out of XML data")? {
         Some(text) => text,
         None => return Ok(Vec::new()),
@@ -73,7 +75,7 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
 }
 
 fn decode_csv<R: std::io::BufRead>(
-    elem: &mut crate::util::XmlElement<'_, R>,
+    elem: crate::util::XmlElement<'_, R>,
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>> {
     let text = match read_text_or_cdata(elem, "Ran out of XML data")? {

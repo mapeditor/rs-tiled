@@ -49,7 +49,6 @@ impl FiniteTileLayerData {
             }
             (encoding, compression)
         );
-        elem.buf.clear();
 
         let tiles = parse_data_line(e, c, elem, tilesets)?;
 

@@ -19,7 +19,7 @@ pub struct ImageLayerData {
 
 impl ImageLayerData {
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         map_path: &Path,
     ) -> Result<(Self, Properties)> {
         let mut image: Option<Image> = None;
@@ -35,9 +35,8 @@ impl ImageLayerData {
             }
             (repeat_x, repeat_y)
         );
-        elem.buf.clear();
 
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "image" => |elem| {
                 image = Some(Image::new(elem, path_relative_to)?);
                 Ok(())

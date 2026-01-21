@@ -75,7 +75,7 @@ impl<'tileset> std::ops::Deref for Tile<'tileset> {
 
 impl TileData {
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         path_relative_to: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -93,14 +93,13 @@ impl TileData {
             }
             ((user_type, user_class, probability, x, y, width, height), id)
         );
-        elem.buf.clear();
 
         let user_type = user_type.or(user_class);
         let mut image = Option::None;
         let mut properties = HashMap::new();
         let mut objectgroup = None;
         let mut animation = None;
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "image" => |elem| {
                 image = Some(Image::new(elem, path_relative_to)?);
                 Ok(())

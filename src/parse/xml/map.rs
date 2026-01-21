@@ -26,11 +26,11 @@ pub fn parse_map(
             .map_err(Error::XmlDecodingError)?
         {
             Event::Start(e) if e.local_name().as_ref() == b"map" => {
-                let elem = XmlElement::new(&mut parser, &mut buf, e.into_owned(), false);
+                let elem = XmlElement::new(&mut parser, &mut buf, e, false);
                 return Map::parse_xml(elem, path, reader, cache);
             }
             Event::Empty(e) if e.local_name().as_ref() == b"map" => {
-                let elem = XmlElement::new(&mut parser, &mut buf, e.into_owned(), true);
+                let elem = XmlElement::new(&mut parser, &mut buf, e, true);
                 return Map::parse_xml(elem, path, reader, cache);
             }
             Event::Eof => {

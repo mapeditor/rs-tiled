@@ -43,7 +43,7 @@ pub struct WangTile {
 impl WangTile {
     /// Reads data from XML parser to create a WangTile.
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
     ) -> Result<(TileId, WangTile)> {
         // Get common data
         let (tile_id, wang_id) = get_attrs!(
@@ -54,7 +54,7 @@ impl WangTile {
             (tile_id, wang_id)
         );
 
-        parse_tag!(&mut elem, {});
+        parse_tag!(elem, {});
         Ok((tile_id, WangTile { wang_id }))
     }
 }

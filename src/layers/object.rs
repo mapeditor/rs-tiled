@@ -19,7 +19,7 @@ impl ObjectLayerData {
     /// If it is known that there are no objects with tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // path_relative_to is a directory to which all other files are relative to
@@ -33,10 +33,9 @@ impl ObjectLayerData {
             }
             color
         );
-        elem.buf.clear();
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "object" => |elem| {
                 objects.push(ObjectData::new(elem, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
                 Ok(())

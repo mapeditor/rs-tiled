@@ -46,7 +46,7 @@ pub struct WangSet {
 impl WangSet {
     /// Reads data from XML parser to create a WangSet.
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
     ) -> Result<WangSet> {
         // Get common data
         let (name, wang_set_type, tile) = get_attrs!(
@@ -57,7 +57,6 @@ impl WangSet {
             }
             (name, wang_set_type, tile)
         );
-        elem.buf.clear();
 
         let wang_set_type = match wang_set_type.as_str() {
             "corner" => WangSetType::Corner,
@@ -70,7 +69,7 @@ impl WangSet {
         let mut wang_colors = Vec::new();
         let mut wang_tiles = HashMap::new();
         let mut properties = HashMap::new();
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "wangcolor" => |elem| {
                 let color = WangColor::new(elem)?;
                 wang_colors.push(color);

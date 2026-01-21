@@ -136,12 +136,11 @@ impl PropertyValue {
 pub type Properties = HashMap<String, PropertyValue>;
 
 pub(crate) fn parse_properties<R: std::io::BufRead>(
-    mut elem: crate::util::XmlElement<'_, R>,
+    elem: crate::util::XmlElement<'_, R>,
 ) -> Result<Properties> {
     let mut p = HashMap::new();
-    elem.buf.clear();
-    parse_tag!(&mut elem, {
-        "property" => |mut elem: crate::util::XmlElement<'_, R>| {
+    parse_tag!(elem, {
+        "property" => |elem: crate::util::XmlElement<'_, R>| {
             let (t, v_attr, k, p_t) = get_attrs!(
                 for attr in (elem.attrs) {
                     Some("type") => obj_type = attr.to_string(),
@@ -151,11 +150,10 @@ pub(crate) fn parse_properties<R: std::io::BufRead>(
                 }
                 (obj_type, value, name, propertytype)
             );
-            elem.buf.clear();
             let t = t.unwrap_or_else(|| "string".to_owned());
             if t == "class" {
                 let mut properties = HashMap::new();
-                parse_tag!(&mut elem, {
+                parse_tag!(elem, {
                     "properties" => |elem| {
                         properties = parse_properties(elem)?;
                         Ok(())
@@ -170,13 +168,13 @@ pub(crate) fn parse_properties<R: std::io::BufRead>(
 
             let v: String = match v_attr {
                 Some(val) => {
-                    parse_tag!(&mut elem, {});
+                    parse_tag!(elem, {});
                     val
                 }
                 None => {
                     // if the "value" attribute was missing, might be a multiline string
                     let text = read_text_or_cdata(
-                        &mut elem,
+                        elem,
                         "XML stream ended when parsing property contents",
                     )?
                     .unwrap_or_default();

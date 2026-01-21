@@ -26,11 +26,11 @@ pub fn parse_tileset(
             .map_err(Error::XmlDecodingError)?
         {
             Event::Start(e) if e.local_name().as_ref() == b"tileset" => {
-                let elem = XmlElement::new(&mut tileset_parser, &mut buf, e.into_owned(), false);
+                let elem = XmlElement::new(&mut tileset_parser, &mut buf, e, false);
                 return Tileset::parse_external_tileset(elem, path, reader, cache);
             }
             Event::Empty(e) if e.local_name().as_ref() == b"tileset" => {
-                let elem = XmlElement::new(&mut tileset_parser, &mut buf, e.into_owned(), true);
+                let elem = XmlElement::new(&mut tileset_parser, &mut buf, e, true);
                 return Tileset::parse_external_tileset(elem, path, reader, cache);
             }
             Event::Eof => {

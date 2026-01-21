@@ -16,7 +16,7 @@ pub struct GroupLayerData {
 
 impl GroupLayerData {
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
@@ -26,8 +26,7 @@ impl GroupLayerData {
     ) -> Result<(Self, Properties)> {
         let mut properties = HashMap::new();
         let mut layers = Vec::new();
-        elem.buf.clear();
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "layer" => |elem| {
                 layers.push(LayerData::new(
                     elem,

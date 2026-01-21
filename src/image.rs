@@ -67,7 +67,7 @@ pub struct Image {
 
 impl Image {
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: XmlElement<'_, R>,
+        elem: XmlElement<'_, R>,
         path_relative_to: impl AsRef<Path>,
     ) -> Result<Image> {
         let (c, (s, w, h)) = get_attrs!(
@@ -80,8 +80,7 @@ impl Image {
             (trans, (source, width, height))
         );
 
-        elem.buf.clear();
-        parse_tag!(&mut elem, {});
+        parse_tag!(elem, {});
         Ok(Image {
             source: path_relative_to.as_ref().join(s),
             width: w,

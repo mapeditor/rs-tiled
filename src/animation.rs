@@ -18,7 +18,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    pub(crate) fn new<R: std::io::BufRead>(mut elem: XmlElement<'_, R>) -> Result<Frame> {
+    pub(crate) fn new<R: std::io::BufRead>(elem: XmlElement<'_, R>) -> Result<Frame> {
         let (tile_id, duration) = get_attrs!(
             for v in (elem.attrs) {
                 "tileid" => tile_id ?= v.parse::<u32>(),
@@ -26,17 +26,16 @@ impl Frame {
             }
             (tile_id, duration)
         );
-        parse_tag!(&mut elem, {});
+        parse_tag!(elem, {});
         Ok(Frame { tile_id, duration })
     }
 }
 
 pub(crate) fn parse_animation<R: std::io::BufRead>(
-    mut elem: XmlElement<'_, R>,
+    elem: XmlElement<'_, R>,
 ) -> Result<Vec<Frame>> {
     let mut animation = Vec::new();
-    elem.buf.clear();
-    parse_tag!(&mut elem, {
+    parse_tag!(elem, {
         "frame" => |elem| {
             animation.push(Frame::new(elem)?);
             Ok(())

@@ -47,17 +47,13 @@ impl Template {
                 .read_event_into(&mut event_buf)
                 .map_err(Error::XmlDecodingError)?
             {
-                Event::Start(ref e) if e.local_name().as_ref() == b"template" => {
-                    let owned = e.to_owned();
-                    event_buf.clear();
-                    let elem = XmlElement::new(&mut template_parser, &mut buf, owned, false);
+                Event::Start(e) if e.local_name().as_ref() == b"template" => {
+                    let elem = XmlElement::new(&mut template_parser, &mut buf, e, false);
                     let template = Self::parse_external_template(elem, path, reader, cache)?;
                     return Ok(template);
                 }
-                Event::Empty(ref e) if e.local_name().as_ref() == b"template" => {
-                    let owned = e.to_owned();
-                    event_buf.clear();
-                    let elem = XmlElement::new(&mut template_parser, &mut buf, owned, true);
+                Event::Empty(e) if e.local_name().as_ref() == b"template" => {
+                    let elem = XmlElement::new(&mut template_parser, &mut buf, e, true);
                     let template = Self::parse_external_template(elem, path, reader, cache)?;
                     return Ok(template);
                 }
@@ -73,7 +69,7 @@ impl Template {
     }
 
     fn parse_external_template<R: std::io::BufRead>(
-        mut elem: XmlElement<'_, R>,
+        elem: XmlElement<'_, R>,
         template_path: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -82,8 +78,7 @@ impl Template {
         let mut tileset = None;
         let mut tileset_gid: Vec<MapTilesetGid> = vec![];
 
-        elem.buf.clear();
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "object" => |elem| {
                 object = Some(ObjectData::new(elem, Some(&tileset_gid), tileset.clone(), template_path.parent().ok_or(Error::PathIsNotFile)?, reader, cache)?);
                 Ok(())

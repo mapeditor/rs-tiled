@@ -93,7 +93,7 @@ pub(crate) enum TileLayerData {
 
 impl TileLayerData {
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         infinite: bool,
         tilesets: &[MapTilesetGid],
     ) -> Result<(Self, Properties)> {
@@ -104,10 +104,9 @@ impl TileLayerData {
             }
             (width, height)
         );
-        elem.buf.clear();
         let mut result = Self::Finite(Default::default());
         let mut properties = HashMap::new();
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "data" => |elem| {
                 if infinite {
                     result = Self::Infinite(InfiniteTileLayerData::new(elem, tilesets)?);

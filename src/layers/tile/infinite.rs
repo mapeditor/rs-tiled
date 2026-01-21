@@ -21,7 +21,7 @@ impl std::fmt::Debug for InfiniteTileLayerData {
 
 impl InfiniteTileLayerData {
     pub(crate) fn new<R: std::io::BufRead>(
-        mut elem: crate::util::XmlElement<'_, R>,
+        elem: crate::util::XmlElement<'_, R>,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
@@ -31,10 +31,9 @@ impl InfiniteTileLayerData {
             }
             (encoding, compression)
         );
-        elem.buf.clear();
 
         let mut chunks = HashMap::<(i32, i32), ChunkData>::new();
-        parse_tag!(&mut elem, {
+        parse_tag!(elem, {
             "chunk" => |elem| {
                 let chunk = InternalChunk::new(elem, e.clone(), c.clone(), tilesets)?;
                 for x in chunk.x..chunk.x + chunk.width as i32 {
@@ -197,7 +196,6 @@ impl InternalChunk {
             }
             (x, y, width, height)
         );
-        elem.buf.clear();
 
         let tiles = parse_data_line(encoding, compression, elem, tilesets)?;
 
