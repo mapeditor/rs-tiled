@@ -498,9 +498,7 @@ impl ObjectData {
         let kerning = kerning.map_or(true, |k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
-        let contents =
-            read_text_or_cdata(elem, "XML stream ended when trying to parse text contents")?
-                .unwrap_or_default();
+        let contents = read_text_or_cdata(elem, |text| Ok(text.to_string()))?;
 
         Ok(ObjectShape::Text {
             font_family,

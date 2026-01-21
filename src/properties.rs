@@ -173,12 +173,10 @@ pub(crate) fn parse_properties<R: std::io::BufRead>(
                 }
                 None => {
                     // if the "value" attribute was missing, might be a multiline string
-                    let text = read_text_or_cdata(
+                    read_text_or_cdata(
                         elem,
-                        "XML stream ended when parsing property contents",
+                        |text| Ok(text.to_string()),
                     )?
-                    .unwrap_or_default();
-                    text
                 }
             };
             p.insert(k, PropertyValue::new(t, v)?);

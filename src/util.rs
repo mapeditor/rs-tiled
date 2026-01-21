@@ -324,38 +324,50 @@ impl<'a, R: BufRead> XmlElement<'a, R> {
     }
 }
 
-pub(crate) fn read_text_or_cdata<R: BufRead>(
+pub(crate) fn read_text_or_cdata<R: BufRead, F, T>(
     elem: XmlElement<'_, R>,
-    eof_message: &str,
-) -> Result<Option<String>> {
+    mut handler: F,
+) -> Result<T>
+where
+    F: for<'a> FnMut(&'a str) -> Result<T>,
+{
     if elem.is_empty {
-        return Ok(None);
+        return handler("");
     }
 
     let reader = elem.into_reader();
     let mut event_buf = Vec::new();
-    let mut text = None;
+    let mut result = None;
     loop {
         match reader
             .read_event_into(&mut event_buf)
             .map_err(Error::XmlDecodingError)?
         {
-            Event::Text(e) => {
-                text = Some(e.unescape().map_err(Error::XmlDecodingError)?.into_owned());
+            Event::Text(e) if result.is_none() => {
+                let unescaped = e.unescape().map_err(Error::XmlDecodingError)?;
+                result = Some(Ok(handler(unescaped.as_ref())?));
             }
-            Event::CData(e) => {
-                text = Some(String::from_utf8_lossy(e.as_ref()).into_owned());
+            Event::CData(e) if result.is_none() => {
+                let unescaped = String::from_utf8_lossy(e.as_ref());
+                result = Some(Ok(handler(unescaped.as_ref())?));
             }
-            Event::End(_) => {
-                break;
+            Event::Start(e) => {
+                let end = e.to_end().into_owned();
+                drop(e);
+                reader
+                    .read_to_end_into(end.name(), &mut event_buf)
+                    .map_err(Error::XmlDecodingError)?;
             }
+            Event::Empty(_) => {}
+            Event::End(_) => return result.unwrap_or_else(|| handler("")),
             Event::Eof => {
-                return Err(Error::PrematureEnd(eof_message.to_owned()));
+                return Err(Error::PrematureEnd(
+                    "end of file while reading element contents".to_owned(),
+                ));
             }
             _ => {}
         }
     }
-    Ok(text)
 }
 
 pub(crate) fn parse_root_element<R, F, T>(

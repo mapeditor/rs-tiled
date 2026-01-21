@@ -12,9 +12,9 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
     elem: crate::util::XmlElement<'_, R>,
     tilesets: &[MapTilesetGid],
 ) -> Result<Vec<Option<LayerTileData>>> {
-    let text = read_text_or_cdata(elem, "Ran out of XML data")?;
-    let text = text.as_deref().unwrap_or("");
-    match (encoding.as_deref(), compression.as_deref()) {
+    let encoding_ref = encoding.as_deref();
+    let compression_ref = compression.as_deref();
+    read_text_or_cdata(elem, |text| match (encoding_ref, compression_ref) {
         (Some("csv"), None) => decode_csv(text, tilesets),
 
         (Some("base64"), None) => parse_base64(text).map(|v| convert_to_tiles(&v, tilesets)),
@@ -30,10 +30,10 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
             .map(|v| convert_to_tiles(&v, tilesets)),
 
         _ => Err(Error::InvalidEncodingFormat {
-            encoding,
-            compression,
+            encoding: encoding.clone(),
+            compression: compression.clone(),
         }),
-    }
+    })
 }
 
 fn parse_base64(text: &str) -> Result<Vec<u8>> {
