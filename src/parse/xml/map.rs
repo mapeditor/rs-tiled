@@ -17,10 +17,8 @@ pub fn parse_map(
             err: Box::new(err),
         })?;
     let mut parser = Reader::from_reader(BufReader::new(file));
-    let mut buf = Vec::new();
     parse_root_element(
         &mut parser,
-        &mut buf,
         b"map",
         "Document ended before map was parsed",
         |elem| Map::parse_xml(elem, path, reader, cache),

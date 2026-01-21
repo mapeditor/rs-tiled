@@ -31,9 +31,7 @@ impl Frame {
     }
 }
 
-pub(crate) fn parse_animation<R: std::io::BufRead>(
-    elem: XmlElement<'_, R>,
-) -> Result<Vec<Frame>> {
+pub(crate) fn parse_animation<R: std::io::BufRead>(elem: XmlElement<'_, R>) -> Result<Vec<Frame>> {
     let mut animation = Vec::new();
     parse_tag!(elem, {
         "frame" => |elem| {

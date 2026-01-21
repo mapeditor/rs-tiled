@@ -48,9 +48,7 @@ pub(crate) fn parse_data_line<R: std::io::BufRead>(
     }
 }
 
-fn parse_base64<R: std::io::BufRead>(
-    elem: crate::util::XmlElement<'_, R>,
-) -> Result<Vec<u8>> {
+fn parse_base64<R: std::io::BufRead>(elem: crate::util::XmlElement<'_, R>) -> Result<Vec<u8>> {
     let text = match read_text_or_cdata(elem, "Ran out of XML data")? {
         Some(text) => text,
         None => return Ok(Vec::new()),

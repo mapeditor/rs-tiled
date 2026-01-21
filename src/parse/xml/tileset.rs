@@ -17,10 +17,8 @@ pub fn parse_tileset(
             err: Box::new(err),
         })?;
     let mut tileset_parser = Reader::from_reader(BufReader::new(file));
-    let mut buf = Vec::new();
     parse_root_element(
         &mut tileset_parser,
-        &mut buf,
         b"tileset",
         "Tileset Document ended before map was parsed",
         |elem| Tileset::parse_external_tileset(elem, path, reader, cache),

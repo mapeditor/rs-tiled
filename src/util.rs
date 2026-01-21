@@ -195,8 +195,7 @@ macro_rules! parse_tag {
     ($elem:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {{
         let __elem = $elem;
         if !__elem.is_empty {
-            let (reader, buf) = __elem.into_reader_and_buf();
-            let _ = &buf;
+            let reader = __elem.into_reader();
             let mut __event_buf = Vec::new();
             loop {
                 __event_buf.clear();
@@ -209,7 +208,7 @@ macro_rules! parse_tag {
                         $(
                             if e.local_name().as_ref() == $open_tag.as_bytes() {
                                 let mut __child =
-                                    $crate::util::XmlElement::new(&mut *reader, &mut *buf, e, false);
+                                    $crate::util::XmlElement::new(&mut *reader, e, false);
                                 $open_method(__child)?;
                                 continue;
                             }
@@ -225,7 +224,7 @@ macro_rules! parse_tag {
                         $(
                             if e.local_name().as_ref() == $open_tag.as_bytes() {
                                 let mut __child =
-                                    $crate::util::XmlElement::new(&mut *reader, &mut *buf, e, true);
+                                    $crate::util::XmlElement::new(&mut *reader, e, true);
                                 $open_method(__child)?;
                                 continue;
                             }
@@ -316,7 +315,6 @@ use crate::{Error, Result};
 
 pub(crate) struct XmlElement<'a, R: BufRead> {
     reader: &'a mut Reader<R>,
-    buf: &'a mut Vec<u8>,
     pub attrs: BytesStart<'a>,
     pub is_empty: bool,
 }
@@ -324,20 +322,18 @@ pub(crate) struct XmlElement<'a, R: BufRead> {
 impl<'a, R: BufRead> XmlElement<'a, R> {
     pub(crate) fn new(
         reader: &'a mut Reader<R>,
-        buf: &'a mut Vec<u8>,
         attrs: BytesStart<'a>,
         is_empty: bool,
     ) -> Self {
         Self {
             reader,
-            buf,
             attrs,
             is_empty,
         }
     }
 
-    pub(crate) fn into_reader_and_buf(self) -> (&'a mut Reader<R>, &'a mut Vec<u8>) {
-        (self.reader, self.buf)
+    pub(crate) fn into_reader(self) -> &'a mut Reader<R> {
+        self.reader
     }
 }
 
@@ -349,12 +345,13 @@ pub(crate) fn read_text_or_cdata<R: BufRead>(
         return Ok(None);
     }
 
-    let (reader, buf) = elem.into_reader_and_buf();
+    let reader = elem.into_reader();
+    let mut event_buf = Vec::new();
     let mut text = None;
     loop {
-        buf.clear();
+        event_buf.clear();
         match reader
-            .read_event_into(buf)
+            .read_event_into(&mut event_buf)
             .map_err(Error::XmlDecodingError)?
         {
             Event::Text(e) => {
@@ -378,7 +375,6 @@ pub(crate) fn read_text_or_cdata<R: BufRead>(
 
 pub(crate) fn parse_root_element<R, F, T>(
     reader: &mut Reader<R>,
-    buf: &mut Vec<u8>,
     tag: &[u8],
     eof_message: &str,
     mut handler: F,
@@ -394,12 +390,10 @@ where
             .map_err(Error::XmlDecodingError)?
         {
             Event::Start(e) if e.local_name().as_ref() == tag => {
-                let elem = XmlElement::new(reader, buf, e, false);
-                return handler(elem);
+                return handler(XmlElement::new(reader, e, false));
             }
             Event::Empty(e) if e.local_name().as_ref() == tag => {
-                let elem = XmlElement::new(reader, buf, e, true);
-                return handler(elem);
+                return handler(XmlElement::new(reader, e, true));
             }
             Event::Eof => {
                 return Err(Error::PrematureEnd(eof_message.to_string()));

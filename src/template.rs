@@ -39,10 +39,8 @@ impl Template {
             })?;
 
         let mut template_parser = Reader::from_reader(BufReader::new(file));
-        let mut buf = Vec::new();
         parse_root_element(
             &mut template_parser,
-            &mut buf,
             b"template",
             "Template Document ended before template element was parsed",
             |elem| Self::parse_external_template(elem, path, reader, cache),
