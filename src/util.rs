@@ -82,12 +82,8 @@ macro_rules! get_attrs {
             for attr in ($attrs).attributes() {
                 let attr =
                     attr.map_err(|err| $crate::Error::XmlDecodingError(err.into()))?;
-                let raw_key = attr.key.as_ref();
-                let name_bytes = match raw_key.iter().rposition(|b| *b == b':') {
-                    Some(idx) => &raw_key[idx + 1..],
-                    None => raw_key,
-                };
-                let __attr_name = std::str::from_utf8(name_bytes).unwrap_or("");
+                let local_name = attr.key.local_name();
+                let __attr_name = local_name.as_ref();
                 let __attr_value = attr
                     .unescape_value()
                     .map_err($crate::Error::XmlDecodingError)?;
@@ -122,7 +118,7 @@ macro_rules! process_attr_branches {
     ($name:ident; $value:ident; ) => {};
 
     ($name:ident; $value:ident; Some($attr_pat_opt:literal) => $opt_var:ident = $opt_expr:expr $(, $($tail:tt)*)?) => {
-        if $name == $attr_pat_opt {
+        if $name == $attr_pat_opt.as_bytes() {
             $opt_var = Some($opt_expr);
         }
         else {
@@ -131,7 +127,7 @@ macro_rules! process_attr_branches {
     };
 
     ($name:ident; $value:ident; Some($attr_pat_opt:literal) => $opt_var:ident ?= $opt_expr:expr $(, $($tail:tt)*)?) => {
-        if $name == $attr_pat_opt {
+        if $name == $attr_pat_opt.as_bytes() {
             $opt_var = Some($opt_expr.map_err(|_|
                 $crate::Error::MalformedAttributes(
                     concat!("Error parsing optional attribute '", $attr_pat_opt, "'").to_owned()
@@ -144,7 +140,7 @@ macro_rules! process_attr_branches {
     };
 
     ($name:ident; $value:ident; $attr_pat_opt:literal => $opt_var:ident = $opt_expr:expr $(, $($tail:tt)*)?) => {
-        if $name == $attr_pat_opt {
+        if $name == $attr_pat_opt.as_bytes() {
             $opt_var = Some($opt_expr);
         }
         else {
@@ -153,7 +149,7 @@ macro_rules! process_attr_branches {
     };
 
     ($name:ident; $value:ident; $attr_pat_opt:literal => $opt_var:ident ?= $opt_expr:expr $(, $($tail:tt)*)?) => {
-        if $name == $attr_pat_opt {
+        if $name == $attr_pat_opt.as_bytes() {
             $opt_var = Some($opt_expr.map_err(|_|
                 $crate::Error::MalformedAttributes(
                     concat!("Error parsing attribute '", $attr_pat_opt, "'").to_owned()
