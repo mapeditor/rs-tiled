@@ -195,40 +195,15 @@ macro_rules! parse_tag {
     ($elem:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {{
         let __elem = $elem;
         if !__elem.is_empty {
-            let reader = __elem.into_reader();
-            let mut event_buf = Vec::new();
+            let __reader = __elem.into_reader();
+            let mut __event_buf = Vec::new();
             loop {
-                match reader
-                    .read_event_into(&mut event_buf)
+                let e = match __reader
+                    .read_event_into(&mut __event_buf)
                     .map_err($crate::Error::XmlDecodingError)?
                 {
-                    #[allow(unused_variables)]
-                    quick_xml::events::Event::Start(e) => {
-                        $(
-                            if e.local_name().as_ref() == $open_tag.as_bytes() {
-                                let mut __child =
-                                    $crate::util::XmlElement::new(&mut *reader, e, false);
-                                $open_method(__child)?;
-                                continue;
-                            }
-                        )*
-                        let end = e.to_end().into_owned();
-                        drop(e);
-                        reader
-                            .read_to_end_into(end.name(), &mut event_buf)
-                            .map_err($crate::Error::XmlDecodingError)?;
-                    }
-                    #[allow(unused_variables)]
-                    quick_xml::events::Event::Empty(e) => {
-                        $(
-                            if e.local_name().as_ref() == $open_tag.as_bytes() {
-                                let mut __child =
-                                    $crate::util::XmlElement::new(&mut *reader, e, true);
-                                $open_method(__child)?;
-                                continue;
-                            }
-                        )*
-                    }
+                    quick_xml::events::Event::Start(e) => Some((e, false)),
+                    quick_xml::events::Event::Empty(e) => Some((e, true)),
                     quick_xml::events::Event::End(_) => {
                         break;
                     }
@@ -237,7 +212,28 @@ macro_rules! parse_tag {
                             "Document ended before we expected.".to_string(),
                         ));
                     }
-                    _ => {}
+                    _ => None,
+                };
+
+                if let Some((e, is_empty)) = e {
+                    match e.local_name().as_ref() {
+                        $(
+                            name if name == $open_tag.as_bytes() => {
+                                let mut __child =
+                                    $crate::util::XmlElement::new(&mut *__reader, e, is_empty);
+                                $open_method(__child)?;
+                            }
+                        )*
+                        _ => {
+                            if !is_empty {
+                                let end = e.to_end().into_owned();
+                                drop(e);
+                                __reader
+                                    .read_to_end_into(end.name(), &mut __event_buf)
+                                    .map_err($crate::Error::XmlDecodingError)?;
+                            }
+                        }
+                    }
                 }
             }
         }
