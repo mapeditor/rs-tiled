@@ -282,9 +282,14 @@ impl Tileset {
                 tiles.insert(id, tile);
                 Ok(())
             },
-            "wangset" => |elem| {
-                let set = WangSet::new(elem)?;
-                wang_sets.push(set);
+            "wangsets" => |mut elem: crate::util::XmlElement<'_, R>| {
+                parse_tag!(&mut elem, {
+                    "wangset" => |elem| {
+                        let set = WangSet::new(elem)?;
+                        wang_sets.push(set);
+                        Ok(())
+                    },
+                });
                 Ok(())
             },
         });

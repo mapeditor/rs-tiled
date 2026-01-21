@@ -197,6 +197,7 @@ macro_rules! parse_tag {
         if !__elem.is_empty {
             let mut __event_buf = Vec::new();
             loop {
+                __event_buf.clear();
                 match __elem
                     .reader
                     .read_event_into(&mut __event_buf)
@@ -204,30 +205,33 @@ macro_rules! parse_tag {
                 {
                     #[allow(unused_variables)]
                     quick_xml::events::Event::Start(e) => {
-                        let name = e.local_name();
+                        let owned = e.into_owned();
+                        let name = owned.local_name();
                         $(
                             if name.as_ref() == $open_tag.as_bytes() {
-                                let mut __child = __elem.child(e.into_owned(), false);
+                                let mut __child = __elem.child(owned, false);
                                 $open_method(__child)?;
-                                __event_buf.clear();
                                 continue;
                             }
                         )*
+                        __elem
+                            .reader
+                            .read_to_end_into(owned.name(), &mut __event_buf)
+                            .map_err($crate::Error::XmlDecodingError)?;
                     }
                     #[allow(unused_variables)]
                     quick_xml::events::Event::Empty(e) => {
-                        let name = e.local_name();
+                        let owned = e.into_owned();
+                        let name = owned.local_name();
                         $(
                             if name.as_ref() == $open_tag.as_bytes() {
-                                let mut __child = __elem.child(e.into_owned(), true);
+                                let mut __child = __elem.child(owned, true);
                                 $open_method(__child)?;
-                                __event_buf.clear();
                                 continue;
                             }
                         )*
                     }
                     quick_xml::events::Event::End(_) => {
-                        __event_buf.clear();
                         break;
                     }
                     quick_xml::events::Event::Eof => {
@@ -237,7 +241,6 @@ macro_rules! parse_tag {
                     }
                     _ => {}
                 }
-                __event_buf.clear();
             }
         }
     }};
