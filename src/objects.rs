@@ -1,12 +1,10 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     error::{Error, Result},
     properties::{parse_properties, Properties},
     template::Template,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
+    util::{get_attrs, map_wrapper, parse_tag, read_text_or_cdata},
     Color, Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
 };
 
@@ -219,9 +217,8 @@ impl ObjectData {
 impl ObjectData {
     /// If it is known that the object has no tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // Base path is a directory to which all other files are relative to
@@ -230,7 +227,7 @@ impl ObjectData {
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
         let (id, tile, mut n, mut t, c, mut w, mut h, mut v, mut r, template, x, y) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse::<u32>(),
                 Some("name") => name ?= v.parse(),
@@ -298,32 +295,34 @@ impl ObjectData {
         let mut shape = None;
         let mut properties = HashMap::new();
 
-        parse_tag!(parser, "object", {
-            "ellipse" => |_| {
+        parse_tag!(elem, {
+            "ellipse" => |elem: crate::util::XmlElement<'_, R>| {
                 shape = Some(ObjectShape::Ellipse {
                     width,
                     height,
                 });
+                parse_tag!(elem, {});
                 Ok(())
             },
-            "polyline" => |attrs| {
-                shape = Some(ObjectData::new_polyline(attrs)?);
+            "polyline" => |elem| {
+                shape = Some(ObjectData::new_polyline(elem)?);
                 Ok(())
             },
-            "polygon" => |attrs| {
-                shape = Some(ObjectData::new_polygon(attrs)?);
+            "polygon" => |elem| {
+                shape = Some(ObjectData::new_polygon(elem)?);
                 Ok(())
             },
-            "point" => |_| {
+            "point" => |elem: crate::util::XmlElement<'_, R>| {
                 shape = Some(ObjectShape::Point(x, y));
+                parse_tag!(elem, {});
                 Ok(())
             },
-            "text" => |attrs| {
-                shape = Some(ObjectData::new_text(attrs, parser, width, height)?);
+            "text" => |elem| {
+                shape = Some(ObjectData::new_text(elem, width, height)?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });
@@ -398,29 +397,34 @@ impl ObjectData {
 }
 
 impl ObjectData {
-    fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
+    fn new_polyline<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
+    ) -> Result<ObjectShape> {
         let points = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "points" => points ?= ObjectData::parse_points(v),
             }
             points
         );
+        parse_tag!(elem, {});
         Ok(ObjectShape::Polyline { points })
     }
 
-    fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
+    fn new_polygon<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
+    ) -> Result<ObjectShape> {
         let points = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "points" => points ?= ObjectData::parse_points(v),
             }
             points
         );
+        parse_tag!(elem, {});
         Ok(ObjectShape::Polygon { points })
     }
 
-    fn new_text(
-        attrs: Vec<OwnedAttribute>,
-        parser: &mut impl Iterator<Item = XmlEventResult>,
+    fn new_text<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         width: f32,
         height: f32,
     ) -> Result<ObjectShape> {
@@ -437,8 +441,8 @@ impl ObjectData {
             halign,
             valign,
         ) = get_attrs!(
-            for v in attrs {
-                Some("fontfamily") => font_family = v,
+            for v in (elem.attrs) {
+                Some("fontfamily") => font_family = v.to_string(),
                 Some("pixelsize") => pixel_size ?= v.parse(),
                 Some("wrap") => wrap ?= v.parse(),
                 Some("color") => color ?= v.parse(),
@@ -447,14 +451,14 @@ impl ObjectData {
                 Some("underline") => underline ?= v.parse(),
                 Some("strikeout") => strikeout ?= v.parse(),
                 Some("kerning") => kerning ?= v.parse::<i32>(),
-                Some("halign") => halign = match v.as_str() {
+                Some("halign") => halign = match v {
                     "left" => HorizontalAlignment::Left,
                     "center" => HorizontalAlignment::Center,
                     "right" => HorizontalAlignment::Right,
                     "justify" => HorizontalAlignment::Justify,
                     _ => return Err(Error::MalformedAttributes("`halign` property did not contain a valid value of 'left', 'center', 'right' or 'justify'".to_string()))
                 },
-                Some("valign") => valign = match v.as_str() {
+                Some("valign") => valign = match v {
                     "top" => VerticalAlignment::Top,
                     "center" => VerticalAlignment::Center,
                     "bottom" => VerticalAlignment::Bottom,
@@ -494,22 +498,7 @@ impl ObjectData {
         let kerning = kerning.map_or(true, |k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
-        let contents = match parser.next().map_or_else(
-            || {
-                Err(Error::PrematureEnd(
-                    "XML stream ended when trying to parse text contents".to_owned(),
-                ))
-            },
-            |r| r.map_err(Error::XmlDecodingError),
-        )? {
-            xml::reader::XmlEvent::Characters(contents) => contents,
-            _ => {
-                return Err(Error::InvalidObjectData {
-                    description: "Text attribute contained anything but characters as content"
-                        .into(),
-                })
-            }
-        };
+        let contents = read_text_or_cdata(elem, |text| Ok(text.to_string()))?;
 
         Ok(ObjectShape::Text {
             font_family,
@@ -529,7 +518,7 @@ impl ObjectData {
         })
     }
 
-    fn parse_points(s: String) -> Result<Vec<(f32, f32)>> {
+    fn parse_points(s: &str) -> Result<Vec<(f32, f32)>> {
         let pairs = s.split(' ');
         pairs
             .map(|point| point.split(','))

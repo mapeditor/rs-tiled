@@ -1,44 +1,23 @@
+use std::io::BufReader;
 use std::path::Path;
 
-use xml::{reader::XmlEvent, EventReader};
+use quick_xml::Reader;
 
-use crate::{Error, Map, ResourceCache, ResourceReader, Result};
+use crate::{util::parse_root_element, Error, Map, ResourceCache, ResourceReader, Result};
 
 pub fn parse_map(
     path: &Path,
     reader: &mut impl ResourceReader,
     cache: &mut impl ResourceCache,
 ) -> Result<Map> {
-    let mut parser =
-        EventReader::new(
-            reader
-                .read_from(path)
-                .map_err(|err| Error::ResourceLoadingError {
-                    path: path.to_owned(),
-                    err: Box::new(err),
-                })?,
-        );
-    loop {
-        match parser.next().map_err(Error::XmlDecodingError)? {
-            XmlEvent::StartElement {
-                name, attributes, ..
-            } => {
-                if name.local_name == "map" {
-                    return Map::parse_xml(
-                        &mut parser.into_iter(),
-                        attributes,
-                        path,
-                        reader,
-                        cache,
-                    );
-                }
-            }
-            XmlEvent::EndDocument => {
-                return Err(Error::PrematureEnd(
-                    "Document ended before map was parsed".to_string(),
-                ))
-            }
-            _ => {}
-        }
-    }
+    let file = reader
+        .read_from(path)
+        .map_err(|err| Error::ResourceLoadingError {
+            path: path.to_owned(),
+            err: Box::new(err),
+        })?;
+    let mut parser = Reader::from_reader(BufReader::new(file));
+    parse_root_element(&mut parser, b"map", |elem| {
+        Map::parse_xml(elem, path, reader, cache)
+    })
 }

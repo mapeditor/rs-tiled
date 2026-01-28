@@ -1,12 +1,10 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Color, Error, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader,
-    Result, Tileset,
+    util::{get_attrs, map_wrapper, parse_tag},
+    Color, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader, Result,
+    Tileset,
 };
 
 /// Raw data referring to a map object layer or tile collision data.
@@ -20,9 +18,8 @@ pub struct ObjectLayerData {
 impl ObjectLayerData {
     /// If it is known that there are no objects with tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // path_relative_to is a directory to which all other files are relative to
@@ -31,20 +28,20 @@ impl ObjectLayerData {
         cache: &mut impl ResourceCache,
     ) -> Result<(ObjectLayerData, Properties)> {
         let c = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("color") => color ?= v.parse(),
             }
             color
         );
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
-        parse_tag!(parser, "objectgroup", {
-            "object" => |attrs| {
-                objects.push(ObjectData::new(parser, attrs, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
+        parse_tag!(elem, {
+            "object" => |elem| {
+                objects.push(ObjectData::new(elem, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

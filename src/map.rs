@@ -8,14 +8,12 @@ use std::{
     sync::Arc,
 };
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::{Error, Result},
+    error::Result,
     layers::{LayerData, LayerTag},
     properties::{parse_properties, Color, Properties},
     tileset::Tileset,
-    util::{get_attrs, parse_tag, XmlEventResult},
+    util::{get_attrs, parse_tag},
     EmbeddedParseResultType, Layer, ResourceCache, ResourceReader,
 };
 
@@ -159,9 +157,8 @@ impl Map {
 }
 
 impl Map {
-    pub(crate) fn parse_xml(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn parse_xml<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         map_path: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -170,7 +167,7 @@ impl Map {
             (c, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length),
             (v, o, w, h, tw, th),
         ) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("backgroundcolor") => colour ?= v.parse(),
                 Some("infinite") => infinite = v == "1",
                 Some("type") => user_type ?= v.parse(),
@@ -178,7 +175,7 @@ impl Map {
                 Some("staggeraxis") => stagger_axis ?= v.parse::<StaggerAxis>(),
                 Some("staggerindex") => stagger_index ?= v.parse::<StaggerIndex>(),
                 Some("hexsidelength") => hex_side_length ?= v.parse(),
-                "version" => version = v,
+                "version" => version = v.to_string(),
                 "orientation" => orientation ?= v.parse::<Orientation>(),
                 "width" => width ?= v.parse::<u32>(),
                 "height" => height ?= v.parse::<u32>(),
@@ -200,9 +197,9 @@ impl Map {
         let mut properties = HashMap::new();
         let mut tilesets = Vec::new();
 
-        parse_tag!(parser, "map", {
-            "tileset" => |attrs: Vec<OwnedAttribute>| {
-                let res = Tileset::parse_xml_in_map(parser, &attrs, map_path,  reader, cache)?;
+        parse_tag!(elem, {
+            "tileset" => |elem| {
+                let res = Tileset::parse_xml_in_map(elem, map_path, reader, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         let tileset = if let Some(ts) = cache.get_tileset(&tileset_path) {
@@ -221,10 +218,9 @@ impl Map {
                 };
                 Ok(())
             },
-            "layer" => |attrs| {
+            "layer" => |elem| {
                 layers.push(LayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     LayerTag::Tiles,
                     infinite,
                     map_path,
@@ -235,10 +231,9 @@ impl Map {
                 )?);
                 Ok(())
             },
-            "imagelayer" => |attrs| {
+            "imagelayer" => |elem| {
                 layers.push(LayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     LayerTag::Image,
                     infinite,
                     map_path,
@@ -249,10 +244,9 @@ impl Map {
                 )?);
                 Ok(())
             },
-            "objectgroup" => |attrs| {
+            "objectgroup" => |elem| {
                 layers.push(LayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     LayerTag::Objects,
                     infinite,
                     map_path,
@@ -263,10 +257,9 @@ impl Map {
                 )?);
                 Ok(())
             },
-            "group" => |attrs| {
+            "group" => |elem| {
                 layers.push(LayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     LayerTag::Group,
                     infinite,
                     map_path,
@@ -277,8 +270,8 @@ impl Map {
                 )?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

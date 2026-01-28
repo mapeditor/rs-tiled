@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Error, Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset,
+    util::{get_attrs, map_wrapper, parse_tag},
+    Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset,
 };
 
 mod finite;
@@ -94,14 +92,13 @@ pub(crate) enum TileLayerData {
 }
 
 impl TileLayerData {
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         infinite: bool,
         tilesets: &[MapTilesetGid],
     ) -> Result<(Self, Properties)> {
         let (width, height) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "width" => width ?= v.parse::<u32>(),
                 "height" => height ?= v.parse::<u32>(),
             }
@@ -109,17 +106,17 @@ impl TileLayerData {
         );
         let mut result = Self::Finite(Default::default());
         let mut properties = HashMap::new();
-        parse_tag!(parser, "layer", {
-            "data" => |attrs| {
+        parse_tag!(elem, {
+            "data" => |elem| {
                 if infinite {
-                    result = Self::Infinite(InfiniteTileLayerData::new(parser, attrs, tilesets)?);
+                    result = Self::Infinite(InfiniteTileLayerData::new(elem, tilesets)?);
                 } else {
-                    result = Self::Finite(FiniteTileLayerData::new(parser, attrs, width, height, tilesets)?);
+                    result = Self::Finite(FiniteTileLayerData::new(elem, width, height, tilesets)?);
                 }
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

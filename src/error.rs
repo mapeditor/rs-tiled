@@ -56,7 +56,7 @@ pub enum Error {
     /// An error occurred when decoding a csv encoded dataset.
     CsvDecodingError(CsvDecodingError),
     /// An error occurred when parsing an XML file, such as a TMX or TSX file.
-    XmlDecodingError(xml::reader::Error),
+    XmlDecodingError(quick_xml::Error),
     #[cfg(feature = "world")]
     /// An error occurred when attempting to deserialize a JSON file.
     JsonDecodingError(serde_json::Error),

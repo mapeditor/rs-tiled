@@ -1,7 +1,5 @@
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    util::{get_attrs, map_wrapper, XmlEventResult},
+    util::{get_attrs, map_wrapper},
     LayerTile, LayerTileData, MapTilesetGid, Result,
 };
 
@@ -38,22 +36,21 @@ impl FiniteTileLayerData {
         self.height
     }
 
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         width: u32,
         height: u32,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
-            for v in attrs {
-                Some("encoding") => encoding = v,
-                Some("compression") => compression = v,
+            for v in (elem.attrs) {
+                Some("encoding") => encoding = v.to_string(),
+                Some("compression") => compression = v.to_string(),
             }
             (encoding, compression)
         );
 
-        let tiles = parse_data_line(e, c, parser, tilesets)?;
+        let tiles = parse_data_line(e, c, elem, tilesets)?;
 
         Ok(Self {
             width,

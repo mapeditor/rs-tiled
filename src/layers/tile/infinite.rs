@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    util::{floor_div, get_attrs, map_wrapper, parse_tag, XmlEventResult},
+    util::{floor_div, get_attrs, map_wrapper, parse_tag},
     Error, LayerTile, LayerTileData, MapTilesetGid, Result,
 };
 
@@ -22,23 +20,22 @@ impl std::fmt::Debug for InfiniteTileLayerData {
 }
 
 impl InfiniteTileLayerData {
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (e, c) = get_attrs!(
-            for v in attrs {
-                Some("encoding") => encoding = v,
-                Some("compression") => compression = v,
+            for v in (elem.attrs) {
+                Some("encoding") => encoding = v.to_string(),
+                Some("compression") => compression = v.to_string(),
             }
             (encoding, compression)
         );
 
         let mut chunks = HashMap::<(i32, i32), ChunkData>::new();
-        parse_tag!(parser, "data", {
-            "chunk" => |attrs| {
-                let chunk = InternalChunk::new(parser, attrs, e.clone(), c.clone(), tilesets)?;
+        parse_tag!(elem, {
+            "chunk" => |elem| {
+                let chunk = InternalChunk::new(elem, e.clone(), c.clone(), tilesets)?;
                 for x in chunk.x..chunk.x + chunk.width as i32 {
                     for y in chunk.y..chunk.y + chunk.height as i32 {
                         let chunk_pos = ChunkData::tile_to_chunk_pos(x, y);
@@ -184,15 +181,14 @@ struct InternalChunk {
 }
 
 impl InternalChunk {
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         encoding: Option<String>,
         compression: Option<String>,
         tilesets: &[MapTilesetGid],
     ) -> Result<Self> {
         let (x, y, width, height) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "x" => x ?= v.parse::<i32>(),
                 "y" => y ?= v.parse::<i32>(),
                 "width" => width ?= v.parse::<u32>(),
@@ -201,7 +197,7 @@ impl InternalChunk {
             (x, y, width, height)
         );
 
-        let tiles = parse_data_line(encoding, compression, parser, tilesets)?;
+        let tiles = parse_data_line(encoding, compression, elem, tilesets)?;
 
         Ok(InternalChunk {
             x,

@@ -1,7 +1,5 @@
 use std::{path::Path, sync::Arc};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
     error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid, ResourceCache,
     ResourceReader, Tileset,
@@ -67,9 +65,8 @@ impl LayerData {
         self.id
     }
 
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         tag: LayerTag,
         infinite: bool,
         map_path: &Path,
@@ -91,7 +88,7 @@ impl LayerData {
             user_type,
             user_class,
         ) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("opacity") => opacity ?= v.parse(),
                 Some("tintcolor") => tint_color ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
@@ -99,7 +96,7 @@ impl LayerData {
                 Some("offsety") => offset_y ?= v.parse(),
                 Some("parallaxx") => parallax_x ?= v.parse(),
                 Some("parallaxy") => parallax_y ?= v.parse(),
-                Some("name") => name = v,
+                Some("name") => name = v.to_string(),
                 Some("id") => id ?= v.parse(),
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
@@ -109,13 +106,12 @@ impl LayerData {
 
         let (ty, properties) = match tag {
             LayerTag::Tiles => {
-                let (ty, properties) = TileLayerData::new(parser, attrs, infinite, tilesets)?;
+                let (ty, properties) = TileLayerData::new(elem, infinite, tilesets)?;
                 (LayerDataType::Tiles(ty), properties)
             }
             LayerTag::Objects => {
                 let (ty, properties) = ObjectLayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     Some(tilesets),
                     for_tileset,
                     map_path.parent().ok_or(crate::Error::PathIsNotFile)?,
@@ -125,12 +121,12 @@ impl LayerData {
                 (LayerDataType::Objects(ty), properties)
             }
             LayerTag::Image => {
-                let (ty, properties) = ImageLayerData::new(parser, attrs, map_path)?;
+                let (ty, properties) = ImageLayerData::new(elem, map_path)?;
                 (LayerDataType::Image(ty), properties)
             }
             LayerTag::Group => {
                 let (ty, properties) = GroupLayerData::new(
-                    parser,
+                    elem,
                     infinite,
                     map_path,
                     tilesets,
