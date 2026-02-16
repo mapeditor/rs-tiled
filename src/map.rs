@@ -171,7 +171,17 @@ impl Map {
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
         let (
-            (c, infinite, user_type, user_class, skew_x, skew_y, stagger_axis, stagger_index, hex_side_length),
+            (
+                c,
+                infinite,
+                user_type,
+                user_class,
+                skew_x,
+                skew_y,
+                stagger_axis,
+                stagger_index,
+                hex_side_length,
+            ),
             (v, o, w, h, tw, th),
         ) = get_attrs!(
             for v in (elem.attrs) {
