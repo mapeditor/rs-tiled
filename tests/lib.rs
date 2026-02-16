@@ -19,6 +19,8 @@ fn compare_everything_but_sources(r: &Map, e: &Map) {
     assert_eq!(r.height, e.height);
     assert_eq!(r.tile_width, e.tile_width);
     assert_eq!(r.tile_height, e.tile_height);
+    assert_eq!(r.skew_x, e.skew_x);
+    assert_eq!(r.skew_y, e.skew_y);
     assert_eq!(r.properties, e.properties);
     assert_eq!(r.background_color, e.background_color);
     assert_eq!(r.infinite(), e.infinite());
