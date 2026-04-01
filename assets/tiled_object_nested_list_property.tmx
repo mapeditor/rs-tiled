@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="2" height="2" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="5">
+ <layer id="1" name="Tile Layer 1" width="2" height="2">
+  <data encoding="csv">
+0,0,
+0,0
+</data>
+ </layer>
+ <objectgroup id="2" name="Object Layer 1">
+  <object id="2" x="0" y="0" width="32" height="32">
+   <properties>
+    <property name="list property" type="list">
+     <item type="object" value="4"/>
+     <item type="object" value="3"/>
+     <item type="bool" value="true"/>
+     <item type="list">
+      <item type="bool" value="false"/>
+      <item type="bool" value="true"/>
+     </item>
+    </property>
+   </properties>
+  </object>
+  <object id="3" x="32" y="32" width="32" height="32">
+   <properties>
+    <property name="object property" type="object" value="0"/>
+   </properties>
+  </object>
+  <object id="4" x="32" y="0" width="32" height="32">
+   <properties>
+    <property name="object property" type="object" value="0"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>

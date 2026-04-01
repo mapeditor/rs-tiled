@@ -448,6 +448,66 @@ fn test_object_property() {
 }
 
 #[test]
+fn test_object_list_property() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_list_property.tmx")
+        .unwrap();
+    let layer = r.get_layer(1).unwrap();
+    let prop_value = if let Some(PropertyValue::ListValue(v)) = layer
+        .as_object_layer()
+        .unwrap()
+        .get_object(0)
+        .unwrap()
+        .properties
+        .get("list property")
+    {
+        v.clone()
+    } else {
+        vec![]
+    };
+    assert_eq!(
+        vec![
+            PropertyValue::ObjectValue(4),
+            PropertyValue::ObjectValue(3),
+            PropertyValue::BoolValue(true),
+        ],
+        prop_value
+    );
+}
+
+#[test]
+fn test_object_nested_list_property() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_nested_list_property.tmx")
+        .unwrap();
+    let layer = r.get_layer(1).unwrap();
+    let prop_value = if let Some(PropertyValue::ListValue(v)) = layer
+        .as_object_layer()
+        .unwrap()
+        .get_object(0)
+        .unwrap()
+        .properties
+        .get("list property")
+    {
+        v.clone()
+    } else {
+        vec![]
+    };
+    assert_eq!(
+        vec![
+            PropertyValue::ObjectValue(4),
+            PropertyValue::ObjectValue(3),
+            PropertyValue::BoolValue(true),
+            PropertyValue::ListValue(vec![
+                PropertyValue::BoolValue(false),
+                PropertyValue::BoolValue(true),
+            ])
+        ],
+        prop_value
+    );
+}
+
+#[test]
 fn test_class_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_class_property.tmx")
