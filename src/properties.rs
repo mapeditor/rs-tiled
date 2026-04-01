@@ -154,47 +154,63 @@ pub(crate) fn parse_properties(
                 }
                 (obj_type, value, name, propertytype)
             );
-            let t = t.unwrap_or_else(|| "string".to_owned());
-            if t == "class" {
-                // Class properties will have their member values stored in a nested <properties>
-                // element. Only the actually set members are saved. When no members have been set
-                // the properties element is left out entirely.
-                let properties = if has_properties_tag_next(parser) {
-                    parse_properties(parser)?
-                } else {
-                    HashMap::new()
-                };
-                p.insert(k, PropertyValue::ClassValue {
-                    property_type: p_t.unwrap_or_default(),
-                    properties,
-                });
-                return Ok(());
-            }
 
-            if t == "list" {
-                let values = parse_items(parser)?;
-                p.insert(k, PropertyValue::ListValue(values));
-                return Ok(());
-            }
+            let v = parse_property_value(t, v_attr, Some(&k), p_t, parser)?;
+            p.insert(k, v);
 
-            let v: String = match v_attr {
-                Some(val) => val,
-                None => {
-                    // if the "value" attribute was missing, might be a multiline string
-                    match parser.next() {
-                        Some(Ok(XmlEvent::Characters(s))) => Ok(s),
-                        Some(Err(err)) => Err(Error::XmlDecodingError(err)),
-                        None => unreachable!(), // EndDocument or error must come first
-                        _ => Err(Error::MalformedAttributes(format!("property '{}' is missing a value", k))),
-                    }?
-                }
-            };
-
-            p.insert(k, PropertyValue::new(t, v)?);
             Ok(())
         },
     });
     Ok(p)
+}
+
+fn parse_property_value(
+    t: Option<String>,
+    v_attr: Option<String>,
+    k: Option<&String>,
+    p_t: Option<String>,
+    parser: &mut impl Iterator<Item = XmlEventResult>,
+) -> Result<PropertyValue> {
+    let t = t.unwrap_or_else(|| "string".to_owned());
+
+    if t == "class" {
+        // Class properties will have their member values stored in a nested <properties>
+        // element. Only the actually set members are saved. When no members have been set
+        // the properties element is left out entirely.
+        let properties = if has_properties_tag_next(parser) {
+            parse_properties(parser)?
+        } else {
+            HashMap::new()
+        };
+        return Ok(PropertyValue::ClassValue {
+            property_type: p_t.unwrap_or_default(),
+            properties,
+        });
+    }
+
+    if t == "list" {
+        let values = parse_items(parser)?;
+        return Ok(PropertyValue::ListValue(values));
+    }
+
+    let v: String = match v_attr {
+        Some(val) => val,
+        None => {
+            // if the "value" attribute was missing, might be a multiline string
+            match parser.next() {
+                Some(Ok(XmlEvent::Characters(s))) => Ok(s),
+                Some(Err(err)) => Err(Error::XmlDecodingError(err)),
+                None => unreachable!(), // EndDocument or error must come first
+                _ => Err(Error::MalformedAttributes(if let Some(k) = k {
+                    format!("property '{}' is missing a value", k)
+                } else {
+                    "property is missing a value".to_string()
+                })),
+            }?
+        }
+    };
+
+    PropertyValue::new(t, v)
 }
 
 /// Checks if there is a properties tag next in the parser. Will consume any whitespace or comments.
@@ -232,43 +248,9 @@ fn parse_items(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<
                 }
                 (obj_type, value, propertytype)
             );
-            let t = t.unwrap_or_else(|| "string".to_owned());
-            if t == "class" {
-                // Class properties will have their member values stored in a nested <properties>
-                // element. Only the actually set members are saved. When no members have been set
-                // the properties element is left out entirely.
-                let properties = if has_properties_tag_next(parser) {
-                    parse_properties(parser)?
-                } else {
-                    HashMap::new()
-                };
-                values.push(PropertyValue::ClassValue {
-                    property_type: p_t.unwrap_or_default(),
-                    properties,
-                });
-                return Ok(());
-            }
 
-            if t == "list" {
-                let nested_values = parse_items(parser)?;
-                values.push(PropertyValue::ListValue(nested_values));
-                return Ok(());
-            }
-
-            let v: String = match v_attr {
-                Some(val) => val,
-                None => {
-                    // if the "value" attribute was missing, might be a multiline string
-                    match parser.next() {
-                        Some(Ok(XmlEvent::Characters(s))) => Ok(s),
-                        Some(Err(err)) => Err(Error::XmlDecodingError(err)),
-                        None => unreachable!(), // EndDocument or error must come first
-                        _ => Err(Error::MalformedAttributes("property is missing a value".to_string())),
-                    }?
-                }
-            };
-
-            values.push(PropertyValue::new(t, v)?);
+            let value = parse_property_value(t, v_attr, None, p_t, parser)?;
+            values.push(value);
 
             Ok(())
         }
