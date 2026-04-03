@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### [Fixed]
+- Fixed a compile error when the `world` feature is enabled, but serde's `derive` feature isn't separately enabled by the dependent crate or another dependency. (#339)
+
 ## [0.15.0]
 ### Added
 - New `ImageLayer` `repeat_x`/`y` fields are now parsed from map image layers. (#324)
