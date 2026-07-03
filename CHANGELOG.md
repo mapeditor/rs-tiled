@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added support for list properties. (#338)
 
+### [Fixed]
+- Fixed a compile error when the `world` feature is enabled, but serde's `derive` feature isn't separately enabled by the dependent crate or another dependency. (#339)
+
 ## [0.15.0]
 ### Added
 - New `ImageLayer` `repeat_x`/`y` fields are now parsed from map image layers. (#324)

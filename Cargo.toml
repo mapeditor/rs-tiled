@@ -14,7 +14,7 @@ include = ["src/**/*.rs", "README.md", "LICENSE", "CHANGELOG.md"]
 [features]
 default = ["zstd"]
 wasm = ["zstd/wasm"]
-world = ["regex", "serde", "serde_json", "serde_regex"]
+world = ["regex", "serde", "serde_json", "serde_regex", "serde/derive"]
 example-sfml = ["dep:sfml"]
 example-ggez = ["dep:ggez"]
 
