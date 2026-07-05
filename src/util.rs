@@ -203,40 +203,29 @@ macro_rules! parse_tag {
     }
 }
 
-macro_rules! parse_tag_shallow {
-    ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
-        #[allow(unused_variables)]
-        let mut depth = 0;
+macro_rules! parse_tag_with_depth {
+    ($parser:expr, $close_tag:expr, $depth:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
+        let starting_depth = $depth.clone();
         while let Some(next) = $parser.next() {
-            match next.map_err(Error::XmlDecodingError)? {
+            match next.clone().map_err(Error::XmlDecodingError)? {
+                #[allow(unused_variables)]
                 $(
-                    xml::reader::XmlEvent::StartElement {name, attributes, ..} if name.local_name == $open_tag => {
-                        if $open_tag == $close_tag {
-                            depth += 1;
+                    xml::reader::XmlEvent::StartElement {name, attributes, ..} => {
+                        *$depth += 1;
+                        if name.local_name == $open_tag {
+                            $open_method(attributes, $depth)?
                         }
-
-                        if depth > 1 {
-                            break
-                        }
-
-                        $open_method(attributes)?;
                     },
                 )*
 
-                xml::reader::XmlEvent::EndElement {name, ..} if name.local_name == $close_tag => {
-                    if depth == 0 {
-                        break
+
+                xml::reader::XmlEvent::EndElement {name, ..} => {
+                    *$depth -= 1;
+
+                    if name.local_name == $close_tag && starting_depth - 1 == *$depth {
+                        break;
                     }
-
-                    $(
-                        if $open_tag == $close_tag {
-                            depth -= 1;
-                            continue
-                        }
-                    )*
-
-                    break
-                }
+                },
 
                 xml::reader::XmlEvent::EndDocument => {
                     return Err(Error::PrematureEnd("Document ended before we expected.".to_string()));
@@ -284,7 +273,7 @@ macro_rules! map_wrapper {
 pub(crate) use get_attrs;
 pub(crate) use map_wrapper;
 pub(crate) use parse_tag;
-pub(crate) use parse_tag_shallow;
+pub(crate) use parse_tag_with_depth;
 
 use crate::{Gid, MapTilesetGid};
 

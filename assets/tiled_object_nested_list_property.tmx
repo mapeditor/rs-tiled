@@ -16,6 +16,10 @@
      <item type="list">
       <item type="bool" value="false"/>
       <item type="bool" value="true"/>
+      <item type="list">
+       <item type="bool" value="false"/>
+       <item type="bool" value="true"/>
+      </item>
      </item>
      <item type="list">
       <item type="class" propertytype="ListClass">

@@ -6,7 +6,7 @@ use crate::{
     error::{Error, Result},
     util::{get_attrs, parse_tag, XmlEventResult},
 };
-use crate::util::parse_tag_shallow;
+use crate::util::parse_tag_with_depth;
 
 /// Represents a RGBA color with 8-bit depth on each channel.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -156,7 +156,8 @@ pub(crate) fn parse_properties(
                 (obj_type, value, name, propertytype)
             );
 
-            let v = parse_property_value(t, v_attr, Some(&k), p_t, false, parser)?;
+            let mut depth = 0;
+            let v = parse_property_value(t, v_attr, Some(&k), p_t, &mut depth, parser)?;
             p.insert(k, v);
 
             Ok(())
@@ -170,7 +171,7 @@ fn parse_property_value(
     v_attr: Option<String>,
     k: Option<&String>,
     p_t: Option<String>,
-    in_list: bool,
+    depth: &mut usize,
     parser: &mut impl Iterator<Item = XmlEventResult>,
 ) -> Result<PropertyValue> {
     let t = t.unwrap_or_else(|| "string".to_owned());
@@ -191,7 +192,7 @@ fn parse_property_value(
     }
 
     if t == "list" {
-        let values = parse_items(in_list, parser)?;
+        let values = parse_items(depth, parser)?;
         return Ok(PropertyValue::ListValue(values));
     }
 
@@ -239,14 +240,15 @@ fn has_properties_tag_next(parser: &mut impl Iterator<Item = XmlEventResult>) ->
 }
 
 fn parse_items(
-    in_list: bool,
+    depth: &mut usize,
     parser: &mut impl Iterator<Item = XmlEventResult>,
 ) -> Result<Vec<PropertyValue>> {
     let mut values = vec![];
-    let key = if in_list { "item" } else { "property" };
 
-    parse_tag_shallow!(parser, key, {
-        "item" => |attrs:Vec<OwnedAttribute>| {
+    if *depth == 0 {
+        *depth += 1;
+        parse_tag!(parser, "property", {
+            "item" => |attrs:Vec<OwnedAttribute>| {
             let (t, v_attr, p_t) = get_attrs!(
                 for attr in attrs {
                     Some("type") => obj_type = attr,
@@ -256,7 +258,27 @@ fn parse_items(
                 (obj_type, value, propertytype)
             );
 
-            let value = parse_property_value(t, v_attr, None, p_t, true, parser)?;
+            let value = parse_property_value(t, v_attr, None, p_t, depth, parser)?;
+            values.push(value);
+
+            Ok(())
+        }
+        });
+        return Ok(values);
+    }
+
+    parse_tag_with_depth!(parser, "item", depth, {
+        "item" => |attrs:Vec<OwnedAttribute>, depth: &mut usize| {
+            let (t, v_attr, p_t) = get_attrs!(
+                for attr in attrs {
+                    Some("type") => obj_type = attr,
+                    Some("value") => value = attr,
+                    Some("propertytype") => propertytype = attr,
+                }
+                (obj_type, value, propertytype)
+            );
+
+            let value = parse_property_value(t, v_attr, None, p_t, depth, parser)?;
             values.push(value);
 
             Ok(())

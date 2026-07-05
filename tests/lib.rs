@@ -498,6 +498,10 @@ fn test_object_nested_list_property() {
             PropertyValue::ListValue(vec![
                 PropertyValue::BoolValue(false),
                 PropertyValue::BoolValue(true),
+                PropertyValue::ListValue(vec![
+                    PropertyValue::BoolValue(false),
+                    PropertyValue::BoolValue(true),
+                ])
             ]),
             PropertyValue::ListValue(vec![PropertyValue::ClassValue {
                 property_type: "ListClass".to_string(),
