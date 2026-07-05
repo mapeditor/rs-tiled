@@ -203,6 +203,50 @@ macro_rules! parse_tag {
     }
 }
 
+macro_rules! parse_tag_shallow {
+    ($parser:expr, $close_tag:expr, {$($open_tag:expr => $open_method:expr),* $(,)*}) => {
+        #[allow(unused_variables)]
+        let mut depth = 0;
+        while let Some(next) = $parser.next() {
+            match next.map_err(Error::XmlDecodingError)? {
+                $(
+                    xml::reader::XmlEvent::StartElement {name, attributes, ..} if name.local_name == $open_tag => {
+                        if $open_tag == $close_tag {
+                            depth += 1;
+                        }
+
+                        if depth > 1 {
+                            break
+                        }
+
+                        $open_method(attributes)?;
+                    },
+                )*
+
+                xml::reader::XmlEvent::EndElement {name, ..} if name.local_name == $close_tag => {
+                    if depth == 0 {
+                        break
+                    }
+
+                    $(
+                        if $open_tag == $close_tag {
+                            depth -= 1;
+                            continue
+                        }
+                    )*
+
+                    break
+                }
+
+                xml::reader::XmlEvent::EndDocument => {
+                    return Err(Error::PrematureEnd("Document ended before we expected.".to_string()));
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
 /// Creates a new type that wraps an internal data type over along with a map.
 macro_rules! map_wrapper {
     ($(#[$attrs:meta])* $name:ident => $data_ty:ty) => {
@@ -240,6 +284,7 @@ macro_rules! map_wrapper {
 pub(crate) use get_attrs;
 pub(crate) use map_wrapper;
 pub(crate) use parse_tag;
+pub(crate) use parse_tag_shallow;
 
 use crate::{Gid, MapTilesetGid};
 

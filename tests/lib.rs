@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use tiled::{
-    Color, FiniteTileLayer, HorizontalAlignment, LayerType, Loader, Map, ObjectShape,
-    PropertyValue, ResourceCache, TileLayer, TilesetLocation, VerticalAlignment, WangId,
-};
+use tiled::{Color, FiniteTileLayer, HorizontalAlignment, LayerType, Loader, Map, ObjectShape, Properties, PropertyValue, ResourceCache, TileLayer, TilesetLocation, VerticalAlignment, WangId};
 
 fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
     match data {
@@ -501,7 +498,23 @@ fn test_object_nested_list_property() {
             PropertyValue::ListValue(vec![
                 PropertyValue::BoolValue(false),
                 PropertyValue::BoolValue(true),
-            ])
+            ]),
+            PropertyValue::ListValue(vec![PropertyValue::ClassValue {
+                property_type: "ListClass".to_string(),
+                properties: Properties::from([(
+                    "list".to_string(),
+                    PropertyValue::ListValue(vec![PropertyValue::ClassValue {
+                        property_type: "Class".to_string(),
+                        properties: Properties::from([
+                            (
+                                "member_1".to_string(),
+                                PropertyValue::StringValue("test".to_string())
+                            ),
+                            ("member_2".to_string(), PropertyValue::IntValue(10))
+                        ])
+                    }])
+                ),])
+            }])
         ],
         prop_value
     );

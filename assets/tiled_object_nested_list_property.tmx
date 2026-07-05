@@ -17,6 +17,20 @@
       <item type="bool" value="false"/>
       <item type="bool" value="true"/>
      </item>
+     <item type="list">
+      <item type="class" propertytype="ListClass">
+       <properties>
+        <property name="list" type="list">
+         <item type="class" propertytype="Class">
+          <properties>
+           <property name="member_1" value="test"/>
+           <property name="member_2" type="int" value="10"/>
+          </properties>
+         </item>
+        </property>
+       </properties>
+      </item>
+     </item>
     </property>
    </properties>
   </object>

@@ -6,6 +6,7 @@ use crate::{
     error::{Error, Result},
     util::{get_attrs, parse_tag, XmlEventResult},
 };
+use crate::util::parse_tag_shallow;
 
 /// Represents a RGBA color with 8-bit depth on each channel.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -155,7 +156,7 @@ pub(crate) fn parse_properties(
                 (obj_type, value, name, propertytype)
             );
 
-            let v = parse_property_value(t, v_attr, Some(&k), p_t, parser)?;
+            let v = parse_property_value(t, v_attr, Some(&k), p_t, false, parser)?;
             p.insert(k, v);
 
             Ok(())
@@ -169,6 +170,7 @@ fn parse_property_value(
     v_attr: Option<String>,
     k: Option<&String>,
     p_t: Option<String>,
+    in_list: bool,
     parser: &mut impl Iterator<Item = XmlEventResult>,
 ) -> Result<PropertyValue> {
     let t = t.unwrap_or_else(|| "string".to_owned());
@@ -189,7 +191,7 @@ fn parse_property_value(
     }
 
     if t == "list" {
-        let values = parse_items(parser)?;
+        let values = parse_items(in_list, parser)?;
         return Ok(PropertyValue::ListValue(values));
     }
 
@@ -236,9 +238,14 @@ fn has_properties_tag_next(parser: &mut impl Iterator<Item = XmlEventResult>) ->
     false
 }
 
-fn parse_items(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<PropertyValue>> {
+fn parse_items(
+    in_list: bool,
+    parser: &mut impl Iterator<Item = XmlEventResult>,
+) -> Result<Vec<PropertyValue>> {
     let mut values = vec![];
-    parse_tag!(parser, "property", {
+    let key = if in_list { "item" } else { "property" };
+
+    parse_tag_shallow!(parser, key, {
         "item" => |attrs:Vec<OwnedAttribute>| {
             let (t, v_attr, p_t) = get_attrs!(
                 for attr in attrs {
@@ -249,7 +256,7 @@ fn parse_items(parser: &mut impl Iterator<Item = XmlEventResult>) -> Result<Vec<
                 (obj_type, value, propertytype)
             );
 
-            let value = parse_property_value(t, v_attr, None, p_t, parser)?;
+            let value = parse_property_value(t, v_attr, None, p_t, true, parser)?;
             values.push(value);
 
             Ok(())
