@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use crate::{
-    properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag},
     Result, TileId,
+    properties::{Properties, parse_properties},
+    util::{get_attrs, parse_tag},
 };
 
 mod wang_color;
@@ -12,18 +12,13 @@ mod wang_tile;
 pub use wang_tile::*;
 
 /// Wang set's terrain brush connection type.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 #[allow(missing_docs)]
 pub enum WangSetType {
     Corner,
     Edge,
+    #[default]
     Mixed,
-}
-
-impl Default for WangSetType {
-    fn default() -> Self {
-        WangSetType::Mixed
-    }
 }
 
 /// Raw data belonging to a WangSet.

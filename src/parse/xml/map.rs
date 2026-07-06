@@ -3,7 +3,7 @@ use std::path::Path;
 
 use quick_xml::Reader;
 
-use crate::{util::parse_root_element, Error, Map, ResourceCache, ResourceReader, Result};
+use crate::{Error, Map, ResourceCache, ResourceReader, Result, util::parse_root_element};
 
 pub fn parse_map(
     path: &Path,

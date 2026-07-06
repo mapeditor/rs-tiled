@@ -115,7 +115,7 @@ fn test_world_pattern() {
 
     let paths = vec!["bad_map.tmx", "OVERFLOW-x099-y099.tmx"];
 
-    let errors = vec![
+    let errors = [
         "No match found for path: 'bad_map.tmx'",
         "Range error: Capture x * multiplierX causes overflow",
     ];
@@ -123,7 +123,7 @@ fn test_world_pattern() {
     let matches = e.match_paths(&paths);
 
     for (index, result) in matches.iter().enumerate() {
-        assert_eq!(result.is_err(), true);
+        assert!(result.is_err());
         assert_eq!(result.as_ref().err().unwrap().to_string(), errors[index]);
     }
 }
@@ -298,7 +298,7 @@ fn test_tile_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
         .unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) = r.tilesets()[0]
+    let prop_value: String = if let Some(PropertyValue::StringValue(v)) = r.tilesets()[0]
         .get_tile(1)
         .unwrap()
         .properties
@@ -316,7 +316,7 @@ fn test_layer_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
         .unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
+    let prop_value: String = if let Some(PropertyValue::StringValue(v)) =
         r.get_layer(0).unwrap().properties.get("prop3")
     {
         v.clone()
@@ -334,7 +334,7 @@ fn test_object_group_property() {
     let group_layer = r.get_layer(1).unwrap();
     let group_layer = group_layer.as_group_layer().unwrap();
     let sub_layer = group_layer.get_layer(0).unwrap();
-    let prop_value: bool = if let Some(&PropertyValue::BoolValue(ref v)) =
+    let prop_value: bool = if let Some(PropertyValue::BoolValue(v)) =
         sub_layer.properties.get("an object group property")
     {
         *v
@@ -349,7 +349,7 @@ fn test_tileset_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64.tmx")
         .unwrap();
-    let prop_value: String = if let Some(&PropertyValue::StringValue(ref v)) =
+    let prop_value: String = if let Some(PropertyValue::StringValue(v)) =
         r.tilesets()[0].properties.get("tileset property")
     {
         v.clone()
@@ -453,8 +453,8 @@ fn test_repeat() {
             3 => {
                 assert_eq!(layer.name, "ImageLayer");
                 let image_layer = layer.as_image_layer().unwrap();
-                assert_eq!(image_layer.repeat_x, true);
-                assert_eq!(image_layer.repeat_y, true);
+                assert!(image_layer.repeat_x);
+                assert!(image_layer.repeat_y);
             }
             _ => panic!("unexpected layer"),
         }
@@ -808,7 +808,7 @@ fn test_reading_wang_sets() {
         .unwrap();
 
     // We will pick some random data from the wangsets for tessting
-    let tileset = map.tilesets().get(0).unwrap();
+    let tileset = map.tilesets().first().unwrap();
     assert_eq!(
         tileset.transformations,
         tiled::Transformations {
@@ -819,7 +819,7 @@ fn test_reading_wang_sets() {
         }
     );
     assert_eq!(tileset.wang_sets.len(), 3);
-    let wangset_1 = tileset.wang_sets.get(0).unwrap();
+    let wangset_1 = tileset.wang_sets.first().unwrap();
     assert_eq!(wangset_1.user_type, "VoidSet");
     assert_eq!(wangset_1.wang_colors[0].user_type, "VoidColor");
     let wangset_2 = tileset.wang_sets.get(1).unwrap();
@@ -857,7 +857,7 @@ fn test_text_object() {
         } => {
             assert_eq!(font_family.as_str(), "sans-serif");
             assert_eq!(*pixel_size, 16);
-            assert_eq!(*wrap, false);
+            assert!(!(*wrap));
             assert_eq!(
                 *color,
                 Color {
@@ -867,11 +867,11 @@ fn test_text_object() {
                     alpha: 100
                 }
             );
-            assert_eq!(*bold, true);
-            assert_eq!(*italic, true);
-            assert_eq!(*underline, true);
-            assert_eq!(*strikeout, true);
-            assert_eq!(*kerning, true);
+            assert!(*bold);
+            assert!(*italic);
+            assert!(*underline);
+            assert!(*strikeout);
+            assert!(*kerning);
             assert_eq!(*halign, HorizontalAlignment::Center);
             assert_eq!(*valign, VerticalAlignment::Bottom);
             assert_eq!(text.as_str(), "Test");

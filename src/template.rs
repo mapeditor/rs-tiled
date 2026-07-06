@@ -5,9 +5,9 @@ use std::sync::Arc;
 use quick_xml::Reader;
 
 use crate::{
-    util::{parse_root_element, parse_tag, XmlElement},
     EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache, ResourceReader,
     Result, Tileset,
+    util::{XmlElement, parse_root_element, parse_tag},
 };
 
 /// A template, consisting of an object and a tileset
@@ -72,7 +72,7 @@ impl Template {
                         });
                     }
                     EmbeddedParseResultType::Embedded { tileset: embedded_tileset } => {
-                        tileset = Some(Arc::new(embedded_tileset));
+                        tileset = Some(Arc::new(*embedded_tileset));
                     },
                 };
                 tileset_gid.push(MapTilesetGid {

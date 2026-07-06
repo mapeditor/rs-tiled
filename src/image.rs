@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use crate::{
     error::Result,
     properties::Color,
-    util::{get_attrs, parse_tag, XmlElement},
+    util::{XmlElement, get_attrs, parse_tag},
 };
 
 /// A reference to an image stored somewhere within the filesystem.

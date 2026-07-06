@@ -2,7 +2,7 @@
 
 use crate::{
     error::Result,
-    util::{get_attrs, parse_tag, XmlElement},
+    util::{XmlElement, get_attrs, parse_tag},
 };
 
 /// A structure describing a [frame] of a [TMX tile animation].

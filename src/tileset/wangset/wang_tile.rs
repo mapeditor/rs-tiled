@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use crate::{
+    Result, TileId,
     error::Error,
     util::{get_attrs, parse_tag},
-    Result, TileId,
 };
 
 /// The Wang ID, stored as an array of 8 u8 values.

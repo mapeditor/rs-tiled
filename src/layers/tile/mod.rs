@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    parse_properties,
+    Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset, parse_properties,
     util::{get_attrs, map_wrapper, parse_tag},
-    Gid, Map, MapTilesetGid, Properties, Result, Tile, TileId, Tileset,
 };
 
 mod finite;

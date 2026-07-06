@@ -300,7 +300,7 @@ pub fn floor_div(a: i32, b: i32) -> i32 {
 }
 use std::io::BufRead;
 
-use quick_xml::{events::BytesStart, events::Event, Reader};
+use quick_xml::{Reader, events::BytesStart, events::Event};
 
 use crate::{Error, Result};
 

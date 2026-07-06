@@ -46,10 +46,7 @@ impl World {
     /// Utility function to test a vec of filenames against all defined patterns.
     /// Returns a vec of results with the parsed [`WorldMap`]s if it matches the pattern.
     pub fn match_paths<P: AsRef<Path>>(&self, paths: &[P]) -> Vec<Result<WorldMap, Error>> {
-        paths
-            .into_iter()
-            .map(|path| self.match_path(path))
-            .collect()
+        paths.iter().map(|path| self.match_path(path)).collect()
     }
 }
 
@@ -112,7 +109,7 @@ impl WorldPattern {
             None => {
                 return Err(Error::NoMatchFound {
                     path: path.to_owned(),
-                })
+                });
             }
         };
 
@@ -121,7 +118,7 @@ impl WorldPattern {
             None => {
                 return Err(Error::NoMatchFound {
                     path: path.to_owned(),
-                })
+                });
             }
         };
 
@@ -130,7 +127,7 @@ impl WorldPattern {
             None => {
                 return Err(Error::NoMatchFound {
                     path: path.to_owned(),
-                })
+                });
             }
         };
 
@@ -170,7 +167,7 @@ pub(crate) fn parse_world(
     reader: &mut impl ResourceReader,
 ) -> Result<World, Error> {
     let mut path = reader
-        .read_from(&world_path)
+        .read_from(world_path)
         .map_err(|err| Error::ResourceLoadingError {
             path: world_path.to_owned(),
             err: Box::new(err),
@@ -183,8 +180,7 @@ pub(crate) fn parse_world(
             err: Box::new(err),
         })?;
 
-    let mut world: World =
-        serde_json::from_str(&world_string).map_err(|err| Error::JsonDecodingError(err))?;
+    let mut world: World = serde_json::from_str(&world_string).map_err(Error::JsonDecodingError)?;
 
     world.source = world_path.to_owned();
 

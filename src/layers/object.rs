@@ -1,10 +1,9 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
 use crate::{
-    parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag},
     Color, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader, Result,
-    Tileset,
+    Tileset, parse_properties,
+    util::{get_attrs, map_wrapper, parse_tag},
 };
 
 /// The order in which the objects of an object layer are drawn.
@@ -157,7 +156,7 @@ impl<'map> ObjectLayer<'map> {
     /// # }
     /// ```
     #[inline]
-    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object<'map>> + 'map {
+    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object<'map>> + 'map + use<'map> {
         let map: &'map crate::Map = self.map;
         self.data
             .objects
