@@ -19,6 +19,8 @@ fn compare_everything_but_sources(r: &Map, e: &Map) {
     assert_eq!(r.height, e.height);
     assert_eq!(r.tile_width, e.tile_width);
     assert_eq!(r.tile_height, e.tile_height);
+    assert_eq!(r.skew_x, e.skew_x);
+    assert_eq!(r.skew_y, e.skew_y);
     assert_eq!(r.properties, e.properties);
     assert_eq!(r.background_color, e.background_color);
     assert_eq!(r.infinite(), e.infinite());
@@ -185,6 +187,17 @@ fn test_just_tileset() {
         r.tilesets()[0],
         loader.cache().get_tileset("assets/tilesheet.tsx").unwrap()
     );
+}
+
+#[test]
+fn test_oblique_map() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_oblique.tmx")
+        .unwrap();
+
+    assert_eq!(r.orientation, tiled::Orientation::Oblique);
+    assert_eq!(r.skew_x, 16);
+    assert_eq!(r.skew_y, 8);
 }
 
 #[test]

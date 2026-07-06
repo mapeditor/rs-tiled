@@ -54,6 +54,16 @@ pub struct Map {
     /// individual tiles may have different sizes. As such, there is no guarantee that this value
     /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
+    /// The horizontal skew of the tile grid in pixels (used by oblique maps).
+    ///
+    /// Each row of tiles is shifted horizontally by this amount relative to the row above it,
+    /// resulting in a horizontal shear factor of `skew_x / tile_height`.
+    pub skew_x: i32,
+    /// The vertical skew of the tile grid in pixels (used by oblique maps).
+    ///
+    /// Each column of tiles is shifted vertically by this amount relative to the column to its
+    /// left, resulting in a vertical shear factor of `skew_y / tile_width`.
+    pub skew_y: i32,
     /// The length of the side of a hexagonal tile in pixels (used by tile layers on hexagonal maps).
     pub hex_side_length: Option<i32>,
     /// The stagger axis of Hexagonal/Staggered map.
@@ -82,6 +92,9 @@ impl fmt::Debug for Map {
             .field("height", &self.height)
             .field("tile_width", &self.tile_width)
             .field("tile_height", &self.tile_height)
+            .field("skew_x", &self.skew_x)
+            .field("skew_y", &self.skew_y)
+            .field("hex_side_length", &self.hex_side_length)
             .field("stagger_axis", &self.stagger_axis)
             .field("stagger_index", &self.stagger_index)
             .field("tilesets", &format!("{} tilesets", self.tilesets.len()))
@@ -164,7 +177,17 @@ impl Map {
         cache: &mut impl ResourceCache,
     ) -> Result<Map> {
         let (
-            (c, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length),
+            (
+                c,
+                infinite,
+                user_type,
+                user_class,
+                skew_x,
+                skew_y,
+                stagger_axis,
+                stagger_index,
+                hex_side_length,
+            ),
             (v, o, w, h, tw, th),
         ) = get_attrs!(
             for v in (elem.attrs) {
@@ -172,6 +195,8 @@ impl Map {
                 Some("infinite") => infinite = v == "1",
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
+                Some("skewx") => skew_x ?= v.parse::<i32>(),
+                Some("skewy") => skew_y ?= v.parse::<i32>(),
                 Some("staggeraxis") => stagger_axis ?= v.parse::<StaggerAxis>(),
                 Some("staggerindex") => stagger_index ?= v.parse::<StaggerIndex>(),
                 Some("hexsidelength") => hex_side_length ?= v.parse(),
@@ -182,11 +207,13 @@ impl Map {
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((colour, infinite, user_type, user_class, stagger_axis, stagger_index, hex_side_length), (version, orientation, width, height, tile_width, tile_height))
+            ((colour, infinite, user_type, user_class, skew_x, skew_y, stagger_axis, stagger_index, hex_side_length), (version, orientation, width, height, tile_width, tile_height))
         );
 
         let infinite = infinite.unwrap_or(false);
         let user_type = user_type.or(user_class);
+        let skew_x = skew_x.unwrap_or(0);
+        let skew_y = skew_y.unwrap_or(0);
         let stagger_axis = stagger_axis.unwrap_or_default();
         let stagger_index = stagger_index.unwrap_or_default();
 
@@ -287,6 +314,8 @@ impl Map {
             height: h,
             tile_width: tw,
             tile_height: th,
+            skew_x,
+            skew_y,
             hex_side_length,
             stagger_axis,
             stagger_index,
@@ -388,6 +417,7 @@ pub enum Orientation {
     Isometric,
     Staggered,
     Hexagonal,
+    Oblique,
 }
 
 #[derive(Debug)]
@@ -399,8 +429,8 @@ pub struct OrientationParseError {
 
 impl std::fmt::Display for OrientationParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("failed to parse orientation, valid options are `orthogonal`, `isometric`, `staggered` \
-        and `hexagonal` but got `{}` instead", self.str_found))
+        f.write_fmt(format_args!("failed to parse orientation, valid options are `orthogonal`, `isometric`, `staggered`, \
+        `hexagonal` and `oblique` but got `{}` instead", self.str_found))
     }
 }
 
@@ -415,6 +445,7 @@ impl FromStr for Orientation {
             "isometric" => Ok(Orientation::Isometric),
             "staggered" => Ok(Orientation::Staggered),
             "hexagonal" => Ok(Orientation::Hexagonal),
+            "oblique" => Ok(Orientation::Oblique),
             _ => Err(OrientationParseError {
                 str_found: s.to_owned(),
             }),
@@ -429,6 +460,7 @@ impl fmt::Display for Orientation {
             Orientation::Isometric => write!(f, "isometric"),
             Orientation::Staggered => write!(f, "staggered"),
             Orientation::Hexagonal => write!(f, "hexagonal"),
+            Orientation::Oblique => write!(f, "oblique"),
         }
     }
 }
