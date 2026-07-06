@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for list properties via `PropertyValue::ListValue`. (#338, #340, #341)
 - Added `Tileset` `tile_render_size`, `fill_mode` and `object_alignment` fields parsed from
   the TMX `tilerendersize`, `fillmode` and `objectalignment` attributes.
+- Added the `Capsule` variant to the `ObjectShape` enum, which is a breaking change for
+  code that matches on it exhaustively.
+- Added `LayerData` `blend_mode` field parsed from the TMX `mode` attribute.
+- Added `ObjectData` `opacity` field parsed from the TMX `opacity` attribute.
 
 ### Changed
 - Switched from `xml-rs` to `quick-xml` to speed up XML parsing.

@@ -48,6 +48,10 @@ pub struct LayerData {
     pub parallax_y: f32,
     /// The layer's opacity.
     pub opacity: f32,
+    /// The blend mode to use when rendering this layer, `normal` by default. Other values
+    /// written by Tiled are `add`, `multiply`, `screen`, `overlay`, `darken`, `lighten`,
+    /// `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference` and `exclusion`.
+    pub blend_mode: String,
     /// The layer's tint color.
     pub tint_color: Option<Color>,
     /// The layer's custom properties, as arbitrarily set by the user.
@@ -77,6 +81,7 @@ impl LayerData {
     ) -> Result<Self> {
         let (
             opacity,
+            blend_mode,
             tint_color,
             visible,
             offset_x,
@@ -90,6 +95,7 @@ impl LayerData {
         ) = get_attrs!(
             for v in (elem.attrs) {
                 Some("opacity") => opacity ?= v.parse(),
+                Some("mode") => blend_mode = v.to_string(),
                 Some("tintcolor") => tint_color ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
                 Some("offsetx") => offset_x ?= v.parse(),
@@ -101,7 +107,7 @@ impl LayerData {
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
             }
-            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
+            (opacity, blend_mode, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
         );
 
         let (ty, properties) = match tag {
@@ -145,6 +151,7 @@ impl LayerData {
             parallax_x: parallax_x.unwrap_or(1.0),
             parallax_y: parallax_y.unwrap_or(1.0),
             opacity: opacity.unwrap_or(1.0),
+            blend_mode: blend_mode.unwrap_or_else(|| "normal".to_string()),
             tint_color,
             name: name.unwrap_or_default(),
             id: id.unwrap_or(0),

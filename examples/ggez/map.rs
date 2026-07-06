@@ -258,6 +258,17 @@ impl MapHandler {
                 )?;
                 canvas.draw(&shape, draw_param);
             }
+            tiled::ObjectShape::Capsule { width, height } => {
+                let bounds = graphics::Rect::new(object.x, object.y, *width, *height);
+                let shape = graphics::Mesh::new_rounded_rectangle(
+                    ctx,
+                    graphics::DrawMode::stroke(2.0),
+                    bounds,
+                    width.min(*height) / 2.0,
+                    graphics::Color::CYAN,
+                )?;
+                canvas.draw(&shape, draw_param);
+            }
             tiled::ObjectShape::Polyline { points } => {
                 let points: Vec<_> = points
                     .iter()

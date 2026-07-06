@@ -459,6 +459,32 @@ fn test_repeat() {
 }
 
 #[test]
+fn test_capsule_object_and_blend_modes() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_capsule.tmx")
+        .unwrap();
+
+    assert_eq!(r.get_layer(0).unwrap().blend_mode, "multiply");
+
+    let layer = r.get_layer(1).unwrap();
+    assert_eq!(layer.blend_mode, "add");
+
+    let objects = layer.as_object_layer().unwrap();
+    let capsule = objects.get_object(0).unwrap();
+    assert_eq!(
+        capsule.shape,
+        ObjectShape::Capsule {
+            width: 16.0,
+            height: 48.0
+        }
+    );
+    assert_eq!(capsule.opacity, 0.5);
+
+    // An object without an opacity attribute gets the default value.
+    assert_eq!(objects.get_object(1).unwrap().opacity, 1.0);
+}
+
+#[test]
 fn test_object_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_object_property.tmx")
