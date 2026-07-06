@@ -31,6 +31,8 @@ impl Default for WangSetType {
 pub struct WangSet {
     /// The name of the Wang set.
     pub name: String,
+    /// The custom type of the Wang set, arbitrarily set by the user.
+    pub user_type: Option<String>,
     /// Type of Wang set.
     pub wang_set_type: WangSetType,
     /// The tile ID of the tile representing this Wang set.
@@ -49,13 +51,14 @@ impl WangSet {
         elem: crate::util::XmlElement<'_, R>,
     ) -> Result<WangSet> {
         // Get common data
-        let (name, wang_set_type, tile) = get_attrs!(
+        let ((user_type,), (name, wang_set_type, tile)) = get_attrs!(
             for v in (elem.attrs) {
+                Some("class") => user_type ?= v.parse::<String>(),
                 "name" => name ?= v.parse::<String>(),
                 "type" => wang_set_type ?= v.parse::<String>(),
                 "tile" => tile ?= v.parse::<i64>(),
             }
-            (name, wang_set_type, tile)
+            ((user_type,), (name, wang_set_type, tile))
         );
 
         let wang_set_type = match wang_set_type.as_str() {
@@ -88,6 +91,7 @@ impl WangSet {
 
         Ok(WangSet {
             name,
+            user_type,
             wang_set_type,
             tile,
             wang_colors,

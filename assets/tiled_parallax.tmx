@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.5" tiledversion="1.7.1" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="32" tileheight="32" infinite="0" nextlayerid="4" nextobjectid="1">
+<map version="1.5" tiledversion="1.7.1" orientation="orthogonal" renderorder="right-up" width="10" height="10" tilewidth="32" tileheight="32" infinite="0" parallaxoriginx="120" parallaxoriginy="-40.5" nextlayerid="4" nextobjectid="1">
  <tileset firstgid="1" source="tilesheet.tsx"/>
  <layer id="3" name="Background" width="10" height="10" parallaxx="0.5" parallaxy="0.75">
   <data encoding="csv">

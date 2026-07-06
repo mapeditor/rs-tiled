@@ -7,12 +7,64 @@ use crate::{
     Tileset,
 };
 
+/// The order in which the objects of an object layer are drawn.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+pub enum DrawOrder {
+    /// The objects are drawn sorted by their y-coordinate.
+    #[default]
+    TopDown,
+    /// The objects are drawn in the order of appearance in the map file, which can be manually
+    /// arranged in the editor.
+    Index,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse a [`DrawOrder`] that is not valid.
+pub struct DrawOrderParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl std::fmt::Display for DrawOrderParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse draw order, valid options are `topdown` and `index` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl std::str::FromStr for DrawOrder {
+    type Err = DrawOrderParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "topdown" => Ok(DrawOrder::TopDown),
+            "index" => Ok(DrawOrder::Index),
+            _ => Err(DrawOrderParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl std::fmt::Display for DrawOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DrawOrder::TopDown => write!(f, "topdown"),
+            DrawOrder::Index => write!(f, "index"),
+        }
+    }
+}
+
 /// Raw data referring to a map object layer or tile collision data.
 #[derive(Debug, PartialEq, Clone)]
 pub struct ObjectLayerData {
     objects: Vec<ObjectData>,
     /// The color used in the editor to display objects in this layer.
     pub colour: Option<Color>,
+    /// The order in which the objects in this layer are drawn.
+    pub draw_order: DrawOrder,
 }
 
 impl ObjectLayerData {
@@ -27,12 +79,14 @@ impl ObjectLayerData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<(ObjectLayerData, Properties)> {
-        let c = get_attrs!(
+        let (c, draw_order) = get_attrs!(
             for v in (elem.attrs) {
                 Some("color") => color ?= v.parse(),
+                Some("draworder") => draw_order ?= v.parse::<DrawOrder>(),
             }
-            color
+            (color, draw_order)
         );
+        let draw_order = draw_order.unwrap_or_default();
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
         parse_tag!(elem, {
@@ -45,7 +99,14 @@ impl ObjectLayerData {
                 Ok(())
             },
         });
-        Ok((ObjectLayerData { objects, colour: c }, properties))
+        Ok((
+            ObjectLayerData {
+                objects,
+                colour: c,
+                draw_order,
+            },
+            properties,
+        ))
     }
 
     /// Returns the data belonging to the objects contained within the layer, in the order they were

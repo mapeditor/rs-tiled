@@ -11,6 +11,8 @@ use crate::{
 pub struct WangColor {
     /// The name of this color.
     pub name: String,
+    /// The custom type of this color, arbitrarily set by the user.
+    pub user_type: Option<String>,
     #[allow(missing_docs)]
     pub color: Color,
     /// The tile ID of the tile representing this color.
@@ -27,14 +29,15 @@ impl WangColor {
         elem: crate::util::XmlElement<'_, R>,
     ) -> Result<WangColor> {
         // Get common data
-        let (name, color, tile, probability) = get_attrs!(
+        let ((user_type,), (name, color, tile, probability)) = get_attrs!(
             for v in (elem.attrs) {
+                Some("class") => user_type ?= v.parse::<String>(),
                 "name" => name ?= v.parse::<String>(),
                 "color" => color ?= v.parse(),
                 "tile" => tile ?= v.parse::<i64>(),
                 "probability" => probability ?= v.parse::<f32>(),
             }
-            (name, color, tile, probability)
+            ((user_type,), (name, color, tile, probability))
         );
 
         let tile = if tile >= 0 { Some(tile as u32) } else { None };
@@ -50,6 +53,7 @@ impl WangColor {
 
         Ok(WangColor {
             name,
+            user_type,
             color,
             tile,
             probability,

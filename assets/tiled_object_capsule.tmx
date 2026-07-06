@@ -6,7 +6,7 @@
 0,0
 </data>
  </layer>
- <objectgroup id="2" name="Object Layer 1" mode="add">
+ <objectgroup id="2" name="Object Layer 1" mode="add" draworder="index">
   <object id="1" x="8" y="8" width="16" height="48" opacity="0.5">
    <capsule/>
   </object>
