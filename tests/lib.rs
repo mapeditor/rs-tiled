@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use tiled::{
-    Color, FiniteTileLayer, HorizontalAlignment, LayerType, Loader, Map, ObjectShape,
+    Color, FiniteTileLayer, HorizontalAlignment, LayerType, Loader, Map, ObjectShape, Properties,
     PropertyValue, ResourceCache, TileLayer, TilesetLocation, VerticalAlignment, WangId,
 };
 
@@ -458,6 +458,100 @@ fn test_object_property() {
         0
     };
     assert_eq!(3, prop_value);
+}
+
+#[test]
+fn test_object_list_property() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_list_property.tmx")
+        .unwrap();
+    let layer = r.get_layer(1).unwrap();
+    let prop_value = if let Some(PropertyValue::ListValue(v)) = layer
+        .as_object_layer()
+        .unwrap()
+        .get_object(0)
+        .unwrap()
+        .properties
+        .get("list property")
+    {
+        v.clone()
+    } else {
+        vec![]
+    };
+    assert_eq!(
+        vec![
+            PropertyValue::ObjectValue(4),
+            PropertyValue::ObjectValue(3),
+            PropertyValue::BoolValue(true),
+        ],
+        prop_value
+    );
+}
+
+#[test]
+fn test_object_nested_list_property() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_nested_list_property.tmx")
+        .unwrap();
+    let layer = r.get_layer(1).unwrap();
+    let objects = layer.as_object_layer().unwrap();
+    let prop_value = if let Some(PropertyValue::ListValue(v)) = objects
+        .get_object(0)
+        .unwrap()
+        .properties
+        .get("list property")
+    {
+        v.clone()
+    } else {
+        vec![]
+    };
+    assert_eq!(
+        vec![
+            PropertyValue::ObjectValue(4),
+            PropertyValue::ObjectValue(3),
+            PropertyValue::BoolValue(true),
+            PropertyValue::ListValue(vec![
+                PropertyValue::BoolValue(false),
+                PropertyValue::BoolValue(true),
+                PropertyValue::ListValue(vec![
+                    PropertyValue::BoolValue(false),
+                    PropertyValue::BoolValue(true),
+                ])
+            ]),
+            PropertyValue::ListValue(vec![PropertyValue::ClassValue {
+                property_type: "ListClass".to_string(),
+                properties: Properties::from([(
+                    "list".to_string(),
+                    PropertyValue::ListValue(vec![PropertyValue::ClassValue {
+                        property_type: "Class".to_string(),
+                        properties: Properties::from([
+                            (
+                                "member_1".to_string(),
+                                PropertyValue::StringValue("test".to_string())
+                            ),
+                            ("member_2".to_string(), PropertyValue::IntValue(10))
+                        ])
+                    }])
+                ),])
+            }]),
+            PropertyValue::IntValue(7),
+        ],
+        prop_value
+    );
+
+    // The properties of the objects following the nested list must be unaffected by its parsing.
+    for index in 1..=2 {
+        assert_eq!(
+            objects
+                .get_object(index)
+                .unwrap()
+                .properties
+                .get("object property"),
+            Some(&PropertyValue::ObjectValue(0)),
+            "property of object {} was corrupted by list parsing",
+            index
+        );
+    }
 }
 
 #[test]
