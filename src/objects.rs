@@ -136,7 +136,15 @@ pub enum ObjectShape {
     Polygon {
         points: Vec<(f32, f32)>,
     },
-    Point(f32, f32),
+    /// A point marker.
+    ///
+    /// The values are deprecated, since they merely duplicate the object's `x` and `y` members
+    /// and will be removed in a future version. Match this variant with
+    /// `ObjectShape::Point(..)` to avoid the deprecation warnings.
+    Point(
+        #[deprecated = "use the object's `x` member instead"] f32,
+        #[deprecated = "use the object's `y` member instead"] f32,
+    ),
     Text {
         font_family: String,
         pixel_size: usize,
@@ -331,7 +339,10 @@ impl ObjectData {
                 Ok(())
             },
             "point" => |elem: crate::util::XmlElement<'_, R>| {
-                shape = Some(ObjectShape::Point(x, y));
+                #[allow(deprecated)]
+                {
+                    shape = Some(ObjectShape::Point(x, y));
+                }
                 parse_tag!(elem, {});
                 Ok(())
             },
@@ -353,7 +364,8 @@ impl ObjectData {
                     ObjectShape::Rect { .. } => ObjectShape::Rect { width, height },
                     ObjectShape::Ellipse { .. } => ObjectShape::Ellipse { width, height },
                     ObjectShape::Capsule { .. } => ObjectShape::Capsule { width, height },
-                    ObjectShape::Point(_, _) => ObjectShape::Point(x, y),
+                    #[allow(deprecated)]
+                    ObjectShape::Point(..) => ObjectShape::Point(x, y),
                     ObjectShape::Text {
                         font_family,
                         pixel_size,
