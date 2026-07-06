@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Support for `oblique` map orientation.
+- Added the `Oblique` variant to the `Orientation` enum, which is a breaking
+  change for code that matches on it exhaustively.
 - Added `Map` `skew_x` and `skew_y` fields parsed from TMX `skewx`/`skewy`.
 
 ### Changed
