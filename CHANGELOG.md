@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Switched from `xml-rs` to `quick-xml` to speed up XML parsing.
+- The `user_type` fields on `Map`, `Tileset`, `LayerData` and `TileData` changed from
+  `Option<String>` to `String`, which is empty when the `class` attribute is not set. This
+  matches `ObjectData` as well as Tiled itself.
 
 ## [0.15.1]
 ### Changed

@@ -57,7 +57,7 @@ pub struct LayerData {
     /// The layer's custom properties, as arbitrarily set by the user.
     pub properties: Properties,
     /// The layer's type, which is arbitrarily setby the user.
-    pub user_type: Option<String>,
+    pub user_type: String,
     layer_type: LayerDataType,
 }
 
@@ -155,7 +155,7 @@ impl LayerData {
             tint_color,
             name: name.unwrap_or_default(),
             id: id.unwrap_or(0),
-            user_type: user_type.or(user_class),
+            user_type: user_type.or(user_class).unwrap_or_default(),
             properties,
             layer_type: ty,
         })

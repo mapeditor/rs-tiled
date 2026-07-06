@@ -820,11 +820,8 @@ fn test_reading_wang_sets() {
     );
     assert_eq!(tileset.wang_sets.len(), 3);
     let wangset_1 = tileset.wang_sets.get(0).unwrap();
-    assert_eq!(wangset_1.user_type.as_deref(), Some("VoidSet"));
-    assert_eq!(
-        wangset_1.wang_colors[0].user_type.as_deref(),
-        Some("VoidColor")
-    );
+    assert_eq!(wangset_1.user_type, "VoidSet");
+    assert_eq!(wangset_1.wang_colors[0].user_type, "VoidColor");
     let wangset_2 = tileset.wang_sets.get(1).unwrap();
     let tile_10 = wangset_2.wang_tiles.get(&10).unwrap();
     assert_eq!(tile_10.wang_id, WangId([2u8, 2, 0, 2, 0, 2, 2, 2]));

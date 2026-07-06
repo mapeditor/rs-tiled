@@ -83,7 +83,7 @@ pub struct Tileset {
     pub properties: Properties,
 
     /// The custom tileset type, arbitrarily set by the user.
-    pub user_type: Option<String>,
+    pub user_type: String,
 }
 
 /// The transformations that can be applied to the tiles of a tileset, for example when used by
@@ -296,7 +296,7 @@ struct TilesetProperties {
     tilecount: u32,
     columns: Option<u32>,
     name: String,
-    user_type: Option<String>,
+    user_type: String,
     tile_width: u32,
     tile_height: u32,
     tile_render_size: Option<TileRenderSize>,
@@ -379,7 +379,7 @@ impl Tileset {
                 spacing,
                 margin,
                 name: name.unwrap_or_default(),
-                user_type: user_type.or(user_class),
+                user_type: user_type.or(user_class).unwrap_or_default(),
                 root_path,
                 columns,
                 tilecount,
@@ -456,7 +456,7 @@ impl Tileset {
                 spacing,
                 margin,
                 name: name.unwrap_or_default(),
-                user_type: user_type.or(user_class),
+                user_type: user_type.or(user_class).unwrap_or_default(),
                 root_path,
                 columns,
                 tilecount,
