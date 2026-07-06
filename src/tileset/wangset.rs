@@ -12,9 +12,8 @@ mod wang_tile;
 pub use wang_tile::*;
 
 /// Wang set's terrain brush connection type.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 #[allow(missing_docs)]
-#[derive(Default)]
 pub enum WangSetType {
     Corner,
     Edge,
