@@ -1,11 +1,11 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
 use crate::{
+    Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
     error::Result,
     layers::{LayerData, LayerTag},
-    properties::{parse_properties, Properties},
+    properties::{Properties, parse_properties},
     util::*,
-    Error, Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
 };
 
 /// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -15,8 +15,8 @@ pub struct GroupLayerData {
 }
 
 impl GroupLayerData {
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         infinite: bool,
         map_path: &Path,
         tilesets: &[MapTilesetGid],
@@ -26,61 +26,61 @@ impl GroupLayerData {
     ) -> Result<(Self, Properties)> {
         let mut properties = HashMap::new();
         let mut layers = Vec::new();
-        parse_tag!(parser, "group", {
-            "layer" => |attrs| {
+        parse_tag!(elem, {
+            "layer" => |elem| {
                 layers.push(LayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     LayerTag::Tiles,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),reader,
+                    for_tileset.as_ref().cloned(),
+                    reader,
                     cache
                 )?);
                 Ok(())
             },
-            "imagelayer" => |attrs| {
+            "imagelayer" => |elem| {
                 layers.push(LayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     LayerTag::Image,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),reader,
+                    for_tileset.as_ref().cloned(),
+                    reader,
                     cache
                 )?);
                 Ok(())
             },
-            "objectgroup" => |attrs| {
+            "objectgroup" => |elem| {
                 layers.push(LayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     LayerTag::Objects,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),reader,
+                    for_tileset.as_ref().cloned(),
+                    reader,
                     cache
                 )?);
                 Ok(())
             },
-            "group" => |attrs| {
+            "group" => |elem| {
                 layers.push(LayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     LayerTag::Group,
                     infinite,
                     map_path,
                     tilesets,
-                    for_tileset.as_ref().cloned(),reader,
+                    for_tileset.as_ref().cloned(),
+                    reader,
                     cache
                 )?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });
@@ -121,7 +121,7 @@ impl<'map> GroupLayer<'map> {
     /// dbg!(nested_layers);
     /// # }
     /// ```
-    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer<'map>> + 'map {
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer<'map>> + 'map + use<'map> {
         let map: &'map crate::Map = self.map;
         self.data
             .layers

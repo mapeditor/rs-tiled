@@ -1,11 +1,9 @@
 use std::str::FromStr;
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::Error,
-    util::{get_attrs, XmlEventResult},
     Result, TileId,
+    error::Error,
+    util::{get_attrs, parse_tag},
 };
 
 /// The Wang ID, stored as an array of 8 u8 values.
@@ -44,19 +42,19 @@ pub struct WangTile {
 
 impl WangTile {
     /// Reads data from XML parser to create a WangTile.
-    pub(crate) fn new(
-        _parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
     ) -> Result<(TileId, WangTile)> {
         // Get common data
         let (tile_id, wang_id) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "tileid" => tile_id ?= v.parse::<u32>(),
                 "wangid" => wang_id ?= v.parse(),
             }
             (tile_id, wang_id)
         );
 
+        parse_tag!(elem, {});
         Ok((tile_id, WangTile { wang_id }))
     }
 }

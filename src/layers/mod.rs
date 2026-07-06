@@ -1,10 +1,8 @@
 use std::{path::Path, sync::Arc};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid, ResourceCache,
-    ResourceReader, Tileset,
+    Color, Map, MapTilesetGid, ResourceCache, ResourceReader, Tileset, error::Result,
+    properties::Properties, util::*,
 };
 
 mod image;
@@ -50,12 +48,16 @@ pub struct LayerData {
     pub parallax_y: f32,
     /// The layer's opacity.
     pub opacity: f32,
+    /// The blend mode to use when rendering this layer, `normal` by default. Other values
+    /// written by Tiled are `add`, `multiply`, `screen`, `overlay`, `darken`, `lighten`,
+    /// `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference` and `exclusion`.
+    pub blend_mode: String,
     /// The layer's tint color.
     pub tint_color: Option<Color>,
     /// The layer's custom properties, as arbitrarily set by the user.
     pub properties: Properties,
     /// The layer's type, which is arbitrarily setby the user.
-    pub user_type: Option<String>,
+    pub user_type: String,
     layer_type: LayerDataType,
 }
 
@@ -67,9 +69,9 @@ impl LayerData {
         self.id
     }
 
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         tag: LayerTag,
         infinite: bool,
         map_path: &Path,
@@ -80,6 +82,7 @@ impl LayerData {
     ) -> Result<Self> {
         let (
             opacity,
+            blend_mode,
             tint_color,
             visible,
             offset_x,
@@ -91,31 +94,31 @@ impl LayerData {
             user_type,
             user_class,
         ) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("opacity") => opacity ?= v.parse(),
+                Some("mode") => blend_mode = v.to_string(),
                 Some("tintcolor") => tint_color ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
                 Some("offsetx") => offset_x ?= v.parse(),
                 Some("offsety") => offset_y ?= v.parse(),
                 Some("parallaxx") => parallax_x ?= v.parse(),
                 Some("parallaxy") => parallax_y ?= v.parse(),
-                Some("name") => name = v,
+                Some("name") => name = v.to_string(),
                 Some("id") => id ?= v.parse(),
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
             }
-            (opacity, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
+            (opacity, blend_mode, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
         );
 
         let (ty, properties) = match tag {
             LayerTag::Tiles => {
-                let (ty, properties) = TileLayerData::new(parser, attrs, infinite, tilesets)?;
+                let (ty, properties) = TileLayerData::new(elem, infinite, tilesets)?;
                 (LayerDataType::Tiles(ty), properties)
             }
             LayerTag::Objects => {
                 let (ty, properties) = ObjectLayerData::new(
-                    parser,
-                    attrs,
+                    elem,
                     Some(tilesets),
                     for_tileset,
                     map_path.parent().ok_or(crate::Error::PathIsNotFile)?,
@@ -125,12 +128,12 @@ impl LayerData {
                 (LayerDataType::Objects(ty), properties)
             }
             LayerTag::Image => {
-                let (ty, properties) = ImageLayerData::new(parser, attrs, map_path)?;
+                let (ty, properties) = ImageLayerData::new(elem, map_path)?;
                 (LayerDataType::Image(ty), properties)
             }
             LayerTag::Group => {
                 let (ty, properties) = GroupLayerData::new(
-                    parser,
+                    elem,
                     infinite,
                     map_path,
                     tilesets,
@@ -149,10 +152,11 @@ impl LayerData {
             parallax_x: parallax_x.unwrap_or(1.0),
             parallax_y: parallax_y.unwrap_or(1.0),
             opacity: opacity.unwrap_or(1.0),
+            blend_mode: blend_mode.unwrap_or_else(|| "normal".to_string()),
             tint_color,
             name: name.unwrap_or_default(),
             id: id.unwrap_or(0),
-            user_type: user_type.or(user_class),
+            user_type: user_type.or(user_class).unwrap_or_default(),
             properties,
             layer_type: ty,
         })

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="2" height="2" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="3">
+ <layer id="1" name="Tile Layer 1" width="2" height="2" mode="multiply">
+  <data encoding="csv">
+0,0,
+0,0
+</data>
+ </layer>
+ <objectgroup id="2" name="Object Layer 1" mode="add" draworder="index">
+  <object id="1" x="8" y="8" width="16" height="48" opacity="0.5">
+   <capsule/>
+  </object>
+  <object id="2" x="32" y="0" width="32" height="32"/>
+ </objectgroup>
+</map>

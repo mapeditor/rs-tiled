@@ -1,11 +1,8 @@
 use std::{collections::HashMap, path::Path};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Error, Image, Properties, Result,
+    Error, Image, Properties, Result, parse_properties,
+    util::{get_attrs, map_wrapper, parse_tag},
 };
 
 /// The raw data of an [`ImageLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -20,9 +17,8 @@ pub struct ImageLayerData {
 }
 
 impl ImageLayerData {
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         map_path: &Path,
     ) -> Result<(Self, Properties)> {
         let mut image: Option<Image> = None;
@@ -32,20 +28,20 @@ impl ImageLayerData {
 
         // Parse repeat attributes from the imagelayer tag
         let (repeat_x, repeat_y) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("repeatx") => repeat_x ?= v.parse::<i32>().map(|val| val == 1),
                 Some("repeaty") => repeat_y ?= v.parse::<i32>().map(|val| val == 1),
             }
             (repeat_x, repeat_y)
         );
 
-        parse_tag!(parser, "imagelayer", {
-            "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to)?);
+        parse_tag!(elem, {
+            "image" => |elem| {
+                image = Some(Image::new(elem, path_relative_to)?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });

@@ -1,13 +1,60 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    parse_properties,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
-    Color, Error, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader,
-    Result, Tileset,
+    Color, MapTilesetGid, Object, ObjectData, Properties, ResourceCache, ResourceReader, Result,
+    Tileset, parse_properties,
+    util::{get_attrs, map_wrapper, parse_tag},
 };
+
+/// The order in which the objects of an object layer are drawn.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+pub enum DrawOrder {
+    /// The objects are drawn sorted by their y-coordinate.
+    #[default]
+    TopDown,
+    /// The objects are drawn in the order of appearance in the map file, which can be manually
+    /// arranged in the editor.
+    Index,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse a [`DrawOrder`] that is not valid.
+pub struct DrawOrderParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl std::fmt::Display for DrawOrderParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse draw order, valid options are `topdown` and `index` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl std::str::FromStr for DrawOrder {
+    type Err = DrawOrderParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "topdown" => Ok(DrawOrder::TopDown),
+            "index" => Ok(DrawOrder::Index),
+            _ => Err(DrawOrderParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl std::fmt::Display for DrawOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DrawOrder::TopDown => write!(f, "topdown"),
+            DrawOrder::Index => write!(f, "index"),
+        }
+    }
+}
 
 /// Raw data referring to a map object layer or tile collision data.
 #[derive(Debug, PartialEq, Clone)]
@@ -15,14 +62,15 @@ pub struct ObjectLayerData {
     objects: Vec<ObjectData>,
     /// The color used in the editor to display objects in this layer.
     pub colour: Option<Color>,
+    /// The order in which the objects in this layer are drawn.
+    pub draw_order: DrawOrder,
 }
 
 impl ObjectLayerData {
     /// If it is known that there are no objects with tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // path_relative_to is a directory to which all other files are relative to
@@ -30,25 +78,34 @@ impl ObjectLayerData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<(ObjectLayerData, Properties)> {
-        let c = get_attrs!(
-            for v in attrs {
+        let (c, draw_order) = get_attrs!(
+            for v in (elem.attrs) {
                 Some("color") => color ?= v.parse(),
+                Some("draworder") => draw_order ?= v.parse::<DrawOrder>(),
             }
-            color
+            (color, draw_order)
         );
+        let draw_order = draw_order.unwrap_or_default();
         let mut objects = Vec::new();
         let mut properties = HashMap::new();
-        parse_tag!(parser, "objectgroup", {
-            "object" => |attrs| {
-                objects.push(ObjectData::new(parser, attrs, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
+        parse_tag!(elem, {
+            "object" => |elem| {
+                objects.push(ObjectData::new(elem, tilesets, for_tileset.as_ref().cloned(), path_relative_to, reader, cache)?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });
-        Ok((ObjectLayerData { objects, colour: c }, properties))
+        Ok((
+            ObjectLayerData {
+                objects,
+                colour: c,
+                draw_order,
+            },
+            properties,
+        ))
     }
 
     /// Returns the data belonging to the objects contained within the layer, in the order they were
@@ -99,7 +156,7 @@ impl<'map> ObjectLayer<'map> {
     /// # }
     /// ```
     #[inline]
-    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object<'map>> + 'map {
+    pub fn objects(&self) -> impl ExactSizeIterator<Item = Object<'map>> + 'map + use<'map> {
         let map: &'map crate::Map = self.map;
         self.data
             .objects

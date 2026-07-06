@@ -1,13 +1,11 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::{Error, Result},
-    properties::{parse_properties, Properties},
-    template::Template,
-    util::{get_attrs, map_wrapper, parse_tag, XmlEventResult},
     Color, Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
+    error::{Error, Result},
+    properties::{Properties, parse_properties},
+    template::Template,
+    util::{get_attrs, map_wrapper, parse_tag, read_text_or_cdata},
 };
 
 /// The location of the tileset this tile is in
@@ -128,13 +126,25 @@ pub enum ObjectShape {
         width: f32,
         height: f32,
     },
+    Capsule {
+        width: f32,
+        height: f32,
+    },
     Polyline {
         points: Vec<(f32, f32)>,
     },
     Polygon {
         points: Vec<(f32, f32)>,
     },
-    Point(f32, f32),
+    /// A point marker.
+    ///
+    /// The values are deprecated, since they merely duplicate the object's `x` and `y` members
+    /// and will be removed in a future version. Match this variant with
+    /// `ObjectShape::Point(..)` to avoid the deprecation warnings.
+    Point(
+        #[deprecated = "use the object's `x` member instead"] f32,
+        #[deprecated = "use the object's `y` member instead"] f32,
+    ),
     Text {
         font_family: String,
         pixel_size: usize,
@@ -192,6 +202,8 @@ pub struct ObjectData {
     pub y: f32,
     /// The clockwise rotation of this object around (x,y) in degrees.
     pub rotation: f32,
+    /// The opacity of this object.
+    pub opacity: f32,
     /// Whether the object is shown or hidden.
     pub visible: bool,
     /// The object's shape.
@@ -219,9 +231,8 @@ impl ObjectData {
 impl ObjectData {
     /// If it is known that the object has no tile images in it (i.e. collision data)
     /// then we can pass in [`None`] as the tilesets
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         tilesets: Option<&[MapTilesetGid]>,
         for_tileset: Option<Arc<Tileset>>,
         // Base path is a directory to which all other files are relative to
@@ -229,8 +240,8 @@ impl ObjectData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
-        let (id, tile, mut n, mut t, c, mut w, mut h, mut v, mut r, template, x, y) = get_attrs!(
-            for v in attrs {
+        let (id, tile, mut n, mut t, c, mut w, mut h, mut v, mut r, mut o, template, x, y) = get_attrs!(
+            for v in (elem.attrs) {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse::<u32>(),
                 Some("name") => name ?= v.parse(),
@@ -240,11 +251,12 @@ impl ObjectData {
                 Some("height") => height ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
                 Some("rotation") => rotation ?= v.parse(),
+                Some("opacity") => opacity ?= v.parse(),
                 Some("template") => template ?= v.parse(),
                 Some("x") => x ?= v.parse::<f32>(),
                 Some("y") => y ?= v.parse::<f32>(),
             }
-            (id, tile, name, user_type, user_class, width, height, visible, rotation, template, x, y)
+            (id, tile, name, user_type, user_class, width, height, visible, rotation, opacity, template, x, y)
         );
         let x = x.unwrap_or(0.);
         let y = y.unwrap_or(0.);
@@ -270,6 +282,7 @@ impl ObjectData {
                 let obj = &template.object;
                 v.get_or_insert(obj.visible);
                 r.get_or_insert(obj.rotation);
+                o.get_or_insert(obj.opacity);
                 n.get_or_insert_with(|| obj.name.clone());
                 t.get_or_insert_with(|| obj.user_type.clone());
                 if let Some(templ_tile) = &obj.tile {
@@ -278,6 +291,7 @@ impl ObjectData {
                 match &obj.shape {
                     ObjectShape::Rect { width, height }
                     | ObjectShape::Ellipse { width, height }
+                    | ObjectShape::Capsule { width, height }
                     | ObjectShape::Text { width, height, .. } => {
                         w.get_or_insert(*width);
                         h.get_or_insert(*height);
@@ -292,38 +306,52 @@ impl ObjectData {
         let width = w.unwrap_or(0f32);
         let height = h.unwrap_or(0f32);
         let rotation = r.unwrap_or(0f32);
+        let opacity = o.unwrap_or(1f32);
         let id = id.unwrap_or(0u32);
         let name = n.unwrap_or_default();
         let user_type: String = t.or(c).unwrap_or_default();
         let mut shape = None;
         let mut properties = HashMap::new();
 
-        parse_tag!(parser, "object", {
-            "ellipse" => |_| {
+        parse_tag!(elem, {
+            "ellipse" => |elem: crate::util::XmlElement<'_, R>| {
                 shape = Some(ObjectShape::Ellipse {
                     width,
                     height,
                 });
+                parse_tag!(elem, {});
                 Ok(())
             },
-            "polyline" => |attrs| {
-                shape = Some(ObjectData::new_polyline(attrs)?);
+            "capsule" => |elem: crate::util::XmlElement<'_, R>| {
+                shape = Some(ObjectShape::Capsule {
+                    width,
+                    height,
+                });
+                parse_tag!(elem, {});
                 Ok(())
             },
-            "polygon" => |attrs| {
-                shape = Some(ObjectData::new_polygon(attrs)?);
+            "polyline" => |elem| {
+                shape = Some(ObjectData::new_polyline(elem)?);
                 Ok(())
             },
-            "point" => |_| {
-                shape = Some(ObjectShape::Point(x, y));
+            "polygon" => |elem| {
+                shape = Some(ObjectData::new_polygon(elem)?);
                 Ok(())
             },
-            "text" => |attrs| {
-                shape = Some(ObjectData::new_text(attrs, parser, width, height)?);
+            "point" => |elem: crate::util::XmlElement<'_, R>| {
+                #[allow(deprecated)]
+                {
+                    shape = Some(ObjectShape::Point(x, y));
+                }
+                parse_tag!(elem, {});
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "text" => |elem| {
+                shape = Some(ObjectData::new_text(elem, width, height)?);
+                Ok(())
+            },
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });
@@ -335,7 +363,9 @@ impl ObjectData {
                 match &templ.object.shape {
                     ObjectShape::Rect { .. } => ObjectShape::Rect { width, height },
                     ObjectShape::Ellipse { .. } => ObjectShape::Ellipse { width, height },
-                    ObjectShape::Point(_, _) => ObjectShape::Point(x, y),
+                    ObjectShape::Capsule { .. } => ObjectShape::Capsule { width, height },
+                    #[allow(deprecated)]
+                    ObjectShape::Point(..) => ObjectShape::Point(x, y),
                     ObjectShape::Text {
                         font_family,
                         pixel_size,
@@ -353,16 +383,16 @@ impl ObjectData {
                         height: _,
                     } => ObjectShape::Text {
                         font_family: font_family.clone(),
-                        pixel_size: pixel_size.clone(),
-                        wrap: wrap.clone(),
-                        color: color.clone(),
-                        bold: bold.clone(),
-                        italic: italic.clone(),
-                        underline: underline.clone(),
-                        strikeout: strikeout.clone(),
-                        kerning: kerning.clone(),
-                        halign: halign.clone(),
-                        valign: valign.clone(),
+                        pixel_size: *pixel_size,
+                        wrap: *wrap,
+                        color: *color,
+                        bold: *bold,
+                        italic: *italic,
+                        underline: *underline,
+                        strikeout: *strikeout,
+                        kerning: *kerning,
+                        halign: *halign,
+                        valign: *valign,
                         text: text.clone(),
                         width,
                         height,
@@ -390,6 +420,7 @@ impl ObjectData {
             x,
             y,
             rotation,
+            opacity,
             visible,
             shape,
             properties,
@@ -398,29 +429,34 @@ impl ObjectData {
 }
 
 impl ObjectData {
-    fn new_polyline(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
+    fn new_polyline<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
+    ) -> Result<ObjectShape> {
         let points = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "points" => points ?= ObjectData::parse_points(v),
             }
             points
         );
+        parse_tag!(elem, {});
         Ok(ObjectShape::Polyline { points })
     }
 
-    fn new_polygon(attrs: Vec<OwnedAttribute>) -> Result<ObjectShape> {
+    fn new_polygon<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
+    ) -> Result<ObjectShape> {
         let points = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 "points" => points ?= ObjectData::parse_points(v),
             }
             points
         );
+        parse_tag!(elem, {});
         Ok(ObjectShape::Polygon { points })
     }
 
-    fn new_text(
-        attrs: Vec<OwnedAttribute>,
-        parser: &mut impl Iterator<Item = XmlEventResult>,
+    fn new_text<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         width: f32,
         height: f32,
     ) -> Result<ObjectShape> {
@@ -437,8 +473,8 @@ impl ObjectData {
             halign,
             valign,
         ) = get_attrs!(
-            for v in attrs {
-                Some("fontfamily") => font_family = v,
+            for v in (elem.attrs) {
+                Some("fontfamily") => font_family = v.to_string(),
                 Some("pixelsize") => pixel_size ?= v.parse(),
                 Some("wrap") => wrap ?= v.parse(),
                 Some("color") => color ?= v.parse(),
@@ -447,14 +483,14 @@ impl ObjectData {
                 Some("underline") => underline ?= v.parse(),
                 Some("strikeout") => strikeout ?= v.parse(),
                 Some("kerning") => kerning ?= v.parse::<i32>(),
-                Some("halign") => halign = match v.as_str() {
+                Some("halign") => halign = match v {
                     "left" => HorizontalAlignment::Left,
                     "center" => HorizontalAlignment::Center,
                     "right" => HorizontalAlignment::Right,
                     "justify" => HorizontalAlignment::Justify,
                     _ => return Err(Error::MalformedAttributes("`halign` property did not contain a valid value of 'left', 'center', 'right' or 'justify'".to_string()))
                 },
-                Some("valign") => valign = match v.as_str() {
+                Some("valign") => valign = match v {
                     "top" => VerticalAlignment::Top,
                     "center" => VerticalAlignment::Center,
                     "bottom" => VerticalAlignment::Bottom,
@@ -491,25 +527,10 @@ impl ObjectData {
         let italic = italic == Some(1);
         let underline = underline == Some(1);
         let strikeout = strikeout == Some(1);
-        let kerning = kerning.map_or(true, |k| k == 1);
+        let kerning = kerning.is_none_or(|k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
-        let contents = match parser.next().map_or_else(
-            || {
-                Err(Error::PrematureEnd(
-                    "XML stream ended when trying to parse text contents".to_owned(),
-                ))
-            },
-            |r| r.map_err(Error::XmlDecodingError),
-        )? {
-            xml::reader::XmlEvent::Characters(contents) => contents,
-            _ => {
-                return Err(Error::InvalidObjectData {
-                    description: "Text attribute contained anything but characters as content"
-                        .into(),
-                })
-            }
-        };
+        let contents = read_text_or_cdata(elem, |text| Ok(text.to_string()))?;
 
         Ok(ObjectShape::Text {
             font_family,
@@ -529,7 +550,7 @@ impl ObjectData {
         })
     }
 
-    fn parse_points(s: String) -> Result<Vec<(f32, f32)>> {
+    fn parse_points(s: &str) -> Result<Vec<(f32, f32)>> {
         let pairs = s.split(' ');
         pairs
             .map(|point| point.split(','))

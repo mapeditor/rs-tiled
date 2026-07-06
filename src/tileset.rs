@@ -1,13 +1,16 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::path::{Path, PathBuf};
-
-use xml::attribute::OwnedAttribute;
+use std::str::FromStr;
 
 use crate::error::{Error, Result};
 use crate::image::Image;
-use crate::properties::{parse_properties, Properties};
+use crate::properties::{Properties, parse_properties};
 use crate::tile::TileData;
-use crate::{util::*, Gid, InvalidTilesetError, ResourceCache, ResourceReader, Tile, TileId};
+use crate::{
+    Gid, InvalidTilesetError, ResourceCache, ResourceReader, Tile, TileId,
+    util::{get_attrs, parse_tag},
+};
 
 mod wangset;
 pub use wangset::*;
@@ -50,6 +53,16 @@ pub struct Tileset {
     pub offset_x: i32,
     /// The y-offset to be used when drawing tiles of this tileset.
     pub offset_y: i32,
+    /// The size to use when rendering tiles of this tileset on a tile layer.
+    pub tile_render_size: TileRenderSize,
+    /// The fill mode to use when rendering tiles of this tileset, relevant when the tiles are
+    /// not rendered at their native size.
+    pub fill_mode: FillMode,
+    /// The alignment to use for tile objects referring to tiles of this tileset.
+    pub object_alignment: ObjectAlignment,
+    /// The transformations that can be applied to the tiles of this tileset, for example when
+    /// used by Wang sets.
+    pub transformations: Transformations,
 
     /// A tileset can either:
     /// * have a single spritesheet `image` in `tileset` ("regular" tileset);
@@ -70,12 +83,205 @@ pub struct Tileset {
     pub properties: Properties,
 
     /// The custom tileset type, arbitrarily set by the user.
-    pub user_type: Option<String>,
+    pub user_type: String,
+}
+
+/// The transformations that can be applied to the tiles of a tileset, for example when used by
+/// Wang sets.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+pub struct Transformations {
+    /// Whether the tiles in this tileset can be flipped horizontally.
+    pub hflip: bool,
+    /// Whether the tiles in this tileset can be flipped vertically.
+    pub vflip: bool,
+    /// Whether the tiles in this tileset can be rotated in 90-degree increments.
+    pub rotate: bool,
+    /// Whether untransformed tiles remain preferred, otherwise transformed tiles are used to
+    /// produce more variations.
+    pub prefer_untransformed: bool,
+}
+
+/// The size to use when rendering a tileset's tiles on a tile layer.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+pub enum TileRenderSize {
+    /// The tile is drawn at its own size, positioned so that its bottom left corner aligns with
+    /// the bottom left corner of its grid cell.
+    #[default]
+    Tile,
+    /// The tile is drawn at the size of the map's grid cell.
+    Grid,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse a [`TileRenderSize`] that is not valid.
+pub struct TileRenderSizeParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl fmt::Display for TileRenderSizeParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse tile render size, valid options are `tile` and `grid` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for TileRenderSize {
+    type Err = TileRenderSizeParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "tile" => Ok(TileRenderSize::Tile),
+            "grid" => Ok(TileRenderSize::Grid),
+            _ => Err(TileRenderSizeParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl fmt::Display for TileRenderSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TileRenderSize::Tile => write!(f, "tile"),
+            TileRenderSize::Grid => write!(f, "grid"),
+        }
+    }
+}
+
+/// The fill mode to use when rendering a tileset's tiles at a size differing from their native
+/// size.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+pub enum FillMode {
+    /// The tile image is stretched to fill the target rectangle.
+    #[default]
+    Stretch,
+    /// The tile image is scaled to fit the target rectangle while preserving its aspect ratio.
+    PreserveAspectFit,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse a [`FillMode`] that is not valid.
+pub struct FillModeParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl fmt::Display for FillModeParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse fill mode, valid options are `stretch` and `preserve-aspect-fit` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for FillMode {
+    type Err = FillModeParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "stretch" => Ok(FillMode::Stretch),
+            "preserve-aspect-fit" => Ok(FillMode::PreserveAspectFit),
+            _ => Err(FillModeParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl fmt::Display for FillMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FillMode::Stretch => write!(f, "stretch"),
+            FillMode::PreserveAspectFit => write!(f, "preserve-aspect-fit"),
+        }
+    }
+}
+
+/// The alignment to use for tile objects referring to a tileset's tiles.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+#[allow(missing_docs)]
+pub enum ObjectAlignment {
+    /// Tile objects use the alignment that older Tiled versions used: [`BottomLeft`] in
+    /// orthogonal maps and [`Bottom`] in isometric maps.
+    ///
+    /// [`BottomLeft`]: ObjectAlignment::BottomLeft
+    /// [`Bottom`]: ObjectAlignment::Bottom
+    #[default]
+    Unspecified,
+    TopLeft,
+    Top,
+    TopRight,
+    Left,
+    Center,
+    Right,
+    BottomLeft,
+    Bottom,
+    BottomRight,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse an [`ObjectAlignment`] that is not valid.
+pub struct ObjectAlignmentParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl fmt::Display for ObjectAlignmentParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse object alignment, valid options are `unspecified`, `topleft`, \
+        `top`, `topright`, `left`, `center`, `right`, `bottomleft`, `bottom` and `bottomright` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for ObjectAlignment {
+    type Err = ObjectAlignmentParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "unspecified" => Ok(ObjectAlignment::Unspecified),
+            "topleft" => Ok(ObjectAlignment::TopLeft),
+            "top" => Ok(ObjectAlignment::Top),
+            "topright" => Ok(ObjectAlignment::TopRight),
+            "left" => Ok(ObjectAlignment::Left),
+            "center" => Ok(ObjectAlignment::Center),
+            "right" => Ok(ObjectAlignment::Right),
+            "bottomleft" => Ok(ObjectAlignment::BottomLeft),
+            "bottom" => Ok(ObjectAlignment::Bottom),
+            "bottomright" => Ok(ObjectAlignment::BottomRight),
+            _ => Err(ObjectAlignmentParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl fmt::Display for ObjectAlignment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ObjectAlignment::Unspecified => write!(f, "unspecified"),
+            ObjectAlignment::TopLeft => write!(f, "topleft"),
+            ObjectAlignment::Top => write!(f, "top"),
+            ObjectAlignment::TopRight => write!(f, "topright"),
+            ObjectAlignment::Left => write!(f, "left"),
+            ObjectAlignment::Center => write!(f, "center"),
+            ObjectAlignment::Right => write!(f, "right"),
+            ObjectAlignment::BottomLeft => write!(f, "bottomleft"),
+            ObjectAlignment::Bottom => write!(f, "bottom"),
+            ObjectAlignment::BottomRight => write!(f, "bottomright"),
+        }
+    }
 }
 
 pub(crate) enum EmbeddedParseResultType {
     ExternalReference { tileset_path: PathBuf },
-    Embedded { tileset: Tileset },
+    Embedded { tileset: Box<Tileset> },
 }
 
 pub(crate) struct EmbeddedParseResult {
@@ -90,9 +296,12 @@ struct TilesetProperties {
     tilecount: u32,
     columns: Option<u32>,
     name: String,
-    user_type: Option<String>,
+    user_type: String,
     tile_width: u32,
     tile_height: u32,
+    tile_render_size: Option<TileRenderSize>,
+    fill_mode: Option<FillMode>,
+    object_alignment: Option<ObjectAlignment>,
     /// The root all non-absolute paths contained within the tileset are relative to.
     root_path: PathBuf,
 }
@@ -100,13 +309,13 @@ struct TilesetProperties {
 impl Tileset {
     /// Gets the tile with the specified ID from the tileset.
     #[inline]
-    pub fn get_tile(&self, id: TileId) -> Option<Tile> {
+    pub fn get_tile(&self, id: TileId) -> Option<Tile<'_>> {
         self.tiles.get(&id).map(|data| Tile::new(self, data))
     }
 
     /// Iterates through the tiles from this tileset.
     #[inline]
-    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (TileId, Tile)> {
+    pub fn tiles(&self) -> impl ExactSizeIterator<Item = (TileId, Tile<'_>)> {
         self.tiles
             .iter()
             .map(move |(id, data)| (*id, Tile::new(self, data)))
@@ -114,14 +323,14 @@ impl Tileset {
 }
 
 impl Tileset {
-    pub(crate) fn parse_xml_in_map(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: &[OwnedAttribute],
+    pub(crate) fn parse_xml_in_map<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         path: &Path, // Template or Map file
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
-        Tileset::parse_xml_embedded(parser, attrs, path, reader, cache).or_else(|err| {
+        let attrs = elem.attrs.clone();
+        Tileset::parse_xml_embedded(elem, attrs.clone(), path, reader, cache).or_else(|err| {
             if matches!(err, Error::MalformedAttributes(_)) {
                 Tileset::parse_xml_reference(attrs, path)
             } else {
@@ -130,66 +339,75 @@ impl Tileset {
         })
     }
 
-    fn parse_xml_embedded(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: &[OwnedAttribute],
+    fn parse_xml_embedded<'a, R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'a, R>,
+        attrs: quick_xml::events::BytesStart<'a>,
         path: &Path, // Template or Map file
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
         let (
             (spacing, margin, columns, name, user_type, user_class),
+            (tile_render_size, fill_mode, object_alignment),
             (tilecount, first_gid, tile_width, tile_height),
         ) = get_attrs!(
-           for v in attrs {
+           for v in (attrs) {
             Some("spacing") => spacing ?= v.parse(),
             Some("margin") => margin ?= v.parse(),
             Some("columns") => columns ?= v.parse(),
-            Some("name") => name = v,
+            Some("name") => name = v.to_string(),
             Some("type") => user_type ?= v.parse(),
             Some("class") => user_class ?= v.parse(),
+            Some("tilerendersize") => tile_render_size ?= v.parse::<TileRenderSize>(),
+            Some("fillmode") => fill_mode ?= v.parse::<FillMode>(),
+            Some("objectalignment") => object_alignment ?= v.parse::<ObjectAlignment>(),
 
             "tilecount" => tilecount ?= v.parse::<u32>(),
             "firstgid" => first_gid ?= v.parse::<u32>().map(Gid),
             "tilewidth" => tile_width ?= v.parse::<u32>(),
             "tileheight" => tile_height ?= v.parse::<u32>(),
            }
-           ((spacing, margin, columns, name, user_type, user_class), (tilecount, first_gid, tile_width, tile_height))
+           ((spacing, margin, columns, name, user_type, user_class), (tile_render_size, fill_mode, object_alignment), (tilecount, first_gid, tile_width, tile_height))
         );
 
         let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
 
         Self::finish_parsing_xml(
-            parser,
+            elem,
             path.to_owned(),
             TilesetProperties {
                 spacing,
                 margin,
                 name: name.unwrap_or_default(),
-                user_type: user_type.or(user_class),
+                user_type: user_type.or(user_class).unwrap_or_default(),
                 root_path,
                 columns,
                 tilecount,
                 tile_height,
                 tile_width,
+                tile_render_size,
+                fill_mode,
+                object_alignment,
             },
             reader,
             cache,
         )
         .map(|tileset| EmbeddedParseResult {
             first_gid,
-            result_type: EmbeddedParseResultType::Embedded { tileset },
+            result_type: EmbeddedParseResultType::Embedded {
+                tileset: Box::new(tileset),
+            },
         })
     }
 
-    fn parse_xml_reference(
-        attrs: &[OwnedAttribute],
+    fn parse_xml_reference<'a>(
+        attrs: quick_xml::events::BytesStart<'a>,
         map_path: &Path,
     ) -> Result<EmbeddedParseResult> {
         let (first_gid, source) = get_attrs!(
-            for v in attrs {
+            for v in (attrs) {
                 "firstgid" => first_gid ?= v.parse::<u32>().map(Gid),
-                "source" => source = v,
+                "source" => source = v.to_string(),
             }
             (first_gid, source)
         );
@@ -202,55 +420,61 @@ impl Tileset {
         })
     }
 
-    pub(crate) fn parse_external_tileset(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: &[OwnedAttribute],
+    pub(crate) fn parse_external_tileset<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         path: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<Tileset> {
         let (
             (spacing, margin, columns, name, user_type, user_class),
+            (tile_render_size, fill_mode, object_alignment),
             (tilecount, tile_width, tile_height),
         ) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("spacing") => spacing ?= v.parse(),
                 Some("margin") => margin ?= v.parse(),
                 Some("columns") => columns ?= v.parse(),
-                Some("name") => name = v,
+                Some("name") => name = v.to_string(),
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
+                Some("tilerendersize") => tile_render_size ?= v.parse::<TileRenderSize>(),
+                Some("fillmode") => fill_mode ?= v.parse::<FillMode>(),
+                Some("objectalignment") => object_alignment ?= v.parse::<ObjectAlignment>(),
 
                 "tilecount" => tilecount ?= v.parse::<u32>(),
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((spacing, margin, columns, name, user_type, user_class), (tilecount, tile_width, tile_height))
+            ((spacing, margin, columns, name, user_type, user_class), (tile_render_size, fill_mode, object_alignment), (tilecount, tile_width, tile_height))
         );
 
         let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
 
         Self::finish_parsing_xml(
-            parser,
+            elem,
             path.to_owned(),
             TilesetProperties {
                 spacing,
                 margin,
                 name: name.unwrap_or_default(),
-                user_type: user_type.or(user_class),
+                user_type: user_type.or(user_class).unwrap_or_default(),
                 root_path,
                 columns,
                 tilecount,
                 tile_height,
                 tile_width,
+                tile_render_size,
+                fill_mode,
+                object_alignment,
             },
             reader,
             cache,
         )
     }
 
-    fn finish_parsing_xml(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
+    fn finish_parsing_xml<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         container_path: PathBuf,
         prop: TilesetProperties,
         reader: &mut impl ResourceReader,
@@ -261,28 +485,38 @@ impl Tileset {
         let mut properties = HashMap::new();
         let mut wang_sets = Vec::new();
         let mut offset = (0i32, 0i32);
+        let mut transformations = Transformations::default();
 
-        parse_tag!(parser, "tileset", {
-            "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, &prop.root_path)?);
+        parse_tag!(elem, {
+            "image" => |elem| {
+                image = Some(Image::new(elem, &prop.root_path)?);
                 Ok(())
             },
-            "tileoffset" => |attrs| {
-                offset = parse_tileoffset(attrs)?;
+            "tileoffset" => |elem| {
+                offset = parse_tileoffset(elem)?;
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "transformations" => |elem| {
+                transformations = parse_transformations(elem)?;
                 Ok(())
             },
-            "tile" => |attrs| {
-                let (id, tile) = TileData::new(parser, attrs, &prop.root_path, reader, cache)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
+                Ok(())
+            },
+            "tile" => |elem| {
+                let (id, tile) = TileData::new(elem, &prop.root_path, reader, cache)?;
                 tiles.insert(id, tile);
                 Ok(())
             },
-            "wangset" => |attrs| {
-                let set = WangSet::new(parser, attrs)?;
-                wang_sets.push(set);
+            "wangsets" => |elem: crate::util::XmlElement<'_, R>| {
+                parse_tag!(elem, {
+                    "wangset" => |elem| {
+                        let set = WangSet::new(elem)?;
+                        wang_sets.push(set);
+                        Ok(())
+                    },
+                });
                 Ok(())
             },
         });
@@ -320,6 +554,10 @@ impl Tileset {
             columns,
             offset_x: offset.0,
             offset_y: offset.1,
+            tile_render_size: prop.tile_render_size.unwrap_or_default(),
+            fill_mode: prop.fill_mode.unwrap_or_default(),
+            object_alignment: prop.object_alignment.unwrap_or_default(),
+            transformations,
             tilecount: prop.tilecount,
             image,
             tiles,
@@ -345,13 +583,39 @@ impl Tileset {
     }
 }
 
+/// Parse the optional <transformations hflip=... vflip=... rotate=... preferuntransformed=.../> tag.
+fn parse_transformations<R: std::io::BufRead>(
+    elem: crate::util::XmlElement<'_, R>,
+) -> Result<Transformations> {
+    let (hflip, vflip, rotate, prefer_untransformed) = get_attrs!(
+        for v in (elem.attrs) {
+            Some("hflip") => hflip = v == "1",
+            Some("vflip") => vflip = v == "1",
+            Some("rotate") => rotate = v == "1",
+            Some("preferuntransformed") => prefer_untransformed = v == "1",
+        }
+        (hflip, vflip, rotate, prefer_untransformed)
+    );
+    parse_tag!(elem, {});
+    Ok(Transformations {
+        hflip: hflip.unwrap_or(false),
+        vflip: vflip.unwrap_or(false),
+        rotate: rotate.unwrap_or(false),
+        prefer_untransformed: prefer_untransformed.unwrap_or(false),
+    })
+}
+
 /// Parse the optional <tileoffset x=... y=.../> tag.
-fn parse_tileoffset(attrs: Vec<OwnedAttribute>) -> Result<(i32, i32)> {
-    Ok(get_attrs!(
-        for v in attrs {
+fn parse_tileoffset<R: std::io::BufRead>(
+    elem: crate::util::XmlElement<'_, R>,
+) -> Result<(i32, i32)> {
+    let offset = get_attrs!(
+        for v in (elem.attrs) {
             "x" => offset_x ?= v.parse::<i32>(),
             "y" => offset_y ?= v.parse::<i32>(),
         }
         (offset_x, offset_y)
-    ))
+    );
+    parse_tag!(elem, {});
+    Ok(offset)
 }

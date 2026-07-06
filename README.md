@@ -72,8 +72,8 @@ tiled = { version = ".....", features = ["wasm"] }
 ```
 
 - Second, since you cannot use the filesystem as normally on the web, you cannot use `FilesystemResourceReader`. As such,
-you'll need to implement your own `ResourceReader`. This is a pretty simple task, as you just need to return anything
-that is `Read`able when given a path, e.g.:
+  you'll need to implement your own `ResourceReader`. This is a pretty simple task, as you just need to return anything
+  that is `Read`able when given a path, e.g.:
 ```rust,ignore
 use std::io::Cursor;
 

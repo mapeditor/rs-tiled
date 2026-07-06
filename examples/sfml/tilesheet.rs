@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use sfml::{
-    graphics::{FloatRect, Texture},
     SfBox,
+    graphics::{FloatRect, Texture},
 };
 use tiled::Tileset;
 

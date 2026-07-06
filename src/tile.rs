@@ -1,15 +1,12 @@
 use std::{collections::HashMap, path::Path};
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    animation::{parse_animation, Frame},
-    error::Error,
+    ResourceCache, ResourceReader, Result, Tileset,
+    animation::{Frame, parse_animation},
     image::Image,
     layers::ObjectLayerData,
-    properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
-    ResourceCache, ResourceReader, Result, Tileset,
+    properties::{Properties, parse_properties},
+    util::{get_attrs, parse_tag},
 };
 
 /// A tile ID, local to a tileset.
@@ -41,7 +38,7 @@ pub struct TileData {
     /// The animation frames of this tile.
     pub animation: Option<Vec<Frame>>,
     /// The type of this tile.
-    pub user_type: Option<String>,
+    pub user_type: String,
     /// The probability of this tile.
     pub probability: f32,
     /// The image rect of this tile, which is only used in image collection tilesets and corresponds
@@ -77,15 +74,14 @@ impl<'tileset> std::ops::Deref for Tile<'tileset> {
 }
 
 impl TileData {
-    pub(crate) fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
         path_relative_to: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<(TileId, TileData)> {
         let ((user_type, user_class, probability, x, y, width, height), id) = get_attrs!(
-            for v in attrs {
+            for v in (elem.attrs) {
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
                 Some("probability") => probability ?= v.parse(),
@@ -98,28 +94,28 @@ impl TileData {
             ((user_type, user_class, probability, x, y, width, height), id)
         );
 
-        let user_type = user_type.or(user_class);
+        let user_type = user_type.or(user_class).unwrap_or_default();
         let mut image = Option::None;
         let mut properties = HashMap::new();
         let mut objectgroup = None;
         let mut animation = None;
-        parse_tag!(parser, "tile", {
-            "image" => |attrs| {
-                image = Some(Image::new(parser, attrs, path_relative_to)?);
+        parse_tag!(elem, {
+            "image" => |elem| {
+                image = Some(Image::new(elem, path_relative_to)?);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
-            "objectgroup" => |attrs| {
+            "objectgroup" => |elem| {
                 // Tile objects are not allowed within tile object groups, so we can pass None as the
                 // tilesets vector
-                objectgroup = Some(ObjectLayerData::new(parser, attrs, None, None, path_relative_to, reader, cache)?.0);
+                objectgroup = Some(ObjectLayerData::new(elem, None, None, path_relative_to, reader, cache)?.0);
                 Ok(())
             },
-            "animation" => |_| {
-                animation = Some(parse_animation(parser)?);
+            "animation" => |elem| {
+                animation = Some(parse_animation(elem)?);
                 Ok(())
             },
         });

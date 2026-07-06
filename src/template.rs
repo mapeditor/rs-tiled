@@ -1,12 +1,13 @@
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use xml::EventReader;
-use xml::{attribute::OwnedAttribute, reader::XmlEvent};
+use quick_xml::Reader;
 
 use crate::{
-    util::*, EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache,
-    ResourceReader, Result, Tileset,
+    EmbeddedParseResultType, Error, MapTilesetGid, ObjectData, ResourceCache, ResourceReader,
+    Result, Tileset,
+    util::{XmlElement, parse_root_element, parse_tag},
 };
 
 /// A template, consisting of an object and a tileset
@@ -37,34 +38,14 @@ impl Template {
                 err: Box::new(err),
             })?;
 
-        let mut template_parser = EventReader::new(file);
-        loop {
-            match template_parser.next().map_err(Error::XmlDecodingError)? {
-                XmlEvent::StartElement {
-                    name,
-                    attributes: _,
-                    ..
-                } if name.local_name == "template" => {
-                    let template = Self::parse_external_template(
-                        &mut template_parser.into_iter(),
-                        path,
-                        reader,
-                        cache,
-                    )?;
-                    return Ok(template);
-                }
-                XmlEvent::EndDocument => {
-                    return Err(Error::PrematureEnd(
-                        "Template Document ended before template element was parsed".to_string(),
-                    ))
-                }
-                _ => {}
-            }
-        }
+        let mut template_parser = Reader::from_reader(BufReader::new(file));
+        parse_root_element(&mut template_parser, b"template", |elem| {
+            Self::parse_external_template(elem, path, reader, cache)
+        })
     }
 
-    fn parse_external_template(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
+    fn parse_external_template<R: std::io::BufRead>(
+        elem: XmlElement<'_, R>,
         template_path: &Path,
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
@@ -73,13 +54,13 @@ impl Template {
         let mut tileset = None;
         let mut tileset_gid: Vec<MapTilesetGid> = vec![];
 
-        parse_tag!(parser, "template", {
-            "object" => |attrs| {
-                object = Some(ObjectData::new(parser, attrs, Some(&tileset_gid), tileset.clone(), template_path.parent().ok_or(Error::PathIsNotFile)?, reader, cache)?);
+        parse_tag!(elem, {
+            "object" => |elem| {
+                object = Some(ObjectData::new(elem, Some(&tileset_gid), tileset.clone(), template_path.parent().ok_or(Error::PathIsNotFile)?, reader, cache)?);
                 Ok(())
             },
-            "tileset" => |attrs: Vec<OwnedAttribute>| {
-                let res = Tileset::parse_xml_in_map(parser, &attrs, template_path, reader, cache)?;
+            "tileset" => |elem| {
+                let res = Tileset::parse_xml_in_map(elem, template_path, reader, cache)?;
                 match res.result_type {
                     EmbeddedParseResultType::ExternalReference { tileset_path } => {
                         tileset = Some(if let Some(ts) = cache.get_tileset(&tileset_path) {
@@ -91,7 +72,7 @@ impl Template {
                         });
                     }
                     EmbeddedParseResultType::Embedded { tileset: embedded_tileset } => {
-                        tileset = Some(Arc::new(embedded_tileset));
+                        tileset = Some(Arc::new(*embedded_tileset));
                     },
                 };
                 tileset_gid.push(MapTilesetGid {

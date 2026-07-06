@@ -1,12 +1,9 @@
 use std::collections::HashMap;
 
-use xml::attribute::OwnedAttribute;
-
 use crate::{
-    error::Error,
-    properties::{parse_properties, Properties},
-    util::{get_attrs, parse_tag, XmlEventResult},
     Result, TileId,
+    properties::{Properties, parse_properties},
+    util::{get_attrs, parse_tag},
 };
 
 mod wang_color;
@@ -15,18 +12,13 @@ mod wang_tile;
 pub use wang_tile::*;
 
 /// Wang set's terrain brush connection type.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 #[allow(missing_docs)]
 pub enum WangSetType {
     Corner,
     Edge,
+    #[default]
     Mixed,
-}
-
-impl Default for WangSetType {
-    fn default() -> Self {
-        WangSetType::Mixed
-    }
 }
 
 /// Raw data belonging to a WangSet.
@@ -34,6 +26,8 @@ impl Default for WangSetType {
 pub struct WangSet {
     /// The name of the Wang set.
     pub name: String,
+    /// The custom type of the Wang set, arbitrarily set by the user.
+    pub user_type: String,
     /// Type of Wang set.
     pub wang_set_type: WangSetType,
     /// The tile ID of the tile representing this Wang set.
@@ -48,18 +42,18 @@ pub struct WangSet {
 
 impl WangSet {
     /// Reads data from XML parser to create a WangSet.
-    pub fn new(
-        parser: &mut impl Iterator<Item = XmlEventResult>,
-        attrs: Vec<OwnedAttribute>,
+    pub(crate) fn new<R: std::io::BufRead>(
+        elem: crate::util::XmlElement<'_, R>,
     ) -> Result<WangSet> {
         // Get common data
-        let (name, wang_set_type, tile) = get_attrs!(
-            for v in attrs {
+        let ((user_type,), (name, wang_set_type, tile)) = get_attrs!(
+            for v in (elem.attrs) {
+                Some("class") => user_type ?= v.parse::<String>(),
                 "name" => name ?= v.parse::<String>(),
                 "type" => wang_set_type ?= v.parse::<String>(),
                 "tile" => tile ?= v.parse::<i64>(),
             }
-            (name, wang_set_type, tile)
+            ((user_type,), (name, wang_set_type, tile))
         );
 
         let wang_set_type = match wang_set_type.as_str() {
@@ -73,25 +67,26 @@ impl WangSet {
         let mut wang_colors = Vec::new();
         let mut wang_tiles = HashMap::new();
         let mut properties = HashMap::new();
-        parse_tag!(parser, "wangset", {
-            "wangcolor" => |attrs| {
-                let color = WangColor::new(parser, attrs)?;
+        parse_tag!(elem, {
+            "wangcolor" => |elem| {
+                let color = WangColor::new(elem)?;
                 wang_colors.push(color);
                 Ok(())
             },
-            "wangtile" => |attrs| {
-                let (id, t) = WangTile::new(parser, attrs)?;
+            "wangtile" => |elem| {
+                let (id, t) = WangTile::new(elem)?;
                 wang_tiles.insert(id, t);
                 Ok(())
             },
-            "properties" => |_| {
-                properties = parse_properties(parser)?;
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
                 Ok(())
             },
         });
 
         Ok(WangSet {
             name,
+            user_type: user_type.unwrap_or_default(),
             wang_set_type,
             tile,
             wang_colors,

@@ -48,6 +48,12 @@ impl FilesystemResourceReader {
     }
 }
 
+impl Default for FilesystemResourceReader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResourceReader for FilesystemResourceReader {
     type Resource = BufReader<File>;
     type Error = std::io::Error;

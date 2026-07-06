@@ -8,7 +8,7 @@ repository = "https://github.com/mapeditor/rs-tiled"
 readme = "README.md"
 license = "MIT"
 authors = ["Matthew Hall <matthew@quickbeam.me.uk>"]
-edition = "2018"
+edition = "2024"
 include = ["src/**/*.rs", "README.md", "LICENSE", "CHANGELOG.md"]
 
 [features]
@@ -38,7 +38,7 @@ required-features = ["example-ggez"]
 
 [dependencies]
 base64 = "0.22.1"
-xml-rs = "0.8.4"
+quick-xml = "0.31.0"
 zstd = { version = "0.13.1", optional = true, default-features = false }
 flate2 = "1.0.28"
 serde = { version = "1.0.216", optional = true }

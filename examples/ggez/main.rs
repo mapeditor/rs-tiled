@@ -7,10 +7,11 @@ mod map;
 mod res_reader;
 
 use ggez::{
+    Context, GameResult,
     event::{self, MouseButton},
     graphics::{self, DrawParam},
     mint::Point2,
-    Context, GameResult, *,
+    *,
 };
 use map::MapHandler;
 use res_reader::GgezResourceReader;
@@ -44,9 +45,15 @@ struct Game {
 
 impl Game {
     fn new(ctx: &mut ggez::Context) -> GameResult<Self> {
+        // The map to load can be given as an argument, and is resolved relative to the
+        // repository's `/assets` directory
+        let map_path = std::env::args()
+            .nth(1)
+            .unwrap_or_else(|| "/tiled_base64_external.tmx".to_string());
+
         // Load the map, using a loader with `GgezResourceReader` for reading from the ggez filesystem
         let mut loader = tiled::Loader::with_reader(GgezResourceReader(&mut ctx.fs));
-        let map = loader.load_tmx_map("/tiled_base64_external.tmx").unwrap();
+        let map = loader.load_tmx_map(map_path).unwrap();
 
         let map_handler = MapHandler::new(map, ctx).unwrap();
 

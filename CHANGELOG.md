@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Added the `Oblique` variant to the `Orientation` enum, which is a breaking
+  change for code that matches on it exhaustively.
+- Added `Map` `skew_x` and `skew_y` fields parsed from TMX `skewx`/`skewy`.
+- Added support for list properties via `PropertyValue::ListValue`. (#338, #340, #341)
+- Added `Tileset` `tile_render_size`, `fill_mode` and `object_alignment` fields parsed from
+  the TMX `tilerendersize`, `fillmode` and `objectalignment` attributes.
+- Added the `Capsule` variant to the `ObjectShape` enum, which is a breaking change for
+  code that matches on it exhaustively.
+- Added `LayerData` `blend_mode` field parsed from the TMX `mode` attribute.
+- Added `ObjectData` `opacity` field parsed from the TMX `opacity` attribute.
+- Added `Map` `render_order`, `parallax_origin_x` and `parallax_origin_y` fields parsed from
+  the TMX `renderorder`, `parallaxoriginx` and `parallaxoriginy` attributes.
+- Added `ObjectLayerData` `draw_order` field parsed from the TMX `draworder` attribute.
+- Added `Tileset` `transformations` field parsed from the TMX `transformations` element.
+- Added `WangSet` and `WangColor` `user_type` fields parsed from the TMX `class` attribute.
+
+### Changed
+- Switched from `xml-rs` to `quick-xml` to speed up XML parsing.
+- The `user_type` fields on `Map`, `Tileset`, `LayerData` and `TileData` changed from
+  `Option<String>` to `String`, which is empty when the `class` attribute is not set. This
+  matches `ObjectData` as well as Tiled itself.
+- Raised the Rust edition to 2024, which implies a minimum supported Rust version of
+  1.85. (#332)
+
+### Deprecated
+- The values of `ObjectShape::Point`, since they merely duplicate the object's `x` and `y`
+  members. Match the variant with `ObjectShape::Point(..)` to avoid the deprecation
+  warnings. (#329)
+
 ## [0.15.1]
 ### Changed
 - The GGEZ example now handles tile rotation and mirroring. (#328)
