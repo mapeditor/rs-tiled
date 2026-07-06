@@ -774,6 +774,35 @@ fn test_object_template_property() {
 }
 
 #[test]
+fn test_flipped_tile_objects() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_object_template.tmx")
+        .unwrap();
+    let object_layer = r.get_layer(1).unwrap().as_object_layer().unwrap();
+
+    // Unflipped tile object
+    let tile = object_layer.get_object(1).unwrap().get_tile().unwrap();
+    assert_eq!(tile.id(), 44);
+    assert!(!tile.flip_h);
+    assert!(!tile.flip_v);
+    assert!(!tile.flip_d);
+
+    // Tile object flipped both horizontally and vertically
+    let tile = object_layer.get_object(3).unwrap().get_tile().unwrap();
+    assert_eq!(tile.id(), 44);
+    assert!(tile.flip_h);
+    assert!(tile.flip_v);
+    assert!(!tile.flip_d);
+
+    // Tile object flipped diagonally
+    let tile = object_layer.get_object(4).unwrap().get_tile().unwrap();
+    assert_eq!(tile.id(), 44);
+    assert!(!tile.flip_h);
+    assert!(!tile.flip_v);
+    assert!(tile.flip_d);
+}
+
+#[test]
 fn test_templates() {
     let mut loader = Loader::new();
     let map = loader.load_tmx_map("assets/templates/example.tmx").unwrap();
