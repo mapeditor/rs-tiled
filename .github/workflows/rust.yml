@@ -15,10 +15,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v7
 
     - name: Setup rust-cache
-      uses: Swatinem/rust-cache@v1
+      uses: Swatinem/rust-cache@v2
 
     - name: Update package manager
       run: sudo apt-get update
@@ -36,14 +36,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v7
 
     - name: Get nightly Rust toolchain with rustfmt
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@nightly
       with:
-        profile: minimal
-        toolchain: nightly
-        override: true
         components: rustfmt
 
     - name: Run cargo fmt --all -- --check
@@ -53,7 +50,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v7
 
     - name: Update package manager
       run: sudo apt-get update
@@ -62,11 +59,8 @@ jobs:
       run: sudo apt-get install -y libsfml-dev libcsfml-dev libasound2-dev libudev-dev
 
     - name: Get stable Rust toolchain with clippy
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
-        toolchain: stable
-        override: true
         components: clippy
 
     - name: Run cargo clippy --all-targets --package tiled
@@ -76,7 +70,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v7
 
     - name: Update package manager
       run: sudo apt-get update
@@ -85,12 +79,7 @@ jobs:
       run: sudo apt-get install -y libsfml-dev libcsfml-dev libasound2-dev libudev-dev
 
     - name: Get stable Rust toolchain with doc
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-        components: rust-docs
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Run cargo doc -p tiled --no-deps
       run: cargo doc -p tiled --no-deps
