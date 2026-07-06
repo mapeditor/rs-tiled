@@ -126,6 +126,10 @@ pub enum ObjectShape {
         width: f32,
         height: f32,
     },
+    Capsule {
+        width: f32,
+        height: f32,
+    },
     Polyline {
         points: Vec<(f32, f32)>,
     },
@@ -190,6 +194,8 @@ pub struct ObjectData {
     pub y: f32,
     /// The clockwise rotation of this object around (x,y) in degrees.
     pub rotation: f32,
+    /// The opacity of this object.
+    pub opacity: f32,
     /// Whether the object is shown or hidden.
     pub visible: bool,
     /// The object's shape.
@@ -226,7 +232,7 @@ impl ObjectData {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<ObjectData> {
-        let (id, tile, mut n, mut t, c, mut w, mut h, mut v, mut r, template, x, y) = get_attrs!(
+        let (id, tile, mut n, mut t, c, mut w, mut h, mut v, mut r, mut o, template, x, y) = get_attrs!(
             for v in (elem.attrs) {
                 Some("id") => id ?= v.parse(),
                 Some("gid") => tile ?= v.parse::<u32>(),
@@ -237,11 +243,12 @@ impl ObjectData {
                 Some("height") => height ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
                 Some("rotation") => rotation ?= v.parse(),
+                Some("opacity") => opacity ?= v.parse(),
                 Some("template") => template ?= v.parse(),
                 Some("x") => x ?= v.parse::<f32>(),
                 Some("y") => y ?= v.parse::<f32>(),
             }
-            (id, tile, name, user_type, user_class, width, height, visible, rotation, template, x, y)
+            (id, tile, name, user_type, user_class, width, height, visible, rotation, opacity, template, x, y)
         );
         let x = x.unwrap_or(0.);
         let y = y.unwrap_or(0.);
@@ -267,6 +274,7 @@ impl ObjectData {
                 let obj = &template.object;
                 v.get_or_insert(obj.visible);
                 r.get_or_insert(obj.rotation);
+                o.get_or_insert(obj.opacity);
                 n.get_or_insert_with(|| obj.name.clone());
                 t.get_or_insert_with(|| obj.user_type.clone());
                 if let Some(templ_tile) = &obj.tile {
@@ -275,6 +283,7 @@ impl ObjectData {
                 match &obj.shape {
                     ObjectShape::Rect { width, height }
                     | ObjectShape::Ellipse { width, height }
+                    | ObjectShape::Capsule { width, height }
                     | ObjectShape::Text { width, height, .. } => {
                         w.get_or_insert(*width);
                         h.get_or_insert(*height);
@@ -289,6 +298,7 @@ impl ObjectData {
         let width = w.unwrap_or(0f32);
         let height = h.unwrap_or(0f32);
         let rotation = r.unwrap_or(0f32);
+        let opacity = o.unwrap_or(1f32);
         let id = id.unwrap_or(0u32);
         let name = n.unwrap_or_default();
         let user_type: String = t.or(c).unwrap_or_default();
@@ -298,6 +308,14 @@ impl ObjectData {
         parse_tag!(elem, {
             "ellipse" => |elem: crate::util::XmlElement<'_, R>| {
                 shape = Some(ObjectShape::Ellipse {
+                    width,
+                    height,
+                });
+                parse_tag!(elem, {});
+                Ok(())
+            },
+            "capsule" => |elem: crate::util::XmlElement<'_, R>| {
+                shape = Some(ObjectShape::Capsule {
                     width,
                     height,
                 });
@@ -334,6 +352,7 @@ impl ObjectData {
                 match &templ.object.shape {
                     ObjectShape::Rect { .. } => ObjectShape::Rect { width, height },
                     ObjectShape::Ellipse { .. } => ObjectShape::Ellipse { width, height },
+                    ObjectShape::Capsule { .. } => ObjectShape::Capsule { width, height },
                     ObjectShape::Point(_, _) => ObjectShape::Point(x, y),
                     ObjectShape::Text {
                         font_family,
@@ -389,6 +408,7 @@ impl ObjectData {
             x,
             y,
             rotation,
+            opacity,
             visible,
             shape,
             properties,
