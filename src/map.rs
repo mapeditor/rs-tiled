@@ -54,9 +54,15 @@ pub struct Map {
     /// individual tiles may have different sizes. As such, there is no guarantee that this value
     /// will be the same as the one from the tilesets the map is using.
     pub tile_height: u32,
-    /// The skew x value for oblique maps.
+    /// The horizontal skew of the tile grid in pixels (used by oblique maps).
+    ///
+    /// Each row of tiles is shifted horizontally by this amount relative to the row above it,
+    /// resulting in a horizontal shear factor of `skew_x / tile_height`.
     pub skew_x: i32,
-    /// The skew y value for oblique maps.
+    /// The vertical skew of the tile grid in pixels (used by oblique maps).
+    ///
+    /// Each column of tiles is shifted vertically by this amount relative to the column to its
+    /// left, resulting in a vertical shear factor of `skew_y / tile_width`.
     pub skew_y: i32,
     /// The length of the side of a hexagonal tile in pixels (used by tile layers on hexagonal maps).
     pub hex_side_length: Option<i32>,

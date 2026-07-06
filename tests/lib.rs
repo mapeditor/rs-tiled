@@ -190,6 +190,17 @@ fn test_just_tileset() {
 }
 
 #[test]
+fn test_oblique_map() {
+    let r = Loader::new()
+        .load_tmx_map("assets/tiled_oblique.tmx")
+        .unwrap();
+
+    assert_eq!(r.orientation, tiled::Orientation::Oblique);
+    assert_eq!(r.skew_x, 16);
+    assert_eq!(r.skew_y, 8);
+}
+
+#[test]
 fn test_infinite_map() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_base64_zlib_infinite.tmx")
