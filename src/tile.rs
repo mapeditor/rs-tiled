@@ -38,7 +38,7 @@ pub struct TileData {
     /// The animation frames of this tile.
     pub animation: Option<Vec<Frame>>,
     /// The type of this tile.
-    pub user_type: Option<String>,
+    pub user_type: String,
     /// The probability of this tile.
     pub probability: f32,
     /// The image rect of this tile, which is only used in image collection tilesets and corresponds
@@ -94,7 +94,7 @@ impl TileData {
             ((user_type, user_class, probability, x, y, width, height), id)
         );
 
-        let user_type = user_type.or(user_class);
+        let user_type = user_type.or(user_class).unwrap_or_default();
         let mut image = Option::None;
         let mut properties = HashMap::new();
         let mut objectgroup = None;

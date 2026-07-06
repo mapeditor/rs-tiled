@@ -12,7 +12,7 @@ pub struct WangColor {
     /// The name of this color.
     pub name: String,
     /// The custom type of this color, arbitrarily set by the user.
-    pub user_type: Option<String>,
+    pub user_type: String,
     #[allow(missing_docs)]
     pub color: Color,
     /// The tile ID of the tile representing this color.
@@ -53,7 +53,7 @@ impl WangColor {
 
         Ok(WangColor {
             name,
-            user_type,
+            user_type: user_type.unwrap_or_default(),
             color,
             tile,
             probability,

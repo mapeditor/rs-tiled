@@ -32,7 +32,7 @@ pub struct WangSet {
     /// The name of the Wang set.
     pub name: String,
     /// The custom type of the Wang set, arbitrarily set by the user.
-    pub user_type: Option<String>,
+    pub user_type: String,
     /// Type of Wang set.
     pub wang_set_type: WangSetType,
     /// The tile ID of the tile representing this Wang set.
@@ -91,7 +91,7 @@ impl WangSet {
 
         Ok(WangSet {
             name,
-            user_type,
+            user_type: user_type.unwrap_or_default(),
             wang_set_type,
             tile,
             wang_colors,

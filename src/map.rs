@@ -89,7 +89,7 @@ pub struct Map {
     pub background_color: Option<Color>,
     infinite: bool,
     /// The type of the map, which is arbitrary and set by the user.
-    pub user_type: Option<String>,
+    pub user_type: String,
 }
 
 impl fmt::Debug for Map {
@@ -229,7 +229,7 @@ impl Map {
         );
 
         let infinite = infinite.unwrap_or(false);
-        let user_type = user_type.or(user_class);
+        let user_type = user_type.or(user_class).unwrap_or_default();
         let render_order = render_order.unwrap_or_default();
         let skew_x = skew_x.unwrap_or(0);
         let skew_y = skew_y.unwrap_or(0);
