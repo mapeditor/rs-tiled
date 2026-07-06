@@ -60,6 +60,9 @@ pub struct Tileset {
     pub fill_mode: FillMode,
     /// The alignment to use for tile objects referring to tiles of this tileset.
     pub object_alignment: ObjectAlignment,
+    /// The transformations that can be applied to the tiles of this tileset, for example when
+    /// used by Wang sets.
+    pub transformations: Transformations,
 
     /// A tileset can either:
     /// * have a single spritesheet `image` in `tileset` ("regular" tileset);
@@ -81,6 +84,21 @@ pub struct Tileset {
 
     /// The custom tileset type, arbitrarily set by the user.
     pub user_type: Option<String>,
+}
+
+/// The transformations that can be applied to the tiles of a tileset, for example when used by
+/// Wang sets.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+pub struct Transformations {
+    /// Whether the tiles in this tileset can be flipped horizontally.
+    pub hflip: bool,
+    /// Whether the tiles in this tileset can be flipped vertically.
+    pub vflip: bool,
+    /// Whether the tiles in this tileset can be rotated in 90-degree increments.
+    pub rotate: bool,
+    /// Whether untransformed tiles remain preferred, otherwise transformed tiles are used to
+    /// produce more variations.
+    pub prefer_untransformed: bool,
 }
 
 /// The size to use when rendering a tileset's tiles on a tile layer.
@@ -465,6 +483,7 @@ impl Tileset {
         let mut properties = HashMap::new();
         let mut wang_sets = Vec::new();
         let mut offset = (0i32, 0i32);
+        let mut transformations = Transformations::default();
 
         parse_tag!(elem, {
             "image" => |elem| {
@@ -473,6 +492,10 @@ impl Tileset {
             },
             "tileoffset" => |elem| {
                 offset = parse_tileoffset(elem)?;
+                Ok(())
+            },
+            "transformations" => |elem| {
+                transformations = parse_transformations(elem)?;
                 Ok(())
             },
             "properties" => |elem| {
@@ -532,6 +555,7 @@ impl Tileset {
             tile_render_size: prop.tile_render_size.unwrap_or_default(),
             fill_mode: prop.fill_mode.unwrap_or_default(),
             object_alignment: prop.object_alignment.unwrap_or_default(),
+            transformations,
             tilecount: prop.tilecount,
             image,
             tiles,
@@ -555,6 +579,28 @@ impl Tileset {
                 )
             })
     }
+}
+
+/// Parse the optional <transformations hflip=... vflip=... rotate=... preferuntransformed=.../> tag.
+fn parse_transformations<R: std::io::BufRead>(
+    elem: crate::util::XmlElement<'_, R>,
+) -> Result<Transformations> {
+    let (hflip, vflip, rotate, prefer_untransformed) = get_attrs!(
+        for v in (elem.attrs) {
+            Some("hflip") => hflip = v == "1",
+            Some("vflip") => vflip = v == "1",
+            Some("rotate") => rotate = v == "1",
+            Some("preferuntransformed") => prefer_untransformed = v == "1",
+        }
+        (hflip, vflip, rotate, prefer_untransformed)
+    );
+    parse_tag!(elem, {});
+    Ok(Transformations {
+        hflip: hflip.unwrap_or(false),
+        vflip: vflip.unwrap_or(false),
+        rotate: rotate.unwrap_or(false),
+        prefer_untransformed: prefer_untransformed.unwrap_or(false),
+    })
 }
 
 /// Parse the optional <tileoffset x=... y=.../> tag.

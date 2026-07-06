@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.8" tiledversion="1.8.5" name="tilesheet_wangsets" tilewidth="32" tileheight="32" tilecount="84" columns="14">
  <image source="tilesheet.png" width="448" height="192"/>
+ <transformations hflip="1" vflip="1" rotate="0" preferuntransformed="1"/>
  <wangsets>
-  <wangset name="Void" type="mixed" tile="-1">
-   <wangcolor name="" color="#ff0000" tile="-1" probability="1"/>
+  <wangset name="Void" type="mixed" tile="-1" class="VoidSet">
+   <wangcolor name="" color="#ff0000" tile="-1" probability="1" class="VoidColor"/>
    <wangtile tileid="0" wangid="1,1,0,0,0,0,0,1"/>
    <wangtile tileid="1" wangid="0,0,0,1,1,1,0,0"/>
    <wangtile tileid="14" wangid="0,0,0,0,0,1,1,1"/>

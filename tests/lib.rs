@@ -406,6 +406,9 @@ fn test_parallax_layers() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_parallax.tmx")
         .unwrap();
+    assert_eq!(r.render_order, tiled::RenderOrder::RightUp);
+    assert_eq!(r.parallax_origin_x, 120.0);
+    assert_eq!(r.parallax_origin_y, -40.5);
     for (i, layer) in r.layers().enumerate() {
         match i {
             0 => {
@@ -470,6 +473,8 @@ fn test_capsule_object_and_blend_modes() {
     assert_eq!(layer.blend_mode, "add");
 
     let objects = layer.as_object_layer().unwrap();
+    assert_eq!(objects.draw_order, tiled::DrawOrder::Index);
+
     let capsule = objects.get_object(0).unwrap();
     assert_eq!(
         capsule.shape,
@@ -489,6 +494,15 @@ fn test_object_property() {
     let r = Loader::new()
         .load_tmx_map("assets/tiled_object_property.tmx")
         .unwrap();
+    // An object layer without a draworder attribute gets the default value.
+    assert_eq!(
+        r.get_layer(1)
+            .unwrap()
+            .as_object_layer()
+            .unwrap()
+            .draw_order,
+        tiled::DrawOrder::TopDown
+    );
     let layer = r.get_layer(1).unwrap();
     let prop_value = if let Some(PropertyValue::ObjectValue(v)) = layer
         .as_object_layer()
@@ -795,7 +809,22 @@ fn test_reading_wang_sets() {
 
     // We will pick some random data from the wangsets for tessting
     let tileset = map.tilesets().get(0).unwrap();
+    assert_eq!(
+        tileset.transformations,
+        tiled::Transformations {
+            hflip: true,
+            vflip: true,
+            rotate: false,
+            prefer_untransformed: true,
+        }
+    );
     assert_eq!(tileset.wang_sets.len(), 3);
+    let wangset_1 = tileset.wang_sets.get(0).unwrap();
+    assert_eq!(wangset_1.user_type.as_deref(), Some("VoidSet"));
+    assert_eq!(
+        wangset_1.wang_colors[0].user_type.as_deref(),
+        Some("VoidColor")
+    );
     let wangset_2 = tileset.wang_sets.get(1).unwrap();
     let tile_10 = wangset_2.wang_tiles.get(&10).unwrap();
     assert_eq!(tile_10.wang_id, WangId([2u8, 2, 0, 2, 0, 2, 2, 2]));

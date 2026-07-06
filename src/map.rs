@@ -30,6 +30,9 @@ pub struct Map {
     pub source: PathBuf,
     /// The way tiles are laid out in the map.
     pub orientation: Orientation,
+    /// The order in which the tiles of tile layers are rendered (only relevant for orthogonal
+    /// maps).
+    pub render_order: RenderOrder,
     /// Width of the map, in tiles.
     ///
     /// ## Note
@@ -64,6 +67,12 @@ pub struct Map {
     /// Each column of tiles is shifted vertically by this amount relative to the column to its
     /// left, resulting in a vertical shear factor of `skew_y / tile_width`.
     pub skew_y: i32,
+    /// The X coordinate of the parallax origin in pixels, relative to which all layers are
+    /// scrolled by their parallax factor.
+    pub parallax_origin_x: f32,
+    /// The Y coordinate of the parallax origin in pixels, relative to which all layers are
+    /// scrolled by their parallax factor.
+    pub parallax_origin_y: f32,
     /// The length of the side of a hexagonal tile in pixels (used by tile layers on hexagonal maps).
     pub hex_side_length: Option<i32>,
     /// The stagger axis of Hexagonal/Staggered map.
@@ -88,12 +97,15 @@ impl fmt::Debug for Map {
         f.debug_struct("Map")
             .field("version", &self.version)
             .field("orientation", &self.orientation)
+            .field("render_order", &self.render_order)
             .field("width", &self.width)
             .field("height", &self.height)
             .field("tile_width", &self.tile_width)
             .field("tile_height", &self.tile_height)
             .field("skew_x", &self.skew_x)
             .field("skew_y", &self.skew_y)
+            .field("parallax_origin_x", &self.parallax_origin_x)
+            .field("parallax_origin_y", &self.parallax_origin_y)
             .field("hex_side_length", &self.hex_side_length)
             .field("stagger_axis", &self.stagger_axis)
             .field("stagger_index", &self.stagger_index)
@@ -182,8 +194,11 @@ impl Map {
                 infinite,
                 user_type,
                 user_class,
+                render_order,
                 skew_x,
                 skew_y,
+                parallax_origin_x,
+                parallax_origin_y,
                 stagger_axis,
                 stagger_index,
                 hex_side_length,
@@ -195,8 +210,11 @@ impl Map {
                 Some("infinite") => infinite = v == "1",
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
+                Some("renderorder") => render_order ?= v.parse::<RenderOrder>(),
                 Some("skewx") => skew_x ?= v.parse::<i32>(),
                 Some("skewy") => skew_y ?= v.parse::<i32>(),
+                Some("parallaxoriginx") => parallax_origin_x ?= v.parse::<f32>(),
+                Some("parallaxoriginy") => parallax_origin_y ?= v.parse::<f32>(),
                 Some("staggeraxis") => stagger_axis ?= v.parse::<StaggerAxis>(),
                 Some("staggerindex") => stagger_index ?= v.parse::<StaggerIndex>(),
                 Some("hexsidelength") => hex_side_length ?= v.parse(),
@@ -207,13 +225,16 @@ impl Map {
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((colour, infinite, user_type, user_class, skew_x, skew_y, stagger_axis, stagger_index, hex_side_length), (version, orientation, width, height, tile_width, tile_height))
+            ((colour, infinite, user_type, user_class, render_order, skew_x, skew_y, parallax_origin_x, parallax_origin_y, stagger_axis, stagger_index, hex_side_length), (version, orientation, width, height, tile_width, tile_height))
         );
 
         let infinite = infinite.unwrap_or(false);
         let user_type = user_type.or(user_class);
+        let render_order = render_order.unwrap_or_default();
         let skew_x = skew_x.unwrap_or(0);
         let skew_y = skew_y.unwrap_or(0);
+        let parallax_origin_x = parallax_origin_x.unwrap_or(0.0);
+        let parallax_origin_y = parallax_origin_y.unwrap_or(0.0);
         let stagger_axis = stagger_axis.unwrap_or_default();
         let stagger_index = stagger_index.unwrap_or_default();
 
@@ -310,12 +331,15 @@ impl Map {
             version: v,
             source: map_path.to_owned(),
             orientation: o,
+            render_order,
             width: w,
             height: h,
             tile_width: tw,
             tile_height: th,
             skew_x,
             skew_y,
+            parallax_origin_x,
+            parallax_origin_y,
             hex_side_length,
             stagger_axis,
             stagger_index,
@@ -405,6 +429,61 @@ impl FromStr for StaggerAxis {
             _ => Err(StaggerAxisError {
                 str_found: s.to_owned(),
             }),
+        }
+    }
+}
+
+/// The order in which the tiles of tile layers are rendered. In all cases, the map is drawn
+/// row-by-row. Only relevant for orthogonal maps.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+#[allow(missing_docs)]
+pub enum RenderOrder {
+    #[default]
+    RightDown,
+    RightUp,
+    LeftDown,
+    LeftUp,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse a [`RenderOrder`] that is not valid.
+pub struct RenderOrderParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl std::fmt::Display for RenderOrderParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse render order, valid options are `right-down`, `right-up`, \
+        `left-down` and `left-up` but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for RenderOrder {
+    type Err = RenderOrderParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "right-down" => Ok(RenderOrder::RightDown),
+            "right-up" => Ok(RenderOrder::RightUp),
+            "left-down" => Ok(RenderOrder::LeftDown),
+            "left-up" => Ok(RenderOrder::LeftUp),
+            _ => Err(RenderOrderParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl fmt::Display for RenderOrder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RenderOrder::RightDown => write!(f, "right-down"),
+            RenderOrder::RightUp => write!(f, "right-up"),
+            RenderOrder::LeftDown => write!(f, "left-down"),
+            RenderOrder::LeftUp => write!(f, "left-up"),
         }
     }
 }

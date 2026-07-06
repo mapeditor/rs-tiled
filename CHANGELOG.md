@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   code that matches on it exhaustively.
 - Added `LayerData` `blend_mode` field parsed from the TMX `mode` attribute.
 - Added `ObjectData` `opacity` field parsed from the TMX `opacity` attribute.
+- Added `Map` `render_order`, `parallax_origin_x` and `parallax_origin_y` fields parsed from
+  the TMX `renderorder`, `parallaxoriginx` and `parallaxoriginy` attributes.
+- Added `ObjectLayerData` `draw_order` field parsed from the TMX `draworder` attribute.
+- Added `Tileset` `transformations` field parsed from the TMX `transformations` element.
+- Added `WangSet` and `WangColor` `user_type` fields parsed from the TMX `class` attribute.
 
 ### Changed
 - Switched from `xml-rs` to `quick-xml` to speed up XML parsing.
