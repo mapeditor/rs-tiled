@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   change for code that matches on it exhaustively.
 - Added `Map` `skew_x` and `skew_y` fields parsed from TMX `skewx`/`skewy`.
 - Added support for list properties via `PropertyValue::ListValue`. (#338, #340, #341)
+- Added `Tileset` `tile_render_size`, `fill_mode` and `object_alignment` fields parsed from
+  the TMX `tilerendersize`, `fillmode` and `objectalignment` attributes.
 
 ### Changed
 - Switched from `xml-rs` to `quick-xml` to speed up XML parsing.

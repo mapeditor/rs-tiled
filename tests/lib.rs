@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
 use tiled::{
-    Color, FiniteTileLayer, HorizontalAlignment, LayerType, Loader, Map, ObjectShape, Properties,
-    PropertyValue, ResourceCache, TileLayer, TilesetLocation, VerticalAlignment, WangId,
+    Color, FillMode, FiniteTileLayer, HorizontalAlignment, LayerType, Loader, Map, ObjectAlignment,
+    ObjectShape, Properties, PropertyValue, ResourceCache, TileLayer, TileRenderSize,
+    TilesetLocation, VerticalAlignment, WangId,
 };
 
 fn as_finite<'map>(data: TileLayer<'map>) -> FiniteTileLayer<'map> {
@@ -187,6 +188,24 @@ fn test_just_tileset() {
         r.tilesets()[0],
         loader.cache().get_tileset("assets/tilesheet.tsx").unwrap()
     );
+}
+
+#[test]
+fn test_tileset_render_options() {
+    let mut loader = Loader::new();
+
+    let t = loader
+        .load_tsx_tileset("assets/tilesheet_render_options.tsx")
+        .unwrap();
+    assert_eq!(t.tile_render_size, TileRenderSize::Grid);
+    assert_eq!(t.fill_mode, FillMode::PreserveAspectFit);
+    assert_eq!(t.object_alignment, ObjectAlignment::TopLeft);
+
+    // A tileset without these attributes gets the default values.
+    let t = loader.load_tsx_tileset("assets/tilesheet.tsx").unwrap();
+    assert_eq!(t.tile_render_size, TileRenderSize::Tile);
+    assert_eq!(t.fill_mode, FillMode::Stretch);
+    assert_eq!(t.object_alignment, ObjectAlignment::Unspecified);
 }
 
 #[test]
