@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use crate::error::{Error, Result};
 use crate::image::Image;
@@ -51,6 +53,13 @@ pub struct Tileset {
     pub offset_x: i32,
     /// The y-offset to be used when drawing tiles of this tileset.
     pub offset_y: i32,
+    /// The size to use when rendering tiles of this tileset on a tile layer.
+    pub tile_render_size: TileRenderSize,
+    /// The fill mode to use when rendering tiles of this tileset, relevant when the tiles are
+    /// not rendered at their native size.
+    pub fill_mode: FillMode,
+    /// The alignment to use for tile objects referring to tiles of this tileset.
+    pub object_alignment: ObjectAlignment,
 
     /// A tileset can either:
     /// * have a single spritesheet `image` in `tileset` ("regular" tileset);
@@ -74,6 +83,184 @@ pub struct Tileset {
     pub user_type: Option<String>,
 }
 
+/// The size to use when rendering a tileset's tiles on a tile layer.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+pub enum TileRenderSize {
+    /// The tile is drawn at its own size, positioned so that its bottom left corner aligns with
+    /// the bottom left corner of its grid cell.
+    #[default]
+    Tile,
+    /// The tile is drawn at the size of the map's grid cell.
+    Grid,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse a [`TileRenderSize`] that is not valid.
+pub struct TileRenderSizeParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl fmt::Display for TileRenderSizeParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse tile render size, valid options are `tile` and `grid` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for TileRenderSize {
+    type Err = TileRenderSizeParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "tile" => Ok(TileRenderSize::Tile),
+            "grid" => Ok(TileRenderSize::Grid),
+            _ => Err(TileRenderSizeParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl fmt::Display for TileRenderSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TileRenderSize::Tile => write!(f, "tile"),
+            TileRenderSize::Grid => write!(f, "grid"),
+        }
+    }
+}
+
+/// The fill mode to use when rendering a tileset's tiles at a size differing from their native
+/// size.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+pub enum FillMode {
+    /// The tile image is stretched to fill the target rectangle.
+    #[default]
+    Stretch,
+    /// The tile image is scaled to fit the target rectangle while preserving its aspect ratio.
+    PreserveAspectFit,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse a [`FillMode`] that is not valid.
+pub struct FillModeParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl fmt::Display for FillModeParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse fill mode, valid options are `stretch` and `preserve-aspect-fit` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for FillMode {
+    type Err = FillModeParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "stretch" => Ok(FillMode::Stretch),
+            "preserve-aspect-fit" => Ok(FillMode::PreserveAspectFit),
+            _ => Err(FillModeParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl fmt::Display for FillMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FillMode::Stretch => write!(f, "stretch"),
+            FillMode::PreserveAspectFit => write!(f, "preserve-aspect-fit"),
+        }
+    }
+}
+
+/// The alignment to use for tile objects referring to a tileset's tiles.
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+#[allow(missing_docs)]
+pub enum ObjectAlignment {
+    /// Tile objects use the alignment that older Tiled versions used: [`BottomLeft`] in
+    /// orthogonal maps and [`Bottom`] in isometric maps.
+    ///
+    /// [`BottomLeft`]: ObjectAlignment::BottomLeft
+    /// [`Bottom`]: ObjectAlignment::Bottom
+    #[default]
+    Unspecified,
+    TopLeft,
+    Top,
+    TopRight,
+    Left,
+    Center,
+    Right,
+    BottomLeft,
+    Bottom,
+    BottomRight,
+}
+
+#[derive(Debug)]
+/// An error arising from trying to parse an [`ObjectAlignment`] that is not valid.
+pub struct ObjectAlignmentParseError {
+    /// The invalid string found.
+    pub str_found: String,
+}
+
+impl fmt::Display for ObjectAlignmentParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "failed to parse object alignment, valid options are `unspecified`, `topleft`, \
+        `top`, `topright`, `left`, `center`, `right`, `bottomleft`, `bottom` and `bottomright` \
+        but got `{}` instead",
+            self.str_found
+        ))
+    }
+}
+
+impl FromStr for ObjectAlignment {
+    type Err = ObjectAlignmentParseError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "unspecified" => Ok(ObjectAlignment::Unspecified),
+            "topleft" => Ok(ObjectAlignment::TopLeft),
+            "top" => Ok(ObjectAlignment::Top),
+            "topright" => Ok(ObjectAlignment::TopRight),
+            "left" => Ok(ObjectAlignment::Left),
+            "center" => Ok(ObjectAlignment::Center),
+            "right" => Ok(ObjectAlignment::Right),
+            "bottomleft" => Ok(ObjectAlignment::BottomLeft),
+            "bottom" => Ok(ObjectAlignment::Bottom),
+            "bottomright" => Ok(ObjectAlignment::BottomRight),
+            _ => Err(ObjectAlignmentParseError {
+                str_found: s.to_owned(),
+            }),
+        }
+    }
+}
+
+impl fmt::Display for ObjectAlignment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ObjectAlignment::Unspecified => write!(f, "unspecified"),
+            ObjectAlignment::TopLeft => write!(f, "topleft"),
+            ObjectAlignment::Top => write!(f, "top"),
+            ObjectAlignment::TopRight => write!(f, "topright"),
+            ObjectAlignment::Left => write!(f, "left"),
+            ObjectAlignment::Center => write!(f, "center"),
+            ObjectAlignment::Right => write!(f, "right"),
+            ObjectAlignment::BottomLeft => write!(f, "bottomleft"),
+            ObjectAlignment::Bottom => write!(f, "bottom"),
+            ObjectAlignment::BottomRight => write!(f, "bottomright"),
+        }
+    }
+}
+
 pub(crate) enum EmbeddedParseResultType {
     ExternalReference { tileset_path: PathBuf },
     Embedded { tileset: Tileset },
@@ -94,6 +281,9 @@ struct TilesetProperties {
     user_type: Option<String>,
     tile_width: u32,
     tile_height: u32,
+    tile_render_size: Option<TileRenderSize>,
+    fill_mode: Option<FillMode>,
+    object_alignment: Option<ObjectAlignment>,
     /// The root all non-absolute paths contained within the tileset are relative to.
     root_path: PathBuf,
 }
@@ -140,6 +330,7 @@ impl Tileset {
     ) -> Result<EmbeddedParseResult> {
         let (
             (spacing, margin, columns, name, user_type, user_class),
+            (tile_render_size, fill_mode, object_alignment),
             (tilecount, first_gid, tile_width, tile_height),
         ) = get_attrs!(
            for v in (attrs) {
@@ -149,13 +340,16 @@ impl Tileset {
             Some("name") => name = v.to_string(),
             Some("type") => user_type ?= v.parse(),
             Some("class") => user_class ?= v.parse(),
+            Some("tilerendersize") => tile_render_size ?= v.parse::<TileRenderSize>(),
+            Some("fillmode") => fill_mode ?= v.parse::<FillMode>(),
+            Some("objectalignment") => object_alignment ?= v.parse::<ObjectAlignment>(),
 
             "tilecount" => tilecount ?= v.parse::<u32>(),
             "firstgid" => first_gid ?= v.parse::<u32>().map(Gid),
             "tilewidth" => tile_width ?= v.parse::<u32>(),
             "tileheight" => tile_height ?= v.parse::<u32>(),
            }
-           ((spacing, margin, columns, name, user_type, user_class), (tilecount, first_gid, tile_width, tile_height))
+           ((spacing, margin, columns, name, user_type, user_class), (tile_render_size, fill_mode, object_alignment), (tilecount, first_gid, tile_width, tile_height))
         );
 
         let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
@@ -173,6 +367,9 @@ impl Tileset {
                 tilecount,
                 tile_height,
                 tile_width,
+                tile_render_size,
+                fill_mode,
+                object_alignment,
             },
             reader,
             cache,
@@ -211,6 +408,7 @@ impl Tileset {
     ) -> Result<Tileset> {
         let (
             (spacing, margin, columns, name, user_type, user_class),
+            (tile_render_size, fill_mode, object_alignment),
             (tilecount, tile_width, tile_height),
         ) = get_attrs!(
             for v in (elem.attrs) {
@@ -220,12 +418,15 @@ impl Tileset {
                 Some("name") => name = v.to_string(),
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
+                Some("tilerendersize") => tile_render_size ?= v.parse::<TileRenderSize>(),
+                Some("fillmode") => fill_mode ?= v.parse::<FillMode>(),
+                Some("objectalignment") => object_alignment ?= v.parse::<ObjectAlignment>(),
 
                 "tilecount" => tilecount ?= v.parse::<u32>(),
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
-            ((spacing, margin, columns, name, user_type, user_class), (tilecount, tile_width, tile_height))
+            ((spacing, margin, columns, name, user_type, user_class), (tile_render_size, fill_mode, object_alignment), (tilecount, tile_width, tile_height))
         );
 
         let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
@@ -243,6 +444,9 @@ impl Tileset {
                 tilecount,
                 tile_height,
                 tile_width,
+                tile_render_size,
+                fill_mode,
+                object_alignment,
             },
             reader,
             cache,
@@ -325,6 +529,9 @@ impl Tileset {
             columns,
             offset_x: offset.0,
             offset_y: offset.1,
+            tile_render_size: prop.tile_render_size.unwrap_or_default(),
+            fill_mode: prop.fill_mode.unwrap_or_default(),
+            object_alignment: prop.object_alignment.unwrap_or_default(),
             tilecount: prop.tilecount,
             image,
             tiles,
