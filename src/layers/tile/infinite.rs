@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    util::{floor_div, get_attrs, map_wrapper, parse_tag},
     Error, LayerTile, LayerTileData, MapTilesetGid, Result,
+    util::{floor_div, get_attrs, map_wrapper, parse_tag},
 };
 
 use super::util::parse_data_line;
@@ -263,7 +263,9 @@ impl<'map> InfiniteTileLayer<'map> {
     /// # }
     /// ```
     #[inline]
-    pub fn chunks(&self) -> impl ExactSizeIterator<Item = ((i32, i32), Chunk<'map>)> + 'map {
+    pub fn chunks(
+        &self,
+    ) -> impl ExactSizeIterator<Item = ((i32, i32), Chunk<'map>)> + 'map + use<'map> {
         let map: &'map crate::Map = self.map;
         self.data
             .chunks

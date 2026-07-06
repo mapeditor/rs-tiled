@@ -1,11 +1,11 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
 use crate::{
+    Color, Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
     error::{Error, Result},
-    properties::{parse_properties, Properties},
+    properties::{Properties, parse_properties},
     template::Template,
     util::{get_attrs, map_wrapper, parse_tag, read_text_or_cdata},
-    Color, Gid, MapTilesetGid, ResourceCache, ResourceReader, Tile, TileId, Tileset,
 };
 
 /// The location of the tileset this tile is in
@@ -383,16 +383,16 @@ impl ObjectData {
                         height: _,
                     } => ObjectShape::Text {
                         font_family: font_family.clone(),
-                        pixel_size: pixel_size.clone(),
-                        wrap: wrap.clone(),
-                        color: color.clone(),
-                        bold: bold.clone(),
-                        italic: italic.clone(),
-                        underline: underline.clone(),
-                        strikeout: strikeout.clone(),
-                        kerning: kerning.clone(),
-                        halign: halign.clone(),
-                        valign: valign.clone(),
+                        pixel_size: *pixel_size,
+                        wrap: *wrap,
+                        color: *color,
+                        bold: *bold,
+                        italic: *italic,
+                        underline: *underline,
+                        strikeout: *strikeout,
+                        kerning: *kerning,
+                        halign: *halign,
+                        valign: *valign,
                         text: text.clone(),
                         width,
                         height,
@@ -527,7 +527,7 @@ impl ObjectData {
         let italic = italic == Some(1);
         let underline = underline == Some(1);
         let strikeout = strikeout == Some(1);
-        let kerning = kerning.map_or(true, |k| k == 1);
+        let kerning = kerning.is_none_or(|k| k == 1);
         let halign = halign.unwrap_or_default();
         let valign = valign.unwrap_or_default();
         let contents = read_text_or_cdata(elem, |text| Ok(text.to_string()))?;

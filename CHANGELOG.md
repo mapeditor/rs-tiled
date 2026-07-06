@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `user_type` fields on `Map`, `Tileset`, `LayerData` and `TileData` changed from
   `Option<String>` to `String`, which is empty when the `class` attribute is not set. This
   matches `ObjectData` as well as Tiled itself.
+- Raised the Rust edition to 2024, which implies a minimum supported Rust version of
+  1.85. (#332)
 
 ### Deprecated
 - The values of `ObjectShape::Point`, since they merely duplicate the object's `x` and `y`

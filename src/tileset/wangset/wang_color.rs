@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use crate::{
-    properties::{parse_properties, Color, Properties},
-    util::{get_attrs, parse_tag},
     Result, TileId,
+    properties::{Color, Properties, parse_properties},
+    util::{get_attrs, parse_tag},
 };
 
 /// Stores the data of the Wang color.

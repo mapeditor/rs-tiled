@@ -1,8 +1,8 @@
 use std::{path::Path, sync::Arc};
 
 use crate::{
-    error::Result, properties::Properties, util::*, Color, Map, MapTilesetGid, ResourceCache,
-    ResourceReader, Tileset,
+    Color, Map, MapTilesetGid, ResourceCache, ResourceReader, Tileset, error::Result,
+    properties::Properties, util::*,
 };
 
 mod image;
@@ -69,6 +69,7 @@ impl LayerData {
         self.id
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new<R: std::io::BufRead>(
         elem: crate::util::XmlElement<'_, R>,
         tag: LayerTag,

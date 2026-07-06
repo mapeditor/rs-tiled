@@ -1,11 +1,11 @@
 use std::{collections::HashMap, path::Path, sync::Arc};
 
 use crate::{
+    Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
     error::Result,
     layers::{LayerData, LayerTag},
-    properties::{parse_properties, Properties},
+    properties::{Properties, parse_properties},
     util::*,
-    Layer, MapTilesetGid, ResourceCache, ResourceReader, Tileset,
 };
 
 /// The raw data of a [`GroupLayer`]. Does not include a reference to its parent [`Map`](crate::Map).
@@ -121,7 +121,7 @@ impl<'map> GroupLayer<'map> {
     /// dbg!(nested_layers);
     /// # }
     /// ```
-    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer<'map>> + 'map {
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = Layer<'map>> + 'map + use<'map> {
         let map: &'map crate::Map = self.map;
         self.data
             .layers

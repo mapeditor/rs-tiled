@@ -3,7 +3,7 @@ use std::path::Path;
 
 use quick_xml::Reader;
 
-use crate::{util::parse_root_element, Error, ResourceCache, ResourceReader, Result, Tileset};
+use crate::{Error, ResourceCache, ResourceReader, Result, Tileset, util::parse_root_element};
 
 pub fn parse_tileset(
     path: &Path,

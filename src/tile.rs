@@ -1,12 +1,12 @@
 use std::{collections::HashMap, path::Path};
 
 use crate::{
-    animation::{parse_animation, Frame},
+    ResourceCache, ResourceReader, Result, Tileset,
+    animation::{Frame, parse_animation},
     image::Image,
     layers::ObjectLayerData,
-    properties::{parse_properties, Properties},
+    properties::{Properties, parse_properties},
     util::{get_attrs, parse_tag},
-    ResourceCache, ResourceReader, Result, Tileset,
 };
 
 /// A tile ID, local to a tileset.

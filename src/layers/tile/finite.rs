@@ -1,6 +1,6 @@
 use crate::{
-    util::{get_attrs, map_wrapper},
     LayerTile, LayerTileData, MapTilesetGid, Result,
+    util::{get_attrs, map_wrapper},
 };
 
 use super::util::parse_data_line;

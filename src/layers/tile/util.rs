@@ -3,7 +3,7 @@ use std::{convert::TryInto, io::Read};
 use base64::Engine;
 
 use crate::{
-    util::read_text_or_cdata, CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result,
+    CsvDecodingError, Error, LayerTileData, MapTilesetGid, Result, util::read_text_or_cdata,
 };
 
 pub(crate) fn parse_data_line<R: std::io::BufRead>(
@@ -63,7 +63,7 @@ fn decode_csv(text: &str, tilesets: &[MapTilesetGid]) -> Result<Vec<Option<Layer
             Err(e) => {
                 return Err(Error::CsvDecodingError(
                     CsvDecodingError::TileDataParseError(e),
-                ))
+                ));
             }
         }
     }
