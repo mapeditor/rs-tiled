@@ -295,7 +295,7 @@ impl MapHandler {
                 )?;
                 canvas.draw(&shape, draw_param);
             }
-            tiled::ObjectShape::Point(_, _) | tiled::ObjectShape::Text { .. } => {
+            tiled::ObjectShape::Point(..) | tiled::ObjectShape::Text { .. } => {
                 // Left as an exercise for the reader
             }
         }

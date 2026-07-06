@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Option<String>` to `String`, which is empty when the `class` attribute is not set. This
   matches `ObjectData` as well as Tiled itself.
 
+### Deprecated
+- The values of `ObjectShape::Point`, since they merely duplicate the object's `x` and `y`
+  members. Match the variant with `ObjectShape::Point(..)` to avoid the deprecation
+  warnings. (#329)
+
 ## [0.15.1]
 ### Changed
 - The GGEZ example now handles tile rotation and mirroring. (#328)
