@@ -80,6 +80,8 @@ pub enum PropertyValue {
     /// An object ID value. Corresponds to the `object` property type.
     /// Holds the id of a referenced object, or 0 if unset.
     ObjectValue(u32),
+    /// A list of property values. Corresponds to the `list` property type.
+    ListValue(Vec<PropertyValue>),
     /// A class value. Corresponds to the `class` property type.
     /// Holds the type name and a set of properties.
     ClassValue {
@@ -150,38 +152,69 @@ pub(crate) fn parse_properties<R: std::io::BufRead>(
                 }
                 (obj_type, value, name, propertytype)
             );
-            let t = t.unwrap_or_else(|| "string".to_owned());
-            if t == "class" {
-                let mut properties = HashMap::new();
-                parse_tag!(elem, {
-                    "properties" => |elem| {
-                        properties = parse_properties(elem)?;
-                        Ok(())
-                    },
-                });
-                p.insert(k, PropertyValue::ClassValue {
-                    property_type: p_t.unwrap_or_default(),
-                    properties,
-                });
-                return Ok(());
-            }
-
-            let v: String = match v_attr {
-                Some(val) => {
-                    parse_tag!(elem, {});
-                    val
-                }
-                None => {
-                    // if the "value" attribute was missing, might be a multiline string
-                    read_text_or_cdata(
-                        elem,
-                        |text| Ok(text.to_string()),
-                    )?
-                }
-            };
-            p.insert(k, PropertyValue::new(t, v)?);
+            p.insert(k, parse_property_value(elem, t, v_attr, p_t)?);
             Ok(())
         },
     });
     Ok(p)
+}
+
+/// Parses the value of a `<property>` or list `<item>` element, given its `type`, `value` and
+/// `propertytype` attributes. Consumes the element's content.
+fn parse_property_value<R: std::io::BufRead>(
+    elem: crate::util::XmlElement<'_, R>,
+    t: Option<String>,
+    v_attr: Option<String>,
+    p_t: Option<String>,
+) -> Result<PropertyValue> {
+    let t = t.unwrap_or_else(|| "string".to_owned());
+    if t == "class" {
+        // Class properties will have their member values stored in a nested <properties>
+        // element. Only the actually set members are saved. When no members have been set
+        // the properties element is left out entirely.
+        let mut properties = HashMap::new();
+        parse_tag!(elem, {
+            "properties" => |elem| {
+                properties = parse_properties(elem)?;
+                Ok(())
+            },
+        });
+        return Ok(PropertyValue::ClassValue {
+            property_type: p_t.unwrap_or_default(),
+            properties,
+        });
+    }
+
+    if t == "list" {
+        // List properties store each of their values in a nested <item> element, which is
+        // structured like a <property> element without a name.
+        let mut items = Vec::new();
+        parse_tag!(elem, {
+            "item" => |elem: crate::util::XmlElement<'_, R>| {
+                let (t, v_attr, p_t) = get_attrs!(
+                    for attr in (elem.attrs) {
+                        Some("type") => obj_type = attr.to_string(),
+                        Some("value") => value = attr.to_string(),
+                        Some("propertytype") => propertytype = attr.to_string(),
+                    }
+                    (obj_type, value, propertytype)
+                );
+                items.push(parse_property_value(elem, t, v_attr, p_t)?);
+                Ok(())
+            },
+        });
+        return Ok(PropertyValue::ListValue(items));
+    }
+
+    let v: String = match v_attr {
+        Some(val) => {
+            parse_tag!(elem, {});
+            val
+        }
+        None => {
+            // if the "value" attribute was missing, might be a multiline string
+            read_text_or_cdata(elem, |text| Ok(text.to_string()))?
+        }
+    };
+    PropertyValue::new(t, v)
 }
