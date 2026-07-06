@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, f32::consts::FRAC_PI_2};
 
 use ggez::{
     graphics::{self, Canvas, DrawParam, InstanceArray},
@@ -173,17 +173,41 @@ impl MapHandler {
                                             * 20.0;
                                     }
 
-                                    batch.push(
-                                        DrawParam::default()
-                                            .src(get_tile_rect(ts, tile.id(), ts_size.0, ts_size.1))
-                                            .dest([dx, dy])
-                                            .color(ggez::graphics::Color::from_rgba(
-                                                0xFF,
-                                                0xFF,
-                                                0xFF,
-                                                (layer.opacity * 255.0) as u8,
-                                            )),
-                                    );
+                                    // Handle tile rotation and mirroring
+                                    let offset_x = self.tile_width() as f32 / 2.0;
+                                    let offset_y = self.tile_height() as f32 / 2.0;
+
+                                    let mut draw_param = DrawParam::default()
+                                        .src(get_tile_rect(ts, tile.id(), ts_size.0, ts_size.1))
+                                        .offset([offset_x, offset_y])
+                                        .dest([dx + offset_x, dy + offset_y])
+                                        .color(ggez::graphics::Color::from_rgba(
+                                            0xFF,
+                                            0xFF,
+                                            0xFF,
+                                            (layer.opacity * 255.0) as u8,
+                                        ));
+
+                                    let (fd, fh, fv) = (tile.flip_d, tile.flip_h, tile.flip_v);
+
+                                    draw_param = if fd {
+                                        match (fh, fv) {
+                                            (true, true) => {
+                                                draw_param.scale([-1.0, 1.0]).rotation(FRAC_PI_2)
+                                            }
+                                            (true, false) => draw_param.rotation(FRAC_PI_2),
+                                            (false, true) => draw_param.rotation(-FRAC_PI_2),
+                                            (false, false) => {
+                                                draw_param.scale([-1.0, 1.0]).rotation(-FRAC_PI_2)
+                                            }
+                                        }
+                                    } else {
+                                        let sx = if fh { -1.0 } else { 1.0 };
+                                        let sy = if fv { -1.0 } else { 1.0 };
+                                        draw_param.scale([sx, sy])
+                                    };
+
+                                    batch.push(draw_param);
                                 }
                             }
                         }

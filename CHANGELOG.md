@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Switched from `xml-rs` to `quick-xml` to speed up XML parsing.
 
+## [0.15.1]
+### Changed
+- The GGEZ example now handles tile rotation and mirroring. (#328)
+- The SFML and GGEZ examples are now behind the `example-sfml` and `example-ggez` features, so tests can run without their dependencies. (#337)
+
+### Fixed
+- Fixed a compile error when the `world` feature is enabled, but serde's `derive` feature isn't separately enabled by the dependent crate or another dependency. (#339)
+
 ## [0.15.0]
 ### Added
 - New `ImageLayer` `repeat_x`/`y` fields are now parsed from map image layers. (#324)
