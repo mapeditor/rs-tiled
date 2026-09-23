@@ -40,6 +40,10 @@ required-features = ["example-ggez"]
 name = "loading"
 harness = false
 
+[[bench]]
+name = "access"
+harness = false
+
 [dependencies]
 base64 = "0.22.1"
 quick-xml = "0.31.0"
