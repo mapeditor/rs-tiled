@@ -38,6 +38,8 @@ pub struct LayerData {
     id: u32,
     /// Whether this layer should be visible or not.
     pub visible: bool,
+    /// Whether the layer is locked against editing (the `locked` attribute; editor-only in Tiled).
+    pub locked: bool,
     /// The layer's x offset (in pixels).
     pub offset_x: f32,
     /// The layer's y offset (in pixels).
@@ -85,6 +87,7 @@ impl LayerData {
             blend_mode,
             tint_color,
             visible,
+            locked,
             offset_x,
             offset_y,
             parallax_x,
@@ -99,6 +102,7 @@ impl LayerData {
                 Some("mode") => blend_mode = v.to_string(),
                 Some("tintcolor") => tint_color ?= v.parse(),
                 Some("visible") => visible ?= v.parse().map(|x:i32| x == 1),
+                Some("locked") => locked ?= v.parse().map(|x:i32| x == 1),
                 Some("offsetx") => offset_x ?= v.parse(),
                 Some("offsety") => offset_y ?= v.parse(),
                 Some("parallaxx") => parallax_x ?= v.parse(),
@@ -108,7 +112,7 @@ impl LayerData {
                 Some("type") => user_type ?= v.parse(),
                 Some("class") => user_class ?= v.parse(),
             }
-            (opacity, blend_mode, tint_color, visible, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
+            (opacity, blend_mode, tint_color, visible, locked, offset_x, offset_y, parallax_x, parallax_y, name, id, user_type, user_class)
         );
 
         let (ty, properties) = match tag {
@@ -147,6 +151,7 @@ impl LayerData {
 
         Ok(Self {
             visible: visible.unwrap_or(true),
+            locked: locked.unwrap_or(false),
             offset_x: offset_x.unwrap_or(0.0),
             offset_y: offset_y.unwrap_or(0.0),
             parallax_x: parallax_x.unwrap_or(1.0),
