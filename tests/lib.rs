@@ -918,5 +918,8 @@ fn test_layer_locked_attribute() {
         .unwrap();
     let locked: Vec<_> = map.layers().map(|l| (l.name.clone(), l.locked)).collect();
     assert!(locked.contains(&("Ground".to_string(), true)), "{locked:?}");
-    assert!(locked.contains(&("Background".to_string(), false)), "{locked:?}");
+    assert!(
+        locked.contains(&("Background".to_string(), false)),
+        "{locked:?}"
+    );
 }
