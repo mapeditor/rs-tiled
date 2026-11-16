@@ -910,3 +910,16 @@ fn test_text_object() {
         _ => panic!(),
     };
 }
+
+#[test]
+fn test_layer_locked_attribute() {
+    let map = Loader::new()
+        .load_tmx_map("assets/tiled_base64_zlib_infinite.tmx")
+        .unwrap();
+    let locked: Vec<_> = map.layers().map(|l| (l.name.clone(), l.locked)).collect();
+    assert!(locked.contains(&("Ground".to_string(), true)), "{locked:?}");
+    assert!(
+        locked.contains(&("Background".to_string(), false)),
+        "{locked:?}"
+    );
+}
