@@ -36,19 +36,24 @@ impl InfiniteTileLayerData {
         parse_tag!(elem, {
             "chunk" => |elem| {
                 let chunk = InternalChunk::new(elem, e.clone(), c.clone(), tilesets)?;
-                for x in chunk.x..chunk.x + chunk.width as i32 {
-                    for y in chunk.y..chunk.y + chunk.height as i32 {
+                for y in chunk.y..chunk.y + chunk.height as i32 {
+                    let mut x = chunk.x;
+                    let end_x = chunk.x + chunk.width as i32;
+                    while x < end_x {
                         let chunk_pos = ChunkData::tile_to_chunk_pos(x, y);
                         let relative_pos = (x - chunk_pos.0 * ChunkData::WIDTH as i32, y - chunk_pos.1 * ChunkData::HEIGHT as i32);
                         let chunk_index = (relative_pos.0 + relative_pos.1 * ChunkData::WIDTH as i32) as usize;
                         let internal_pos = (x - chunk.x, y - chunk.y);
                         let internal_index = (internal_pos.0 + internal_pos.1 * chunk.width as i32) as usize;
-
-                        if internal_index >= chunk.tiles.len() {
-                            return Err(Error::InvalidTileFound);
-                        }
-
-                        chunks.entry(chunk_pos).or_insert_with(ChunkData::new).tiles[chunk_index] = chunk.tiles[internal_index];
+                        let len = (end_x - x).min(ChunkData::WIDTH as i32 - relative_pos.0) as usize;
+                        let source = chunk.tiles
+                            .get(internal_index..internal_index + len)
+                            .ok_or(Error::InvalidTileFound)?;
+                        chunks.entry(chunk_pos)
+                            .or_insert_with(ChunkData::new)
+                            .tiles[chunk_index..chunk_index + len]
+                            .copy_from_slice(source);
+                        x += len as i32;
                     }
                 }
                 Ok(())
