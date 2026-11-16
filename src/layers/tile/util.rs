@@ -57,8 +57,8 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
 
 fn decode_csv(text: &str, tilesets: &[MapTilesetGid]) -> Result<Vec<Option<LayerTileData>>> {
     let mut tiles = Vec::new();
-    for v in text.split(',') {
-        match v.trim().parse() {
+    for v in text.split([',']) {
+        match v.parse().or_else(|_| v.trim().parse()) {
             Ok(bits) => tiles.push(LayerTileData::from_bits(bits, tilesets)),
             Err(e) => {
                 return Err(Error::CsvDecodingError(
