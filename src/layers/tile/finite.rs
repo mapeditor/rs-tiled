@@ -64,6 +64,7 @@ impl FiniteTileLayerData {
     /// If the position given is invalid or the position is empty, this function will return [`None`].
     ///
     /// If you want to get a [`Tile`](`crate::Tile`) instead, use [`FiniteTileLayer::get_tile()`].
+    #[inline]
     pub fn get_tile_data(&self, x: i32, y: i32) -> Option<&LayerTileData> {
         if x < self.width as i32 && y < self.height as i32 && x >= 0 && y >= 0 {
             self.tiles[x as usize + y as usize * self.width as usize].as_ref()
@@ -82,6 +83,7 @@ impl<'map> FiniteTileLayer<'map> {
     /// Obtains the tile present at the position given.
     ///
     /// If the position given is invalid or the position is empty, this function will return [`None`].
+    #[inline]
     pub fn get_tile(&self, x: i32, y: i32) -> Option<LayerTile<'map>> {
         self.data
             .get_tile_data(x, y)
