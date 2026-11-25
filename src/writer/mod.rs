@@ -110,6 +110,27 @@ impl TmxDocument {
     pub fn object_mut(&mut self, id: u32) -> Option<&mut TmxElement> {
         self.map_mut().find_mut(IdKind::Object, id)
     }
+    /// Remove a map object by ID. Other objects and their references are left intact.
+    /// Returns whether an object was removed.
+    pub fn remove_object(&mut self, id: u32) -> bool {
+        fn remove(parent: &mut TmxElement, id: u32) -> bool {
+            if parent.name == "objectgroup" {
+                if let Some(i) = parent.children.iter().position(|node| {
+                    node.element()
+                        .is_some_and(|e| e.name == "object" && e.id() == Some(id))
+                }) {
+                    parent.children.remove(i);
+                    return true;
+                }
+                return false;
+            }
+            parent
+                .elements_mut()
+                .filter(|e| matches!(e.name.as_str(), "group" | "objectgroup"))
+                .any(|layer| remove(layer, id))
+        }
+        remove(self.map_mut(), id)
+    }
     /// Return the ID of the layer containing this map object.
     pub fn object_layer_id(&self, id: u32) -> Option<u32> {
         self.map().find_owner(id)

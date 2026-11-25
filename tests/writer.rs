@@ -141,3 +141,21 @@ fn rejected_edits_preserve_original_layer_and_destination() {
     assert!(doc.save(&target).is_err());
     assert_eq!(fs::read(&target).unwrap(), original);
 }
+
+#[test]
+fn delete_only_the_matching_map_object() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("level.tmx");
+    fs::write(&path,r#"<map version="1.10" orientation="orthogonal" width="1" height="1" tilewidth="1" tileheight="1" nextobjectid="21">
+        <tileset firstgid="1" name="tiles" tilewidth="1" tileheight="1"><tile id="0"><objectgroup><object id="13" x="0" y="0"/></objectgroup></tile></tileset>
+        <group><objectgroup><object id="13" name="remove" x="1" y="1"/><object id="20" name="keep" x="0" y="0"/></objectgroup></group></map>"#).unwrap();
+    let mut doc = TmxDocument::open(&path).unwrap();
+    assert!(doc.remove_object(13));
+    assert!(!doc.remove_object(13));
+    doc.save(&path).unwrap();
+    let xml = fs::read_to_string(&path).unwrap();
+    assert!(!xml.contains("name=\"remove\""));
+    assert!(xml.contains("name=\"keep\""));
+    assert_eq!(xml.matches("id=\"13\"").count(), 1);
+    assert!(xml.contains("nextobjectid=\"21\""));
+}
