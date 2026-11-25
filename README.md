@@ -34,6 +34,10 @@ fn main() {
 
 ```
 
+## Editing a TMX file
+
+Use `tiled::writer::TmxDocument` to edit map properties, update finite tile layers and add layers or rectangle objects to an existing TMX file. Saving to another directory adjusts relative tileset, image, template and file property paths.
+
 ## FAQ
 ### How do I embed a map into my executable? / How do I read a file from anywhere else that isn't the filesystem's OS?
 The crate does all of its reading through the `read_from` function of the [`ResourceReader`](https://docs.rs/tiled/latest/tiled/trait.ResourceReader.html) that you create the loader with. By default, this reader is set to [`FilesystemResourceReader`](https://docs.rs/tiled/latest/tiled/struct.FilesystemResourceReader.html) and all files are read through the OS's filesystem. You can however change this.

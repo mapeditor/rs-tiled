@@ -22,6 +22,7 @@ mod tileset;
 mod util;
 #[cfg(feature = "world")]
 mod world;
+pub mod writer;
 
 pub use animation::*;
 pub use cache::*;

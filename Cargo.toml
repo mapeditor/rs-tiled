@@ -45,6 +45,8 @@ name = "access"
 harness = false
 
 [dependencies]
+pathdiff = "0.2"
+tempfile = "3"
 base64 = "0.22.1"
 quick-xml = "0.31.0"
 zstd = { version = "0.13.1", optional = true, default-features = false }
