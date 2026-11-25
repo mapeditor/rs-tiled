@@ -913,3 +913,38 @@ fn test_text_object() {
         _ => panic!(),
     };
 }
+
+#[test]
+fn tilesets_without_tilecount_or_columns() {
+    let map = Loader::new()
+        .load_tmx_map("assets/legacy_tilesets.tmx")
+        .unwrap();
+    let sheet = &map.tilesets()[0];
+    assert_eq!((sheet.columns, sheet.tilecount), (3, 6));
+    assert!(sheet.get_tile(5).is_some());
+    assert!(sheet.get_tile(6).is_none());
+
+    let collection = &map.tilesets()[1];
+    assert_eq!((collection.columns, collection.tilecount), (0, 2));
+    assert!(collection.get_tile(1).is_none());
+    assert!(collection.get_tile(7).is_some());
+
+    let layer = as_finite(map.get_layer(0).unwrap().as_tile_layer().unwrap());
+    assert_eq!(layer.get_tile(0, 0).unwrap().id(), 5);
+    assert_eq!(layer.get_tile(1, 0).unwrap().id(), 7);
+}
+
+#[test]
+fn embedded_tileset_reports_tilecount_overflow() {
+    let map = br#"<map version="1.0" orientation="orthogonal" width="1" height="1" tilewidth="1" tileheight="1">
+        <tileset firstgid="1" tilewidth="1" tileheight="1">
+            <image source="sheet.png" width="65536" height="65536"/>
+        </tileset>
+    </map>"#;
+    let mut loader = Loader::with_reader(|_: &std::path::Path| std::io::Result::Ok(&map[..]));
+    let error = loader.load_tmx_map("overflow.tmx").unwrap_err();
+    assert!(
+        matches!(error, tiled::Error::MalformedAttributes(ref message) if message == "Tile count exceeds u32"),
+        "{error}"
+    );
+}

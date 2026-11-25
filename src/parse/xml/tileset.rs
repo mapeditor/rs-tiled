@@ -18,6 +18,6 @@ pub fn parse_tileset(
         })?;
     let mut tileset_parser = Reader::from_reader(BufReader::new(file));
     parse_root_element(&mut tileset_parser, b"tileset", |elem| {
-        Tileset::parse_external_tileset(elem, path, reader, cache)
+        Tileset::parse_xml(elem, path, reader, cache)
     })
 }
