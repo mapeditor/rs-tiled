@@ -57,7 +57,9 @@ fn process_decoder(decoder: std::io::Result<impl Read>) -> Result<Vec<u8>> {
 
 fn decode_csv(text: &str, tilesets: &[MapTilesetGid]) -> Result<Vec<Option<LayerTileData>>> {
     let mut tiles = Vec::new();
+    // The single-element array benchmarks faster for short tile IDs
     for v in text.split([',']) {
+        // Most fields in Tiled's CSV output have no surrounding whitespace
         match v.parse().or_else(|_| v.trim().parse()) {
             Ok(bits) => tiles.push(LayerTileData::from_bits(bits, tilesets)),
             Err(e) => {
