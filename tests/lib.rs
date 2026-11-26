@@ -675,6 +675,8 @@ fn test_group_layers() {
     let layer_tile_1 = r.get_layer(0).unwrap();
     let layer_group_1 = r.get_layer(1).unwrap();
     let layer_group_2 = r.get_layer(2).unwrap();
+    assert!(layer_group_1.locked);
+    assert!(!layer_group_2.locked);
 
     assert_eq!(
         Some(&PropertyValue::StringValue("value1".to_string())),
@@ -697,6 +699,7 @@ fn test_group_layers() {
     // Depth = 1
     let layer_group_1 = layer_group_1.as_group_layer().unwrap();
     let layer_tile_2 = layer_group_1.get_layer(0).unwrap();
+    assert!(!layer_tile_2.locked);
     let layer_group_2 = layer_group_2.as_group_layer().unwrap();
     let layer_group_3 = layer_group_2.get_layer(0).unwrap();
     assert_eq!(
