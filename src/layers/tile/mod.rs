@@ -194,7 +194,7 @@ impl<'map> TileLayer<'map> {
     ///
     /// // These are both equal, and they achieve the same thing; However, matching on the layer
     /// // type is significantly more verbose. If you already know the layer type, then it is
-    /// // slighly faster to use its respective width method.
+    /// // slightly faster to use its respective width method.
     /// assert_eq!(width, layer.width());
     /// # }
     /// ```
@@ -228,7 +228,7 @@ impl<'map> TileLayer<'map> {
     ///
     /// // These are both equal, and they achieve the same thing; However, matching on the layer
     /// // type is significantly more verbose. If you already know the layer type, then it is
-    /// // slighly faster to use its respective height method.
+    /// // slightly faster to use its respective height method.
     /// assert_eq!(height, layer.height());
     /// # }
     /// ```
