@@ -45,7 +45,7 @@ impl std::error::Error for InvalidTilesetError {}
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// A attribute was missing, had the wrong type of wasn't formated
+    /// An attribute was missing, had the wrong type or wasn't formatted
     /// correctly.
     MalformedAttributes(String),
     /// An error occurred when decompressing using the
