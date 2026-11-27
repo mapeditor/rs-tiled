@@ -12,6 +12,9 @@ fn bench_loading(c: &mut Criterion) {
         b.iter(|| load("assets/tiled_base64_gzip.tmx"))
     });
     group.bench_function("csv", |b| b.iter(|| load("assets/tiled_csv.tmx")));
+    group.bench_function("base64_zlib_infinite", |b| {
+        b.iter(|| load("assets/tiled_base64_zlib_infinite.tmx"))
+    });
     group.finish();
 }
 
