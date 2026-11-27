@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Exposed the TMX layer lock flag as `LayerData::locked`.
+- Added support for loading tilesets that omit the `tilecount` attribute. (#359)
 
 ## [0.16.0]
 ### Added

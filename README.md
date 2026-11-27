@@ -15,8 +15,6 @@ Documentation is available [on docs.rs](https://docs.rs/tiled/).
 
 Code contributions are welcome as are bug reports, documentation, suggestions and criticism.
 
-The minimum supported TMX version is 0.13.
-
 ## Example
 
 ```rust

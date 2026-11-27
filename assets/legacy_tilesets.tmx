@@ -1,0 +1,7 @@
+<map version="1.0" orientation="orthogonal" width="2" height="1" tilewidth="8" tileheight="4">
+ <tileset firstgid="1" name="sheet" tilewidth="8" tileheight="4" margin="2" spacing="1">
+  <image source="sheet.png" width="28" height="11"/>
+ </tileset>
+ <tileset firstgid="7" source="legacy_collection.tsx"></tileset>
+ <layer name="Ground" width="2" height="1"><data encoding="csv">6,14</data></layer>
+</map>

@@ -44,10 +44,11 @@ pub struct Tileset {
     pub margin: u32,
     /// The number of tiles in this tileset. Note that tile IDs don't always have a connection with
     /// the tile count, and as such there may be tiles with an ID bigger than the tile count.
+    /// When omitted, this is inferred from the sheet dimensions or the number of collection tiles.
     pub tilecount: u32,
     /// The number of tile columns in the tileset. Editable for image collection tilesets, otherwise
     /// calculated using [image](Self::image) width, [tile width](Self::tile_width),
-    /// [spacing](Self::spacing) and [margin](Self::margin).
+    /// [spacing](Self::spacing) and [margin](Self::margin). Defaults to zero for image collections.
     pub columns: u32,
     /// The x-offset to be used when drawing tiles of this tileset.
     pub offset_x: i32,
@@ -293,7 +294,7 @@ pub(crate) struct EmbeddedParseResult {
 struct TilesetProperties {
     spacing: Option<u32>,
     margin: Option<u32>,
-    tilecount: u32,
+    tilecount: Option<u32>,
     columns: Option<u32>,
     name: String,
     user_type: String,
@@ -329,98 +330,31 @@ impl Tileset {
         reader: &mut impl ResourceReader,
         cache: &mut impl ResourceCache,
     ) -> Result<EmbeddedParseResult> {
-        let attrs = elem.attrs.clone();
-        Tileset::parse_xml_embedded(elem, attrs.clone(), path, reader, cache).or_else(|err| {
-            if matches!(err, Error::MalformedAttributes(_)) {
-                Tileset::parse_xml_reference(attrs, path)
-            } else {
-                Err(err)
-            }
-        })
-    }
-
-    fn parse_xml_embedded<'a, R: std::io::BufRead>(
-        elem: crate::util::XmlElement<'a, R>,
-        attrs: quick_xml::events::BytesStart<'a>,
-        path: &Path, // Template or Map file
-        reader: &mut impl ResourceReader,
-        cache: &mut impl ResourceCache,
-    ) -> Result<EmbeddedParseResult> {
-        let (
-            (spacing, margin, columns, name, user_type, user_class),
-            (tile_render_size, fill_mode, object_alignment),
-            (tilecount, first_gid, tile_width, tile_height),
-        ) = get_attrs!(
-           for v in (attrs) {
-            Some("spacing") => spacing ?= v.parse(),
-            Some("margin") => margin ?= v.parse(),
-            Some("columns") => columns ?= v.parse(),
-            Some("name") => name = v.to_string(),
-            Some("type") => user_type ?= v.parse(),
-            Some("class") => user_class ?= v.parse(),
-            Some("tilerendersize") => tile_render_size ?= v.parse::<TileRenderSize>(),
-            Some("fillmode") => fill_mode ?= v.parse::<FillMode>(),
-            Some("objectalignment") => object_alignment ?= v.parse::<ObjectAlignment>(),
-
-            "tilecount" => tilecount ?= v.parse::<u32>(),
-            "firstgid" => first_gid ?= v.parse::<u32>().map(Gid),
-            "tilewidth" => tile_width ?= v.parse::<u32>(),
-            "tileheight" => tile_height ?= v.parse::<u32>(),
-           }
-           ((spacing, margin, columns, name, user_type, user_class), (tile_render_size, fill_mode, object_alignment), (tilecount, first_gid, tile_width, tile_height))
-        );
-
-        let root_path = path.parent().ok_or(Error::PathIsNotFile)?.to_owned();
-
-        Self::finish_parsing_xml(
-            elem,
-            path.to_owned(),
-            TilesetProperties {
-                spacing,
-                margin,
-                name: name.unwrap_or_default(),
-                user_type: user_type.or(user_class).unwrap_or_default(),
-                root_path,
-                columns,
-                tilecount,
-                tile_height,
-                tile_width,
-                tile_render_size,
-                fill_mode,
-                object_alignment,
-            },
-            reader,
-            cache,
-        )
-        .map(|tileset| EmbeddedParseResult {
-            first_gid,
-            result_type: EmbeddedParseResultType::Embedded {
-                tileset: Box::new(tileset),
-            },
-        })
-    }
-
-    fn parse_xml_reference<'a>(
-        attrs: quick_xml::events::BytesStart<'a>,
-        map_path: &Path,
-    ) -> Result<EmbeddedParseResult> {
         let (first_gid, source) = get_attrs!(
-            for v in (attrs) {
+            for v in (elem.attrs) {
                 "firstgid" => first_gid ?= v.parse::<u32>().map(Gid),
-                "source" => source = v.to_string(),
+                Some("source") => source = v.to_string(),
             }
             (first_gid, source)
         );
 
-        let tileset_path = map_path.parent().ok_or(Error::PathIsNotFile)?.join(source);
-
+        let result_type = if let Some(source) = source {
+            let tileset_path = path.parent().ok_or(Error::PathIsNotFile)?.join(source);
+            parse_tag!(elem, {});
+            EmbeddedParseResultType::ExternalReference { tileset_path }
+        } else {
+            let tileset = Self::parse_xml(elem, path, reader, cache)?;
+            EmbeddedParseResultType::Embedded {
+                tileset: Box::new(tileset),
+            }
+        };
         Ok(EmbeddedParseResult {
             first_gid,
-            result_type: EmbeddedParseResultType::ExternalReference { tileset_path },
+            result_type,
         })
     }
 
-    pub(crate) fn parse_external_tileset<R: std::io::BufRead>(
+    pub(crate) fn parse_xml<R: std::io::BufRead>(
         elem: crate::util::XmlElement<'_, R>,
         path: &Path,
         reader: &mut impl ResourceReader,
@@ -442,7 +376,7 @@ impl Tileset {
                 Some("fillmode") => fill_mode ?= v.parse::<FillMode>(),
                 Some("objectalignment") => object_alignment ?= v.parse::<ObjectAlignment>(),
 
-                "tilecount" => tilecount ?= v.parse::<u32>(),
+                Some("tilecount") => tilecount ?= v.parse::<u32>(),
                 "tilewidth" => tile_width ?= v.parse::<u32>(),
                 "tileheight" => tile_height ?= v.parse::<u32>(),
             }
@@ -481,7 +415,7 @@ impl Tileset {
         cache: &mut impl ResourceCache,
     ) -> Result<Tileset> {
         let mut image = Option::None;
-        let mut tiles = HashMap::with_capacity(prop.tilecount as usize);
+        let mut tiles = HashMap::with_capacity(prop.tilecount.unwrap_or_default() as usize);
         let mut properties = HashMap::new();
         let mut wang_sets = Vec::new();
         let mut offset = (0i32, 0i32);
@@ -521,27 +455,39 @@ impl Tileset {
             },
         });
 
-        // A tileset is considered an image collection tileset if there is no image attribute (because its tiles do).
-        let is_image_collection_tileset = image.is_none();
-
-        if !is_image_collection_tileset {
+        let margin = prop.margin.unwrap_or(0);
+        let spacing = prop.spacing.unwrap_or(0);
+        let too_many_tiles = || Error::MalformedAttributes("Tile count exceeds u32".into());
+        let (columns, tilecount) = if let Some(image) = &image {
             if prop.tile_width == 0 || prop.tile_height == 0 {
                 return Err(Error::InvalidTileset(
                     InvalidTilesetError::InvalidTileDimensions,
                 ));
             }
 
-            for tile_id in 0..prop.tilecount {
+            // Use the same leading margin and inter-tile spacing on either axis.
+            let tiles_along = |pixels: i32, tile: u32| {
+                let available = i64::from(pixels) - i64::from(margin) + i64::from(spacing);
+                (available.max(0) / (i64::from(tile) + i64::from(spacing))) as u32
+            };
+            let image_columns = tiles_along(image.width, prop.tile_width);
+            let tilecount = match prop.tilecount {
+                Some(count) => count,
+                None => image_columns
+                    .checked_mul(tiles_along(image.height, prop.tile_height))
+                    .ok_or_else(too_many_tiles)?,
+            };
+            for tile_id in 0..tilecount {
                 tiles.entry(tile_id).or_default();
             }
-        }
-
-        let margin = prop.margin.unwrap_or(0);
-        let spacing = prop.spacing.unwrap_or(0);
-        let columns = prop
-            .columns
-            .map(Ok)
-            .unwrap_or_else(|| Self::calculate_columns(&image, prop.tile_width, margin, spacing))?;
+            (prop.columns.unwrap_or(image_columns), tilecount)
+        } else {
+            let count = match prop.tilecount {
+                Some(count) => count,
+                None => u32::try_from(tiles.len()).map_err(|_| too_many_tiles())?,
+            };
+            (prop.columns.unwrap_or_default(), count)
+        };
 
         Ok(Tileset {
             source: container_path,
@@ -558,28 +504,12 @@ impl Tileset {
             fill_mode: prop.fill_mode.unwrap_or_default(),
             object_alignment: prop.object_alignment.unwrap_or_default(),
             transformations,
-            tilecount: prop.tilecount,
+            tilecount,
             image,
             tiles,
             wang_sets,
             properties,
         })
-    }
-
-    fn calculate_columns(
-        image: &Option<Image>,
-        tile_width: u32,
-        margin: u32,
-        spacing: u32,
-    ) -> Result<u32> {
-        image
-            .as_ref()
-            .map(|image| (image.width as u32 - margin + spacing) / (tile_width + spacing))
-            .ok_or_else(|| {
-                Error::MalformedAttributes(
-                    "No <image> nor columns attribute in <tileset>".to_string(),
-                )
-            })
     }
 }
 
